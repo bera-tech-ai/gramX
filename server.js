@@ -11,10 +11,18 @@ const io = socketIo(server);
 app.use(express.json());
 app.use(express.static('public'));
 
-// In-memory storage (no MongoDB needed)
+// In-memory storage
 const users = new Map(); // username -> password
-const messages = [];
-const activeUsers = new Map(); // socket.id -> username
+const activeUsers = new Map(); // socket.id -> {username, userId}
+const userSockets = new Map(); // username -> socket.id
+
+// Store messages by conversation ID
+const conversations = new Map(); // conversationId -> [messages]
+
+// Generate conversation ID for two users
+function getConversationId(user1, user2) {
+    return [user1, user2].sort().join('_');
+}
 
 // Serve main page
 app.get('/', (req, res) => {
@@ -43,36 +51,80 @@ app.post('/login', (req, res) => {
     }
 });
 
+// Get online users
+app.get('/online-users', (req, res) => {
+    const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
+    res.json({ users: onlineUsers });
+});
+
 // Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
     socket.on('user-login', (username) => {
-        activeUsers.set(socket.id, username);
-        socket.broadcast.emit('user-joined', username);
-        socket.emit('message-history', messages);
+        const userData = { username, userId: socket.id };
+        activeUsers.set(socket.id, userData);
+        userSockets.set(username, socket.id);
+        
+        // Notify all users about new online user
+        io.emit('user-online', username);
+        
+        // Send list of online users to the new user
+        const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
+        socket.emit('online-users', onlineUsers);
     });
 
-    socket.on('send-message', (data) => {
-        const message = {
-            text: data.text,
-            sender: data.sender,
-            timestamp: new Date(),
-            id: Date.now() + Math.random()
-        };
-        
-        messages.push(message);
-        // Keep only last 100 messages
-        if (messages.length > 100) messages.shift();
+    socket.on('join-conversation', (data) => {
+        const conversationId = getConversationId(data.currentUser, data.targetUser);
+        const conversationMessages = conversations.get(conversationId) || [];
+        socket.emit('conversation-history', {
+            conversationId,
+            messages: conversationMessages,
+            targetUser: data.targetUser
+        });
+    });
 
-        io.emit('new-message', message);
+    socket.on('send-private-message', (data) => {
+        const { sender, receiver, text } = data;
+        const conversationId = getConversationId(sender, receiver);
+        
+        const message = {
+            id: Date.now() + Math.random(),
+            text,
+            sender,
+            receiver,
+            timestamp: new Date(),
+            conversationId
+        };
+
+        // Store message in conversation
+        if (!conversations.has(conversationId)) {
+            conversations.set(conversationId, []);
+        }
+        conversations.get(conversationId).push(message);
+        
+        // Keep last 100 messages per conversation
+        if (conversations.get(conversationId).length > 100) {
+            conversations.get(conversationId).shift();
+        }
+
+        // Send to sender
+        socket.emit('new-private-message', message);
+        
+        // Send to receiver if online
+        const receiverSocketId = userSockets.get(receiver);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('new-private-message', message);
+        }
     });
 
     socket.on('disconnect', () => {
-        const username = activeUsers.get(socket.id);
-        if (username) {
+        const userData = activeUsers.get(socket.id);
+        if (userData) {
+            const { username } = userData;
             activeUsers.delete(socket.id);
-            socket.broadcast.emit('user-left', username);
+            userSockets.delete(username);
+            io.emit('user-offline', username);
         }
     });
 });
