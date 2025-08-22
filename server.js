@@ -11,17 +11,48 @@ const io = socketIo(server);
 app.use(express.json());
 app.use(express.static('public'));
 
-// In-memory storage
+// In-memory storage with persistence
 const users = new Map(); // username -> password
 const activeUsers = new Map(); // socket.id -> {username, userId}
 const userSockets = new Map(); // username -> socket.id
 
-// Store messages by conversation ID
-const conversations = new Map(); // conversationId -> [messages]
+// Store ALL conversations permanently
+const allConversations = new Map(); // conversationId -> [messages]
 
 // Generate conversation ID for two users
 function getConversationId(user1, user2) {
     return [user1, user2].sort().join('_');
+}
+
+// Get user's conversation partners
+function getUserConversations(username) {
+    const userConversations = [];
+    
+    for (const [conversationId, messages] of allConversations) {
+        const usersInConv = conversationId.split('_');
+        if (usersInConv.includes(username)) {
+            const partner = usersInConv.find(user => user !== username);
+            if (partner) {
+                // Get last message and timestamp
+                const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+                userConversations.push({
+                    partner,
+                    lastMessage: lastMessage ? {
+                        text: lastMessage.text,
+                        timestamp: lastMessage.timestamp,
+                        sender: lastMessage.sender
+                    } : null,
+                    unreadCount: messages.filter(m => m.receiver === username && !m.read).length
+                });
+            }
+        }
+    }
+    
+    return userConversations.sort((a, b) => {
+        const timeA = a.lastMessage ? new Date(a.lastMessage.timestamp) : new Date(0);
+        const timeB = b.lastMessage ? new Date(b.lastMessage.timestamp) : new Date(0);
+        return timeB - timeA; // Most recent first
+    });
 }
 
 // Serve main page
@@ -57,6 +88,13 @@ app.get('/online-users', (req, res) => {
     res.json({ users: onlineUsers });
 });
 
+// Get user's conversations
+app.get('/user-conversations/:username', (req, res) => {
+    const { username } = req.params;
+    const conversations = getUserConversations(username);
+    res.json({ conversations });
+});
+
 // Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -72,15 +110,30 @@ io.on('connection', (socket) => {
         // Send list of online users to the new user
         const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
         socket.emit('online-users', onlineUsers);
+        
+        // Send user's conversation history
+        const userConversations = getUserConversations(username);
+        socket.emit('user-conversations', userConversations);
     });
 
     socket.on('join-conversation', (data) => {
-        const conversationId = getConversationId(data.currentUser, data.targetUser);
-        const conversationMessages = conversations.get(conversationId) || [];
+        const { currentUser, targetUser } = data;
+        const conversationId = getConversationId(currentUser, targetUser);
+        
+        // Get conversation messages (create empty array if doesn't exist)
+        const conversationMessages = allConversations.get(conversationId) || [];
+        
+        // Mark messages as read when user opens conversation
+        conversationMessages.forEach(message => {
+            if (message.receiver === currentUser && !message.read) {
+                message.read = true;
+            }
+        });
+
         socket.emit('conversation-history', {
             conversationId,
             messages: conversationMessages,
-            targetUser: data.targetUser
+            targetUser: targetUser
         });
     });
 
@@ -94,27 +147,38 @@ io.on('connection', (socket) => {
             sender,
             receiver,
             timestamp: new Date(),
-            conversationId
+            conversationId,
+            read: false // Initially unread
         };
 
-        // Store message in conversation
-        if (!conversations.has(conversationId)) {
-            conversations.set(conversationId, []);
-        }
-        conversations.get(conversationId).push(message);
-        
-        // Keep last 100 messages per conversation
-        if (conversations.get(conversationId).length > 100) {
-            conversations.get(conversationId).shift();
+        // Initialize conversation if it doesn't exist
+        if (!allConversations.has(conversationId)) {
+            allConversations.set(conversationId, []);
         }
 
-        // Send to sender
+        // Add message to conversation history
+        allConversations.get(conversationId).push(message);
+        
+        // Keep last 1000 messages per conversation (much higher limit)
+        if (allConversations.get(conversationId).length > 1000) {
+            allConversations.get(conversationId).shift();
+        }
+
+        // Send to sender immediately
         socket.emit('new-private-message', message);
         
+        // Update sender's conversation list
+        const senderConversations = getUserConversations(sender);
+        socket.emit('user-conversations', senderConversations);
+
         // Send to receiver if online
         const receiverSocketId = userSockets.get(receiver);
         if (receiverSocketId) {
             io.to(receiverSocketId).emit('new-private-message', message);
+            
+            // Update receiver's conversation list
+            const receiverConversations = getUserConversations(receiver);
+            io.to(receiverSocketId).emit('user-conversations', receiverConversations);
         }
     });
 
@@ -133,4 +197,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 gramX server running on port ${PORT}`);
     console.log(`📱 Open http://localhost:${PORT} in your browser`);
+    console.log(`💾 Conversation persistence: ENABLED`);
 });
