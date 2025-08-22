@@ -1,8 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const path = require('path');
 
 const app = express();
@@ -13,31 +11,10 @@ const io = socketIo(server);
 app.use(express.json());
 app.use(express.static('public'));
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/gramx', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
-
-// User Schema
-const userSchema = new mongoose.Schema({
-    username: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    isOnline: { type: Boolean, default: false }
-});
-
-const messageSchema = new mongoose.Schema({
-    text: String,
-    sender: String,
-    timestamp: { type: Date, default: Date.now }
-});
-
-const User = mongoose.model('User', userSchema);
-const Message = mongoose.model('Message', messageSchema);
-
-// Store active users and messages in memory for simplicity
-const activeUsers = new Map();
-let messages = [];
+// In-memory storage (no MongoDB needed)
+const users = new Map(); // username -> password
+const messages = [];
+const activeUsers = new Map(); // socket.id -> username
 
 // Serve main page
 app.get('/', (req, res) => {
@@ -45,30 +22,24 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.post('/register', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, password: hashedPassword });
-        await user.save();
-        res.json({ success: true, username });
-    } catch (error) {
-        res.json({ success: false, error: 'Username taken' });
+app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (users.has(username)) {
+        return res.json({ success: false, error: 'Username taken' });
     }
+    
+    users.set(username, password);
+    res.json({ success: true, username });
 });
 
-app.post('/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-        const user = await User.findOne({ username });
-        
-        if (user && await bcrypt.compare(password, user.password)) {
-            res.json({ success: true, username });
-        } else {
-            res.json({ success: false, error: 'Invalid credentials' });
-        }
-    } catch (error) {
-        res.json({ success: false, error: 'Login failed' });
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    
+    if (users.has(username) && users.get(username) === password) {
+        res.json({ success: true, username });
+    } else {
+        res.json({ success: false, error: 'Invalid credentials' });
     }
 });
 
@@ -86,7 +57,8 @@ io.on('connection', (socket) => {
         const message = {
             text: data.text,
             sender: data.sender,
-            timestamp: new Date()
+            timestamp: new Date(),
+            id: Date.now() + Math.random()
         };
         
         messages.push(message);
@@ -105,7 +77,8 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 gramX server running on http://localhost:${PORT}`);
+    console.log(`🚀 gramX server running on port ${PORT}`);
+    console.log(`📱 Open http://localhost:${PORT} in your browser`);
 });
