@@ -74,7 +74,80 @@
             font-weight: 500;
         }
 
-        /* CHAT SCREEN - TELEGRAM STYLE */
+        /* CHAT LIST SCREEN */
+        .chat-list-header {
+            background: #0088cc;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 20px;
+        }
+
+        .online-users-header {
+            padding: 15px;
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .users-list {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .user-item {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .user-item:active {
+            background: #f8f9fa;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-status {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 5px;
+            display: inline-block;
+        }
+
+        /* CHAT SCREEN */
         .chat-header {
             background: #0088cc;
             color: white;
@@ -213,8 +286,8 @@
         <div class="auth-container">
             <div class="auth-box">
                 <h1 class="auth-title">gramX</h1>
-                <input type="text" id="login-username" class="auth-input" placeholder="Username" value="test">
-                <input type="password" id="login-password" class="auth-input" placeholder="Password" value="test">
+                <input type="text" id="login-username" class="auth-input" placeholder="Username" value="user1">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password" value="pass">
                 <button class="auth-button" onclick="login()">Login</button>
                 <div class="auth-switch">
                     Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
@@ -238,23 +311,36 @@
         </div>
     </div>
 
-    <!-- Chat Screen -->
-    <div id="chat-screen" class="screen">
+    <!-- Chat List Screen -->
+    <div id="chat-list-screen" class="screen">
+        <div class="chat-list-header">
+            gramX
+        </div>
+        <div class="online-users-header">
+            Online Users
+        </div>
+        <div class="users-list" id="users-list">
+            <!-- Online users will be listed here -->
+        </div>
+    </div>
+
+    <!-- Private Chat Screen -->
+    <div id="private-chat-screen" class="screen">
         <div class="chat-header">
-            <button class="back-button" onclick="logout()">←</button>
+            <button class="back-button" onclick="showScreen('chat-list-screen')">←</button>
             <div class="chat-info">
-                <div class="chat-name">General Chat</div>
-                <div class="chat-status" id="online-status">Online</div>
+                <div class="chat-name" id="chat-target-name">User</div>
+                <div class="chat-status" id="chat-target-status">online</div>
             </div>
         </div>
 
-        <div class="messages-container" id="messages-container">
-            <div class="system-message">Welcome to gramX! Start chatting.</div>
+        <div class="messages-container" id="private-messages-container">
+            <!-- Private messages will appear here -->
         </div>
 
         <div class="message-input-container">
-            <input type="text" id="message-input" class="message-input" placeholder="Message" onkeypress="handleKeyPress(event)">
-            <button class="send-button" onclick="sendMessage()">→</button>
+            <input type="text" id="private-message-input" class="message-input" placeholder="Message" onkeypress="handlePrivateKeyPress(event)">
+            <button class="send-button" onclick="sendPrivateMessage()">→</button>
         </div>
     </div>
 
@@ -262,6 +348,8 @@
     <script>
         let socket = null;
         let currentUser = null;
+        let currentTargetUser = null;
+        let onlineUsers = [];
 
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
@@ -305,7 +393,8 @@
             if (result.success) {
                 currentUser = username;
                 initializeSocket();
-                showScreen('chat-screen');
+                showScreen('chat-list-screen');
+                loadOnlineUsers();
             } else {
                 alert('Login failed: ' + result.error);
             }
@@ -318,30 +407,86 @@
                 socket.emit('user-login', currentUser);
             });
 
-            socket.on('message-history', (history) => {
-                const container = document.getElementById('messages-container');
+            socket.on('online-users', (users) => {
+                onlineUsers = users.filter(user => user !== currentUser);
+                updateOnlineUsersList();
+            });
+
+            socket.on('user-online', (username) => {
+                if (username !== currentUser && !onlineUsers.includes(username)) {
+                    onlineUsers.push(username);
+                    updateOnlineUsersList();
+                }
+            });
+
+            socket.on('user-offline', (username) => {
+                onlineUsers = onlineUsers.filter(user => user !== username);
+                updateOnlineUsersList();
+            });
+
+            socket.on('conversation-history', (data) => {
+                const container = document.getElementById('private-messages-container');
                 container.innerHTML = '';
                 
-                history.forEach(message => {
-                    addMessageToChat(message);
+                data.messages.forEach(message => {
+                    addPrivateMessageToChat(message);
                 });
             });
 
-            socket.on('new-message', (message) => {
-                addMessageToChat(message);
-            });
-
-            socket.on('user-joined', (username) => {
-                addSystemMessage(`${username} joined the chat`);
-            });
-
-            socket.on('user-left', (username) => {
-                addSystemMessage(`${username} left the chat`);
+            socket.on('new-private-message', (message) => {
+                if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
+                    addPrivateMessageToChat(message);
+                }
             });
         }
 
-        function addMessageToChat(message) {
-            const container = document.getElementById('messages-container');
+        function updateOnlineUsersList() {
+            const container = document.getElementById('users-list');
+            container.innerHTML = '';
+            
+            onlineUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'user-item';
+                userElement.onclick = () => startPrivateChat(user);
+                
+                userElement.innerHTML = `
+                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user}</div>
+                        <div class="user-status"><span class="online-dot"></span>Online</div>
+                    </div>
+                `;
+                
+                container.appendChild(userElement);
+            });
+        }
+
+        async function loadOnlineUsers() {
+            try {
+                const response = await fetch('/online-users');
+                const result = await response.json();
+                onlineUsers = result.users.filter(user => user !== currentUser);
+                updateOnlineUsersList();
+            } catch (error) {
+                console.log('Error loading online users:', error);
+            }
+        }
+
+        function startPrivateChat(targetUser) {
+            currentTargetUser = targetUser;
+            document.getElementById('chat-target-name').textContent = targetUser;
+            document.getElementById('chat-target-status').textContent = 'online';
+            
+            socket.emit('join-conversation', {
+                currentUser: currentUser,
+                targetUser: targetUser
+            });
+            
+            showScreen('private-chat-screen');
+        }
+
+        function addPrivateMessageToChat(message) {
+            const container = document.getElementById('private-messages-container');
             const messageDiv = document.createElement('div');
             
             const isMyMessage = message.sender === currentUser;
@@ -361,46 +506,30 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        function addSystemMessage(text) {
-            const container = document.getElementById('messages-container');
-            const systemMsg = document.createElement('div');
-            systemMsg.className = 'system-message';
-            systemMsg.textContent = text;
-            container.appendChild(systemMsg);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('message-input');
+        function sendPrivateMessage() {
+            const input = document.getElementById('private-message-input');
             const text = input.value.trim();
             
-            if (text && socket) {
-                socket.emit('send-message', {
-                    text: text,
-                    sender: currentUser
+            if (text && socket && currentTargetUser) {
+                socket.emit('send-private-message', {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    text: text
                 });
                 input.value = '';
             }
         }
 
-        function handleKeyPress(event) {
+        function handlePrivateKeyPress(event) {
             if (event.key === 'Enter') {
-                sendMessage();
+                sendPrivateMessage();
             }
-        }
-
-        function logout() {
-            if (socket) {
-                socket.disconnect();
-            }
-            currentUser = null;
-            showScreen('login-screen');
         }
 
         // Pre-fill for testing
         window.onload = () => {
-            document.getElementById('login-username').value = 'test';
-            document.getElementById('login-password').value = 'test';
+            document.getElementById('login-username').value = 'user1';
+            document.getElementById('login-password').value = 'pass';
         };
     </script>
 </body>
