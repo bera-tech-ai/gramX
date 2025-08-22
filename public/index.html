@@ -2,188 +2,266 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gramX - Messaging Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>gramX</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0088cc;
             height: 100vh;
+            overscroll-behavior: none;
+        }
+
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* AUTH SCREENS */
+        .auth-container {
+            flex: 1;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-        }
-        .app-container {
-            width: 100%;
-            max-width: 400px;
-            height: 90vh;
+            padding: 20px;
             background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        .screen { display: none; height: 100%; }
-        .screen.active { display: flex; flex-direction: column; }
-        
-        /* Auth Screens */
-        .auth-container { padding: 30px; }
-        .auth-form { margin-top: 20px; }
-        .form-group { margin-bottom: 20px; }
-        input { 
-            width: 100%; 
-            padding: 15px; 
-            border: 2px solid #e1e5e9; 
-            border-radius: 10px; 
-            font-size: 16px;
-        }
-        button {
+
+        .auth-box {
             width: 100%;
-            padding: 15px;
+            max-width: 320px;
+        }
+
+        .auth-title {
+            text-align: center;
+            color: #0088cc;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            background: #f8f9fa;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 16px;
             background: #0088cc;
             color: white;
             border: none;
             border-radius: 10px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            margin-bottom: 20px;
         }
-        .auth-switch { 
-            text-align: center; 
-            margin-top: 20px; 
-            color: #666; 
+
+        .auth-switch {
+            text-align: center;
+            color: #666;
         }
-        .auth-switch a { 
-            color: #0088cc; 
-            text-decoration: none; 
+
+        .auth-switch a {
+            color: #0088cc;
+            text-decoration: none;
             font-weight: 500;
         }
 
-        /* Chat Screen */
+        /* CHAT SCREEN - TELEGRAM STYLE */
         .chat-header {
             background: #0088cc;
             color: white;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .chat-status {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
         .messages-container {
             flex: 1;
-            padding: 20px;
+            padding: 16px;
             overflow-y: auto;
-            background: #f0f2f5;
+            background: #e6ebf5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
+
         .message {
-            max-width: 70%;
-            margin-bottom: 15px;
+            max-width: 80%;
             padding: 12px 16px;
-            border-radius: 18px;
-            word-wrap: break-word;
+            border-radius: 12px;
+            animation: messageSlide 0.3s ease-out;
         }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .my-message {
-            background: #dcf8c6;
-            margin-left: auto;
-            border-bottom-right-radius: 5px;
+            background: #d3eddb;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
         }
+
         .their-message {
             background: white;
-            margin-right: auto;
-            border-bottom-left-radius: 5px;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
         }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 14px;
+            color: #0088cc;
+            margin-bottom: 4px;
+        }
+
+        .message-text {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #7d7d7d;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .system-message {
+            text-align: center;
+            color: #7d7d7d;
+            font-size: 13px;
+            margin: 8px 0;
+            font-style: italic;
+        }
+
         .message-input-container {
-            padding: 15px;
-            background: white;
+            padding: 12px 16px;
+            background: #f0f2f5;
             border-top: 1px solid #e0e0e0;
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            align-items: center;
         }
+
         .message-input {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 25px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 22px;
+            font-size: 16px;
+            background: white;
+            outline: none;
         }
-        .send-btn {
+
+        .send-button {
             background: #0088cc;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            font-size: 18px;
         }
 
         /* Responsive */
-        @media (max-width: 480px) {
-            .app-container {
-                height: 100vh;
-                border-radius: 0;
-            }
+        @media (max-width: 340px) {
+            .message { max-width: 75%; }
+            .auth-box { max-width: 280px; }
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Login Screen -->
-        <div id="login-screen" class="screen active">
-            <div class="auth-container">
-                <h2>Welcome to gramX</h2>
-                <div class="auth-form">
-                    <div class="form-group">
-                        <input type="email" id="login-email" placeholder="Email" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="password" id="login-password" placeholder="Password" required>
-                    </div>
-                    <button onclick="login()">Login</button>
-                    <div class="auth-switch">
-                        Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
-                    </div>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="auth-title">gramX</h1>
+                <input type="text" id="login-username" class="auth-input" placeholder="Username" value="test">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password" value="test">
+                <button class="auth-button" onclick="login()">Login</button>
+                <div class="auth-switch">
+                    Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Register Screen -->
-        <div id="register-screen" class="screen">
-            <div class="auth-container">
-                <h2>Create Account</h2>
-                <div class="auth-form">
-                    <div class="form-group">
-                        <input type="text" id="register-username" placeholder="Username" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="email" id="register-email" placeholder="Email" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="password" id="register-password" placeholder="Password" required>
-                    </div>
-                    <button onclick="register()">Create Account</button>
-                    <div class="auth-switch">
-                        Already have an account? <a href="#" onclick="showScreen('login-screen')">Login</a>
-                    </div>
+    <!-- Register Screen -->
+    <div id="register-screen" class="screen">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="auth-title">Create Account</h1>
+                <input type="text" id="register-username" class="auth-input" placeholder="Choose username">
+                <input type="password" id="register-password" class="auth-input" placeholder="Choose password">
+                <button class="auth-button" onclick="register()">Create Account</button>
+                <div class="auth-switch">
+                    Already have an account? <a href="#" onclick="showScreen('login-screen')">Login</a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Main Chat Screen -->
-        <div id="chat-screen" class="screen">
-            <div class="chat-header">
-                gramX Chat
+    <!-- Chat Screen -->
+    <div id="chat-screen" class="screen">
+        <div class="chat-header">
+            <button class="back-button" onclick="logout()">←</button>
+            <div class="chat-info">
+                <div class="chat-name">General Chat</div>
+                <div class="chat-status" id="online-status">Online</div>
             </div>
-            <div class="messages-container" id="messages-container">
-                <!-- Messages will be displayed here -->
-            </div>
-            <div class="message-input-container">
-                <input type="text" id="message-input" class="message-input" placeholder="Type a message...">
-                <button class="send-btn" onclick="sendMessage()">➤</button>
-            </div>
+        </div>
+
+        <div class="messages-container" id="messages-container">
+            <div class="system-message">Welcome to gramX! Start chatting.</div>
+        </div>
+
+        <div class="message-input-container">
+            <input type="text" id="message-input" class="message-input" placeholder="Message" onkeypress="handleKeyPress(event)">
+            <button class="send-button" onclick="sendMessage()">→</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket = io();
+        let socket = null;
         let currentUser = null;
-        let currentToken = null;
 
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
@@ -194,114 +272,136 @@
 
         async function register() {
             const username = document.getElementById('register-username').value;
-            const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
 
-            try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
-                });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    currentToken = data.token;
-                    currentUser = data.user;
-                    showScreen('chat-screen');
-                    connectSocket();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                alert('Registration failed');
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Registration successful! Please login.');
+                showScreen('login-screen');
+            } else {
+                alert('Error: ' + result.error);
             }
         }
 
         async function login() {
-            const email = document.getElementById('login-email').value;
+            const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
 
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    currentToken = data.token;
-                    currentUser = data.user;
-                    showScreen('chat-screen');
-                    connectSocket();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (error) {
-                alert('Login failed');
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                currentUser = username;
+                initializeSocket();
+                showScreen('chat-screen');
+            } else {
+                alert('Login failed: ' + result.error);
             }
         }
 
-        function connectSocket() {
-            socket = io({
-                auth: {
-                    token: currentToken
-                }
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', () => {
+                socket.emit('user-login', currentUser);
             });
 
-            socket.on('connect', () => {
-                console.log('Connected to server');
-                socket.emit('join-room', 'general');
+            socket.on('message-history', (history) => {
+                const container = document.getElementById('messages-container');
+                container.innerHTML = '';
+                
+                history.forEach(message => {
+                    addMessageToChat(message);
+                });
             });
 
             socket.on('new-message', (message) => {
-                displayMessage(message);
+                addMessageToChat(message);
             });
 
-            socket.on('room-messages', (messages) => {
-                const container = document.getElementById('messages-container');
-                container.innerHTML = '';
-                messages.forEach(displayMessage);
+            socket.on('user-joined', (username) => {
+                addSystemMessage(`${username} joined the chat`);
+            });
+
+            socket.on('user-left', (username) => {
+                addSystemMessage(`${username} left the chat`);
             });
         }
 
-        function displayMessage(message) {
+        function addMessageToChat(message) {
             const container = document.getElementById('messages-container');
             const messageDiv = document.createElement('div');
-            const isMyMessage = message.sender._id === currentUser.id;
             
+            const isMyMessage = message.sender === currentUser;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
             messageDiv.innerHTML = `
-                <strong>${message.sender.username}:</strong> ${message.content}
-                ${message.fileUrl ? `<br><img src="${message.fileUrl}" style="max-width: 100%; border-radius: 10px;">` : ''}
+                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                <div class="message-text">${message.text}</div>
+                <div class="message-time">${time}</div>
             `;
             
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
         }
 
+        function addSystemMessage(text) {
+            const container = document.getElementById('messages-container');
+            const systemMsg = document.createElement('div');
+            systemMsg.className = 'system-message';
+            systemMsg.textContent = text;
+            container.appendChild(systemMsg);
+            container.scrollTop = container.scrollHeight;
+        }
+
         function sendMessage() {
             const input = document.getElementById('message-input');
-            const content = input.value.trim();
+            const text = input.value.trim();
             
-            if (content && socket.connected) {
+            if (text && socket) {
                 socket.emit('send-message', {
-                    content: content,
-                    type: 'text',
-                    senderId: currentUser.id,
-                    roomId: 'general'
+                    text: text,
+                    sender: currentUser
                 });
                 input.value = '';
             }
         }
 
-        // Enter key to send message
-        document.getElementById('message-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
                 sendMessage();
             }
-        });
+        }
+
+        function logout() {
+            if (socket) {
+                socket.disconnect();
+            }
+            currentUser = null;
+            showScreen('login-screen');
+        }
+
+        // Pre-fill for testing
+        window.onload = () => {
+            document.getElementById('login-username').value = 'test';
+            document.getElementById('login-password').value = 'test';
+        };
     </script>
 </body>
-  </html>
+</html>
