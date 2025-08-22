@@ -16,65 +16,16 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
         .screen.active { display: flex; }
 
-        /* AUTH SCREENS */
-        .auth-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            background: white;
-        }
+        /* AUTH SCREENS - Keep same as before */
+        .auth-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: white; }
+        .auth-box { width: 100%; max-width: 320px; }
+        .auth-title { text-align: center; color: #0088cc; font-size: 28px; font-weight: bold; margin-bottom: 30px; }
+        .auth-input { width: 100%; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: #f8f9fa; }
+        .auth-button { width: 100%; padding: 16px; background: #0088cc; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+        .auth-switch { text-align: center; color: #666; }
+        .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
 
-        .auth-box {
-            width: 100%;
-            max-width: 320px;
-        }
-
-        .auth-title {
-            text-align: center;
-            color: #0088cc;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 30px;
-        }
-
-        .auth-input {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            background: #f8f9fa;
-        }
-
-        .auth-button {
-            width: 100%;
-            padding: 16px;
-            background: #0088cc;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
-
-        .auth-switch {
-            text-align: center;
-            color: #666;
-        }
-
-        .auth-switch a {
-            color: #0088cc;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        /* CHAT LIST SCREEN */
+        /* CHAT LIST SCREEN - Enhanced with conversations */
         .chat-list-header {
             background: #0088cc;
             color: white;
@@ -82,36 +33,63 @@
             text-align: center;
             font-weight: 600;
             font-size: 20px;
+            position: relative;
         }
 
-        .online-users-header {
-            padding: 15px;
+        .new-chat-button {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .tabs {
+            display: flex;
             background: #f8f9fa;
-            font-weight: 600;
-            color: #666;
             border-bottom: 1px solid #e0e0e0;
         }
 
-        .users-list {
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #0088cc;
+            border-bottom-color: #0088cc;
+        }
+
+        .conversations-list {
             flex: 1;
             overflow-y: auto;
             background: white;
         }
 
-        .user-item {
+        .conversation-item {
             padding: 16px;
             border-bottom: 1px solid #f0f0f0;
             display: flex;
             align-items: center;
             gap: 12px;
             cursor: pointer;
+            position: relative;
         }
 
-        .user-item:active {
+        .conversation-item:active {
             background: #f8f9fa;
         }
 
-        .user-avatar {
+        .conversation-avatar {
             width: 48px;
             height: 48px;
             border-radius: 50%;
@@ -122,156 +100,91 @@
             justify-content: center;
             font-weight: bold;
             font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .user-info {
+        .conversation-info {
             flex: 1;
+            min-width: 0;
         }
 
-        .user-name {
+        .conversation-name {
             font-weight: 600;
             font-size: 16px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .user-status {
-            font-size: 13px;
-            color: #666;
-        }
-
-        .online-dot {
-            width: 10px;
-            height: 10px;
-            background: #4CAF50;
-            border-radius: 50%;
-            margin-right: 5px;
-            display: inline-block;
-        }
-
-        /* CHAT SCREEN */
-        .chat-header {
-            background: #0088cc;
-            color: white;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .back-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-        .chat-info {
-            flex: 1;
-        }
-
-        .chat-name {
-            font-weight: 600;
-            font-size: 17px;
-        }
-
-        .chat-status {
-            font-size: 13px;
-            opacity: 0.9;
-        }
-
-        .messages-container {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            background: #e6ebf5;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            animation: messageSlide 0.3s ease-out;
-        }
-
-        @keyframes messageSlide {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .my-message {
-            background: #d3eddb;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-
-        .their-message {
-            background: white;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-
-        .message-sender {
-            font-weight: 600;
+        .conversation-preview {
             font-size: 14px;
-            color: #0088cc;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-meta {
+            text-align: right;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        .conversation-time {
+            font-size: 12px;
+            color: #666;
             margin-bottom: 4px;
         }
 
-        .message-text {
-            font-size: 16px;
-            line-height: 1.4;
-        }
-
-        .message-time {
-            font-size: 11px;
-            color: #7d7d7d;
-            text-align: right;
-            margin-top: 4px;
-        }
-
-        .system-message {
-            text-align: center;
-            color: #7d7d7d;
-            font-size: 13px;
-            margin: 8px 0;
-            font-style: italic;
-        }
-
-        .message-input-container {
-            padding: 12px 16px;
-            background: #f0f2f5;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .message-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 22px;
-            font-size: 16px;
-            background: white;
-            outline: none;
-        }
-
-        .send-button {
+        .unread-badge {
             background: #0088cc;
             color: white;
-            border: none;
             border-radius: 50%;
-            width: 44px;
-            height: 44px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            font-size: 18px;
+            font-size: 12px;
+            font-weight: 600;
         }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        /* ONLINE USERS LIST - Keep existing styles */
+        .online-users-header { padding: 15px; background: #f8f9fa; font-weight: 600; color: #666; border-bottom: 1px solid #e0e0e0; }
+        .users-list { flex: 1; overflow-y: auto; background: white; }
+        .user-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .user-item:active { background: #f8f9fa; }
+        .user-avatar { width: 48px; height: 48px; border-radius: 50%; background: #0088cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
+        .user-info { flex: 1; }
+        .user-name { font-weight: 600; font-size: 16px; }
+        .user-status { font-size: 13px; color: #666; }
+        .online-dot { width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; margin-right: 5px; display: inline-block; }
+
+        /* CHAT SCREEN - Keep existing styles */
+        .chat-header { background: #0088cc; color: white; padding: 16px; display: flex; align-items: center; gap: 12px; }
+        .back-button { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .chat-info { flex: 1; }
+        .chat-name { font-weight: 600; font-size: 17px; }
+        .chat-status { font-size: 13px; opacity: 0.9; }
+        .messages-container { flex: 1; padding: 16px; overflow-y: auto; background: #e6ebf5; display: flex; flex-direction: column; gap: 8px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; animation: messageSlide 0.3s ease-out; }
+        @keyframes messageSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .my-message { background: #d3eddb; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .their-message { background: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .message-sender { font-weight: 600; font-size: 14px; color: #0088cc; margin-bottom: 4px; }
+        .message-text { font-size: 16px; line-height: 1.4; }
+        .message-time { font-size: 11px; color: #7d7d7d; text-align: right; margin-top: 4px; }
+        .system-message { text-align: center; color: #7d7d7d; font-size: 13px; margin: 8px 0; font-style: italic; }
+        .message-input-container { padding: 12px 16px; background: #f0f2f5; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; align-items: center; }
+        .message-input { flex: 1; padding: 12px 16px; border: none; border-radius: 22px; font-size: 16px; background: white; outline: none; }
+        .send-button { background: #0088cc; color: white; border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
 
         /* Responsive */
         @media (max-width: 340px) {
@@ -315,11 +228,28 @@
     <div id="chat-list-screen" class="screen">
         <div class="chat-list-header">
             gramX
+            <button class="new-chat-button" onclick="showOnlineUsers()">+</button>
         </div>
-        <div class="online-users-header">
-            Online Users
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('conversations')">Chats</div>
+            <div class="tab" onclick="showTab('online')">Online</div>
         </div>
-        <div class="users-list" id="users-list">
+
+        <!-- Conversations Tab -->
+        <div id="conversations-tab" class="conversations-list">
+            <div class="empty-state" id="no-conversations">
+                No conversations yet<br>
+                <small>Start a chat with someone online!</small>
+            </div>
+            <!-- Conversations will be listed here -->
+        </div>
+
+        <!-- Online Users Tab -->
+        <div id="online-tab" class="users-list" style="display: none;">
+            <div class="empty-state" id="no-online-users">
+                No other users online
+            </div>
             <!-- Online users will be listed here -->
         </div>
     </div>
@@ -327,7 +257,7 @@
     <!-- Private Chat Screen -->
     <div id="private-chat-screen" class="screen">
         <div class="chat-header">
-            <button class="back-button" onclick="showScreen('chat-list-screen')">←</button>
+            <button class="back-button" onclick="backToChatList()">←</button>
             <div class="chat-info">
                 <div class="chat-name" id="chat-target-name">User</div>
                 <div class="chat-status" id="chat-target-status">online</div>
@@ -350,12 +280,25 @@
         let currentUser = null;
         let currentTargetUser = null;
         let onlineUsers = [];
+        let userConversations = [];
 
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
             });
             document.getElementById(screenId).classList.add('active');
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
+            
+            document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
+            document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
+        }
+
+        function showOnlineUsers() {
+            showTab('online');
         }
 
         async function register() {
@@ -394,7 +337,6 @@
                 currentUser = username;
                 initializeSocket();
                 showScreen('chat-list-screen');
-                loadOnlineUsers();
             } else {
                 alert('Login failed: ' + result.error);
             }
@@ -410,6 +352,11 @@
             socket.on('online-users', (users) => {
                 onlineUsers = users.filter(user => user !== currentUser);
                 updateOnlineUsersList();
+            });
+
+            socket.on('user-conversations', (conversations) => {
+                userConversations = conversations;
+                updateConversationsList();
             });
 
             socket.on('user-online', (username) => {
@@ -428,20 +375,80 @@
                 const container = document.getElementById('private-messages-container');
                 container.innerHTML = '';
                 
-                data.messages.forEach(message => {
-                    addPrivateMessageToChat(message);
-                });
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
+                } else {
+                    data.messages.forEach(message => {
+                        addPrivateMessageToChat(message);
+                    });
+                }
             });
 
             socket.on('new-private-message', (message) => {
                 if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
                     addPrivateMessageToChat(message);
                 }
+                
+                // Update conversations list when new message arrives
+                if (socket) {
+                    socket.emit('user-login', currentUser); // Refresh conversations
+                }
+            });
+        }
+
+        function updateConversationsList() {
+            const container = document.getElementById('conversations-tab');
+            const emptyState = document.getElementById('no-conversations');
+            
+            if (userConversations.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            userConversations.forEach(conv => {
+                const convElement = document.createElement('div');
+                convElement.className = 'conversation-item';
+                convElement.onclick = () => startPrivateChat(conv.partner);
+                
+                const lastMessageTime = conv.lastMessage ? new Date(conv.lastMessage.timestamp).toLocaleTimeString([], { 
+                    hour: '2-digit', minute: '2-digit' 
+                }) : '';
+                
+                const lastMessageText = conv.lastMessage ? 
+                    (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 
+                    'No messages yet';
+                
+                convElement.innerHTML = `
+                    <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
+                    <div class="conversation-info">
+                        <div class="conversation-name">${conv.partner}</div>
+                        <div class="conversation-preview">${lastMessageText}</div>
+                    </div>
+                    <div class="conversation-meta">
+                        <div class="conversation-time">${lastMessageTime}</div>
+                        ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(convElement);
             });
         }
 
         function updateOnlineUsersList() {
-            const container = document.getElementById('users-list');
+            const container = document.getElementById('online-tab');
+            const emptyState = document.getElementById('no-online-users');
+            
+            if (onlineUsers.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
             container.innerHTML = '';
             
             onlineUsers.forEach(user => {
@@ -461,21 +468,14 @@
             });
         }
 
-        async function loadOnlineUsers() {
-            try {
-                const response = await fetch('/online-users');
-                const result = await response.json();
-                onlineUsers = result.users.filter(user => user !== currentUser);
-                updateOnlineUsersList();
-            } catch (error) {
-                console.log('Error loading online users:', error);
-            }
-        }
-
         function startPrivateChat(targetUser) {
             currentTargetUser = targetUser;
             document.getElementById('chat-target-name').textContent = targetUser;
-            document.getElementById('chat-target-status').textContent = 'online';
+            
+            // Check if target is online
+            const isOnline = onlineUsers.includes(targetUser);
+            document.getElementById('chat-target-status').textContent = isOnline ? 'online' : 'offline';
+            document.getElementById('chat-target-status').style.color = isOnline ? '#4CAF50' : '#666';
             
             socket.emit('join-conversation', {
                 currentUser: currentUser,
@@ -483,6 +483,12 @@
             });
             
             showScreen('private-chat-screen');
+        }
+
+        function backToChatList() {
+            showScreen('chat-list-screen');
+            // Refresh conversations to update read status
+            socket.emit('user-login', currentUser);
         }
 
         function addPrivateMessageToChat(message) {
