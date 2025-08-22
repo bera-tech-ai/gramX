@@ -5,538 +5,594 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>gramX</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #0088cc;
-            height: 100vh;
-            overscroll-behavior: none;
+        /* Add these new styles for enhanced settings */
+        
+        /* Advanced Settings Modal */
+        .settings-container {
+            padding: 0;
         }
-
-        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
-        .screen.active { display: flex; }
-
-        /* AUTH SCREENS - Keep same as before */
-        .auth-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: white; }
-        .auth-box { width: 100%; max-width: 320px; }
-        .auth-title { text-align: center; color: #0088cc; font-size: 28px; font-weight: bold; margin-bottom: 30px; }
-        .auth-input { width: 100%; padding: 16px; margin-bottom: 16px; border: 1px solid #e0e0e0; border-radius: 10px; font-size: 16px; background: #f8f9fa; }
-        .auth-button { width: 100%; padding: 16px; background: #0088cc; color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
-        .auth-switch { text-align: center; color: #666; }
-        .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
-
-        /* CHAT LIST SCREEN - Enhanced with conversations */
-        .chat-list-header {
-            background: #0088cc;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 20px;
-            position: relative;
-        }
-
-        .new-chat-button {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .tab {
-            flex: 1;
+        
+        .settings-section {
             padding: 15px;
-            text-align: center;
-            font-weight: 600;
-            color: #666;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-
-        .tab.active {
-            color: #0088cc;
-            border-bottom-color: #0088cc;
-        }
-
-        .conversations-list {
-            flex: 1;
-            overflow-y: auto;
-            background: white;
-        }
-
-        .conversation-item {
-            padding: 16px;
             border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            position: relative;
         }
-
-        .conversation-item:active {
-            background: #f8f9fa;
-        }
-
-        .conversation-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #0088cc;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .conversation-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .conversation-name {
+        
+        .settings-section-title {
             font-weight: 600;
+            color: #0088cc;
+            margin-bottom: 10px;
             font-size: 16px;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-
-        .conversation-preview {
-            font-size: 14px;
-            color: #666;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        
+        .settings-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 12px 0;
+            cursor: pointer;
         }
-
-        .conversation-meta {
-            text-align: right;
-            margin-left: 8px;
-            flex-shrink: 0;
+        
+        .settings-item:not(:last-child) {
+            border-bottom: 1px solid #f0f0f0;
         }
-
-        .conversation-time {
+        
+        .settings-item-content {
+            flex: 1;
+        }
+        
+        .settings-item-title {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .settings-item-description {
             font-size: 12px;
             color: #666;
-            margin-bottom: 4px;
         }
-
-        .unread-badge {
-            background: #0088cc;
-            color: white;
+        
+        .settings-item-action {
+            color: #0088cc;
+            font-size: 14px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+        }
+        
+        input:checked + .slider {
+            background-color: #0088cc;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Developer Info Section */
+        .developer-info {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .developer-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+        
+        .developer-name {
             font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 5px;
         }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
+        
+        .developer-contact {
+            color: #0088cc;
+            text-decoration: none;
+            font-size: 14px;
         }
-
-        /* ONLINE USERS LIST - Keep existing styles */
-        .online-users-header { padding: 15px; background: #f8f9fa; font-weight: 600; color: #666; border-bottom: 1px solid #e0e0e0; }
-        .users-list { flex: 1; overflow-y: auto; background: white; }
-        .user-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
-        .user-item:active { background: #f8f9fa; }
-        .user-avatar { width: 48px; height: 48px; border-radius: 50%; background: #0088cc; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
-        .user-info { flex: 1; }
-        .user-name { font-weight: 600; font-size: 16px; }
-        .user-status { font-size: 13px; color: #666; }
-        .online-dot { width: 10px; height: 10px; background: #4CAF50; border-radius: 50%; margin-right: 5px; display: inline-block; }
-
-        /* CHAT SCREEN - Keep existing styles */
-        .chat-header { background: #0088cc; color: white; padding: 16px; display: flex; align-items: center; gap: 12px; }
-        .back-button { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
-        .chat-info { flex: 1; }
-        .chat-name { font-weight: 600; font-size: 17px; }
-        .chat-status { font-size: 13px; opacity: 0.9; }
-        .messages-container { flex: 1; padding: 16px; overflow-y: auto; background: #e6ebf5; display: flex; flex-direction: column; gap: 8px; }
-        .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; animation: messageSlide 0.3s ease-out; }
-        @keyframes messageSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .my-message { background: #d3eddb; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .their-message { background: white; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .message-sender { font-weight: 600; font-size: 14px; color: #0088cc; margin-bottom: 4px; }
-        .message-text { font-size: 16px; line-height: 1.4; }
-        .message-time { font-size: 11px; color: #7d7d7d; text-align: right; margin-top: 4px; }
-        .system-message { text-align: center; color: #7d7d7d; font-size: 13px; margin: 8px 0; font-style: italic; }
-        .message-input-container { padding: 12px 16px; background: #f0f2f5; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; align-items: center; }
-        .message-input { flex: 1; padding: 12px 16px; border: none; border-radius: 22px; font-size: 16px; background: white; outline: none; }
-        .send-button { background: #0088cc; color: white; border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
-
-        /* Responsive */
-        @media (max-width: 340px) {
-            .message { max-width: 75%; }
-            .auth-box { max-width: 280px; }
+        
+        .developer-contact:hover {
+            text-decoration: underline;
+        }
+        
+        /* Theme Options */
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .theme-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .theme-option.active {
+            border-color: #0088cc;
+        }
+        
+        .theme-light {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .theme-dark {
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        
+        .theme-system {
+            background: linear-gradient(135deg, #ffffff 50%, #1a1a1a 50%);
+            border: 1px solid #e0e0e0;
+        }
+        
+        /* Edit Profile Modal */
+        .edit-profile-form {
+            padding: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
         }
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div id="login-screen" class="screen active">
-        <div class="auth-container">
-            <div class="auth-box">
-                <h1 class="auth-title">gramX</h1>
-                <input type="text" id="login-username" class="auth-input" placeholder="Username" value="user1">
-                <input type="password" id="login-password" class="auth-input" placeholder="Password" value="pass">
-                <button class="auth-button" onclick="login()">Login</button>
-                <div class="auth-switch">
-                    Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
+    <!-- Add these new modals to your HTML -->
+
+    <!-- Advanced Settings Modal -->
+    <div id="advanced-settings-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Settings & Preferences</h3>
+            </div>
+            
+            <div class="settings-container">
+                <!-- Appearance Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Appearance</div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Theme</div>
+                            <div class="settings-item-description">Choose your preferred theme</div>
+                        </div>
+                        <div class="settings-item-action" onclick="showThemeSelector()">Change</div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Font Size</div>
+                            <div class="settings-item-description">Adjust text size</div>
+                        </div>
+                        <div class="settings-item-action">Medium</div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Notifications</div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Message Notifications</div>
+                            <div class="settings-item-description">Enable message alerts</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notification-toggle" checked onchange="toggleNotifications()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Sound</div>
+                            <div class="settings-item-description">Play sound for new messages</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="sound-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Privacy Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Privacy & Security</div>
+                    
+                    <div class="settings-item" onclick="showPrivacySettings()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Privacy Settings</div>
+                            <div class="settings-item-description">Manage your privacy options</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                    
+                    <div class="settings-item" onclick="showSecuritySettings()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Security</div>
+                            <div class="settings-item-description">Two-factor authentication</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                </div>
+
+                <!-- Account Section -->
+                <div class="settings-section">
+                    <div class="settings-section-title">Account</div>
+                    
+                    <div class="settings-item" onclick="editProfile()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Edit Profile</div>
+                            <div class="settings-item-description">Update your information</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                    
+                    <div class="settings-item" onclick="changePassword()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Change Password</div>
+                            <div class="settings-item-description">Update your password</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                </div>
+
+                <!-- Developer Information -->
+                <div class="settings-section">
+                    <div class="settings-section-title">About & Support</div>
+                    
+                    <div class="developer-info">
+                        <div class="developer-avatar">B</div>
+                        <div class="developer-name">Bruce Bera</div>
+                        <div class="developer-contact">
+                            <a href="tel:+254743982206" style="color: #0088cc; text-decoration: none;">
+                                📞 +254 743 982 206
+                            </a>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Full Stack Developer
+                        </div>
+                    </div>
+                    
+                    <div class="settings-item" onclick="showAppInfo()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">App Information</div>
+                            <div class="settings-item-description">Version and details</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                    
+                    <div class="settings-item" onclick="contactSupport()">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Contact Support</div>
+                            <div class="settings-item-description">Get help with gramX</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="settings-section">
+                    <div class="settings-section-title" style="color: #ff4757;">Danger Zone</div>
+                    
+                    <div class="settings-item" onclick="logout()" style="color: #ff4757;">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Logout</div>
+                            <div class="settings-item-description">Sign out of your account</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
+                    
+                    <div class="settings-item" onclick="deleteAccount()" style="color: #ff4757;">
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Delete Account</div>
+                            <div class="settings-item-description">Permanently remove your account</div>
+                        </div>
+                        <div class="settings-item-action">→</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Register Screen -->
-    <div id="register-screen" class="screen">
-        <div class="auth-container">
-            <div class="auth-box">
-                <h1 class="auth-title">Create Account</h1>
-                <input type="text" id="register-username" class="auth-input" placeholder="Choose username">
-                <input type="password" id="register-password" class="auth-input" placeholder="Choose password">
-                <button class="auth-button" onclick="register()">Create Account</button>
-                <div class="auth-switch">
-                    Already have an account? <a href="#" onclick="showScreen('login-screen')">Login</a>
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+            </div>
+            
+            <div class="edit-profile-form">
+                <div class="form-group">
+                    <label class="form-label">Profile Picture</label>
+                    <div style="text-align: center;">
+                        <img id="edit-profile-preview" class="profile-preview" src="">
+                        <input type="file" id="edit-profile-upload" accept="image/*" style="display: none;" onchange="previewEditProfileImage(this)">
+                        <button onclick="document.getElementById('edit-profile-upload').click()" style="padding: 8px 15px; background: #0088cc; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Change Photo</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="edit-username" class="form-input" placeholder="Username">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Bio</label>
+                    <textarea id="edit-bio" class="form-textarea" placeholder="Tell something about yourself"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" id="edit-phone" class="form-input" placeholder="+254 XXX XXX XXX">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveProfile()" style="flex: 1; padding: 12px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer;">Save Changes</button>
+                    <button onclick="closeModal('edit-profile-modal')" style="flex: 1; padding: 12px; background: #ccc; color: #333; border: none; border-radius: 8px; cursor: pointer;">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Chat List Screen -->
-    <div id="chat-list-screen" class="screen">
-        <div class="chat-list-header">
-            gramX
-            <button class="new-chat-button" onclick="showOnlineUsers()">+</button>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab active" onclick="showTab('conversations')">Chats</div>
-            <div class="tab" onclick="showTab('online')">Online</div>
-        </div>
-
-        <!-- Conversations Tab -->
-        <div id="conversations-tab" class="conversations-list">
-            <div class="empty-state" id="no-conversations">
-                No conversations yet<br>
-                <small>Start a chat with someone online!</small>
+    <!-- Theme Selector Modal -->
+    <div id="theme-selector-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Choose Theme</h3>
             </div>
-            <!-- Conversations will be listed here -->
-        </div>
-
-        <!-- Online Users Tab -->
-        <div id="online-tab" class="users-list" style="display: none;">
-            <div class="empty-state" id="no-online-users">
-                No other users online
+            
+            <div class="settings-container">
+                <div class="theme-options">
+                    <div class="theme-option theme-light active" onclick="selectTheme('light')"></div>
+                    <div class="theme-option theme-dark" onclick="selectTheme('dark')"></div>
+                    <div class="theme-option theme-system" onclick="selectTheme('system')"></div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="applyTheme()" style="padding: 12px 30px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer;">Apply Theme</button>
+                </div>
             </div>
-            <!-- Online users will be listed here -->
-        </div>
-    </div>
-
-    <!-- Private Chat Screen -->
-    <div id="private-chat-screen" class="screen">
-        <div class="chat-header">
-            <button class="back-button" onclick="backToChatList()">←</button>
-            <div class="chat-info">
-                <div class="chat-name" id="chat-target-name">User</div>
-                <div class="chat-status" id="chat-target-status">online</div>
-            </div>
-        </div>
-
-        <div class="messages-container" id="private-messages-container">
-            <!-- Private messages will appear here -->
-        </div>
-
-        <div class="message-input-container">
-            <input type="text" id="private-message-input" class="message-input" placeholder="Message" onkeypress="handlePrivateKeyPress(event)">
-            <button class="send-button" onclick="sendPrivateMessage()">→</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket = null;
-        let currentUser = null;
-        let currentTargetUser = null;
-        let onlineUsers = [];
-        let userConversations = [];
+        // Add these new JavaScript functions for enhanced settings
 
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
-            
-            document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
-            document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
-        }
-
-        function showOnlineUsers() {
-            showTab('online');
-        }
-
-        async function register() {
-            const username = document.getElementById('register-username').value;
-            const password = document.getElementById('register-password').value;
-
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                alert('Registration successful! Please login.');
-                showScreen('login-screen');
-            } else {
-                alert('Error: ' + result.error);
-            }
-        }
-
-        async function login() {
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                currentUser = username;
-                initializeSocket();
-                showScreen('chat-list-screen');
-            } else {
-                alert('Login failed: ' + result.error);
-            }
-        }
-
-        function initializeSocket() {
-            socket = io();
-            
-            socket.on('connect', () => {
-                socket.emit('user-login', currentUser);
-            });
-
-            socket.on('online-users', (users) => {
-                onlineUsers = users.filter(user => user !== currentUser);
-                updateOnlineUsersList();
-            });
-
-            socket.on('user-conversations', (conversations) => {
-                userConversations = conversations;
-                updateConversationsList();
-            });
-
-            socket.on('user-online', (username) => {
-                if (username !== currentUser && !onlineUsers.includes(username)) {
-                    onlineUsers.push(username);
-                    updateOnlineUsersList();
-                }
-            });
-
-            socket.on('user-offline', (username) => {
-                onlineUsers = onlineUsers.filter(user => user !== username);
-                updateOnlineUsersList();
-            });
-
-            socket.on('conversation-history', (data) => {
-                const container = document.getElementById('private-messages-container');
-                container.innerHTML = '';
-                
-                if (data.messages.length === 0) {
-                    container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
-                } else {
-                    data.messages.forEach(message => {
-                        addPrivateMessageToChat(message);
-                    });
-                }
-            });
-
-            socket.on('new-private-message', (message) => {
-                if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
-                    addPrivateMessageToChat(message);
-                }
-                
-                // Update conversations list when new message arrives
-                if (socket) {
-                    socket.emit('user-login', currentUser); // Refresh conversations
-                }
-            });
-        }
-
-        function updateConversationsList() {
-            const container = document.getElementById('conversations-tab');
-            const emptyState = document.getElementById('no-conversations');
-            
-            if (userConversations.length === 0) {
-                emptyState.style.display = 'block';
-                container.innerHTML = '';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            container.innerHTML = '';
-            
-            userConversations.forEach(conv => {
-                const convElement = document.createElement('div');
-                convElement.className = 'conversation-item';
-                convElement.onclick = () => startPrivateChat(conv.partner);
-                
-                const lastMessageTime = conv.lastMessage ? new Date(conv.lastMessage.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', minute: '2-digit' 
-                }) : '';
-                
-                const lastMessageText = conv.lastMessage ? 
-                    (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 
-                    'No messages yet';
-                
-                convElement.innerHTML = `
-                    <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
-                    <div class="conversation-info">
-                        <div class="conversation-name">${conv.partner}</div>
-                        <div class="conversation-preview">${lastMessageText}</div>
-                    </div>
-                    <div class="conversation-meta">
-                        <div class="conversation-time">${lastMessageTime}</div>
-                        ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
-                    </div>
-                `;
-                
-                container.appendChild(convElement);
-            });
-        }
-
-        function updateOnlineUsersList() {
-            const container = document.getElementById('online-tab');
-            const emptyState = document.getElementById('no-online-users');
-            
-            if (onlineUsers.length === 0) {
-                emptyState.style.display = 'block';
-                container.innerHTML = '';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            container.innerHTML = '';
-            
-            onlineUsers.forEach(user => {
-                const userElement = document.createElement('div');
-                userElement.className = 'user-item';
-                userElement.onclick = () => startPrivateChat(user);
-                
-                userElement.innerHTML = `
-                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
-                    <div class="user-info">
-                        <div class="user-name">${user}</div>
-                        <div class="user-status"><span class="online-dot"></span>Online</div>
-                    </div>
-                `;
-                
-                container.appendChild(userElement);
-            });
-        }
-
-        function startPrivateChat(targetUser) {
-            currentTargetUser = targetUser;
-            document.getElementById('chat-target-name').textContent = targetUser;
-            
-            // Check if target is online
-            const isOnline = onlineUsers.includes(targetUser);
-            document.getElementById('chat-target-status').textContent = isOnline ? 'online' : 'offline';
-            document.getElementById('chat-target-status').style.color = isOnline ? '#4CAF50' : '#666';
-            
-            socket.emit('join-conversation', {
-                currentUser: currentUser,
-                targetUser: targetUser
-            });
-            
-            showScreen('private-chat-screen');
-        }
-
-        function backToChatList() {
-            showScreen('chat-list-screen');
-            // Refresh conversations to update read status
-            socket.emit('user-login', currentUser);
-        }
-
-        function addPrivateMessageToChat(message) {
-            const container = document.getElementById('private-messages-container');
-            const messageDiv = document.createElement('div');
-            
-            const isMyMessage = message.sender === currentUser;
-            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
-            
-            const time = new Date(message.timestamp).toLocaleTimeString([], { 
-                hour: '2-digit', minute: '2-digit' 
-            });
-            
-            messageDiv.innerHTML = `
-                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
-                <div class="message-text">${message.text}</div>
-                <div class="message-time">${time}</div>
-            `;
-            
-            container.appendChild(messageDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function sendPrivateMessage() {
-            const input = document.getElementById('private-message-input');
-            const text = input.value.trim();
-            
-            if (text && socket && currentTargetUser) {
-                socket.emit('send-private-message', {
-                    sender: currentUser,
-                    receiver: currentTargetUser,
-                    text: text
-                });
-                input.value = '';
-            }
-        }
-
-        function handlePrivateKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendPrivateMessage();
-            }
-        }
-
-        // Pre-fill for testing
-        window.onload = () => {
-            document.getElementById('login-username').value = 'user1';
-            document.getElementById('login-password').value = 'pass';
+        let appInfo = {
+            name: 'gramX',
+            version: '1.0.0',
+            developer: 'Bruce Bera',
+            contact: '+254743982206'
         };
+
+        // Enhanced Settings Functions
+        function showAdvancedSettings() {
+            loadUserSettings();
+            showModal('advanced-settings-modal');
+        }
+
+        async function loadUserSettings() {
+            try {
+                const response = await fetch('/user/profile?userId=' + currentUser.id);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update toggle switches based on user preferences
+                    document.getElementById('notification-toggle').checked = result.user.notificationEnabled;
+                    // Load other settings as needed
+                }
+            } catch (error) {
+                console.error('Error loading user settings:', error);
+            }
+        }
+
+        async function toggleNotifications() {
+            const enabled = document.getElementById('notification-toggle').checked;
+            
+            try {
+                const response = await fetch('/user/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        notificationEnabled: enabled
+                    })
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    alert('Failed to update notification settings');
+                }
+            } catch (error) {
+                console.error('Error updating notifications:', error);
+            }
+        }
+
+        function editProfile() {
+            // Load current profile data into edit form
+            document.getElementById('edit-username').value = currentUser.username;
+            document.getElementById('edit-bio').value = currentUser.bio || '';
+            document.getElementById('edit-phone').value = currentUser.phoneNumber || '';
+            document.getElementById('edit-profile-preview').src = currentUser.profilePicture || getInitialsAvatar(currentUser.username);
+            
+            closeModal('advanced-settings-modal');
+            showModal('edit-profile-modal');
+        }
+
+        async function saveProfile() {
+            const formData = new FormData();
+            formData.append('userId', currentUser.id);
+            formData.append('username', document.getElementById('edit-username').value);
+            formData.append('bio', document.getElementById('edit-bio').value);
+            formData.append('phoneNumber', document.getElementById('edit-phone').value);
+            
+            const profileInput = document.getElementById('edit-profile-upload');
+            if (profileInput.files[0]) {
+                formData.append('profilePicture', profileInput.files[0]);
+            }
+
+            try {
+                const response = await fetch('/user/profile', {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    currentUser = result.user;
+                    alert('Profile updated successfully!');
+                    closeModal('edit-profile-modal');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to update profile');
+            }
+        }
+
+        function showThemeSelector() {
+            showModal('theme-selector-modal');
+        }
+
+        function selectTheme(theme) {
+            document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+            document.querySelector(`.theme-${theme}`).classList.add('active');
+            currentTheme = theme;
+        }
+
+        function applyTheme() {
+            // Save theme preference and apply it
+            localStorage.setItem('gramx-theme', currentTheme);
+            document.body.setAttribute('data-theme', currentTheme);
+            closeModal('theme-selector-modal');
+            alert('Theme applied successfully!');
+        }
+
+        function showAppInfo() {
+            alert(`App: ${appInfo.name}\nVersion: ${appInfo.version}\nDeveloper: ${appInfo.developer}\nContact: ${appInfo.contact}`);
+        }
+
+        function contactSupport() {
+            window.open(`https://wa.me/${appInfo.contact.replace(/\D/g, '')}?text=Hello%20Bruce,%20I%20need%20help%20with%20gramX`, '_blank');
+        }
+
+        function changePassword() {
+            const newPassword = prompt('Enter new password:');
+            if (newPassword) {
+                alert('Password change functionality will be implemented soon!');
+            }
+        }
+
+        function showPrivacySettings() {
+            alert('Privacy settings will be available in the next update!');
+        }
+
+        function showSecuritySettings() {
+            alert('Security settings will be available in the next update!');
+        }
+
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                alert('Account deletion functionality will be implemented soon!');
+            }
+        }
+
+        // Update your existing settings button to use advanced settings
+        function showSettings() {
+            showAdvancedSettings();
+        }
+
+        // Load app info on startup
+        async function loadAppInfo() {
+            try {
+                const response = await fetch('/app/info');
+                const result = await response.json();
+                if (result.success) {
+                    appInfo = result.app;
+                }
+            } catch (error) {
+                console.log('Using default app info');
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            loadAppInfo();
+        });
     </script>
 </body>
 </html>
