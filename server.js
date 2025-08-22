@@ -295,9 +295,48 @@ io.on('connection', (socket) => {
                 lastSeen: new Date()
             });
 
-            io.emit('user-online', userData);
-            const onlineUsers = await User.find({ isOnline: true }, 'username profilePicture');
+            // Get all users for the user list
+            const allUsers = await User.find({}, 'username profilePicture isOnline lastSeen bio')
+                .sort({ isOnline: -1, username: 1 });
+            
+            // Get online users for status updates
+            const onlineUsers = allUsers.filter(user => user.isOnline && user._id.toString() !== userData.id);
+            
+            // Send both all users and online users
+            socket.emit('all-users', allUsers);
             socket.emit('online-users', onlineUsers);
+
+            // Send user's conversation history
+            const userConversations = await Message.aggregate([
+                {
+                    $match: {
+                        $or: [{ sender: mongoose.Types.ObjectId(userData.id) }, { receiver: mongoose.Types.ObjectId(userData.id) }]
+                    }
+                },
+                {
+                    $sort: { timestamp: -1 }
+                },
+                {
+                    $group: {
+                        _id: "$conversationId",
+                        lastMessage: { $first: "$$ROOT" },
+                        unreadCount: {
+                            $sum: {
+                                $cond: [
+                                    { $and: [
+                                        { $eq: ["$receiver", mongoose.Types.ObjectId(userData.id)] },
+                                        { $eq: ["$read", false] }
+                                    ]},
+                                    1,
+                                    0
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]);
+
+            socket.emit('user-conversations', userConversations);
 
         } catch (error) {
             console.error('Login error:', error);
@@ -356,7 +395,10 @@ io.on('connection', (socket) => {
             await message.populate('sender', 'username profilePicture');
             await message.populate('receiver', 'username profilePicture');
 
+            // Send to sender
             socket.emit('new-private-message', message);
+            
+            // Send to receiver if online
             const receiverSocketId = userSockets.get(receiver.id);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit('new-private-message', message);
@@ -398,7 +440,12 @@ io.on('connection', (socket) => {
                     lastSeen: new Date()
                 });
 
-                io.emit('user-offline', userData);
+                // Notify all users that this user went offline
+                const allUsers = await User.find({}, 'username profilePicture isOnline lastSeen bio');
+                io.emit('all-users', allUsers);
+                
+                const onlineUsers = allUsers.filter(user => user.isOnline);
+                io.emit('online-users', onlineUsers);
             }
         } catch (error) {
             console.error('Disconnect error:', error);
