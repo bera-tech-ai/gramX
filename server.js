@@ -1,7 +1,11 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -10,49 +14,91 @@ const io = socketIo(server);
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
 
-// In-memory storage with persistence
-const users = new Map(); // username -> password
-const activeUsers = new Map(); // socket.id -> {username, userId}
-const userSockets = new Map(); // username -> socket.id
-
-// Store ALL conversations permanently
-const allConversations = new Map(); // conversationId -> [messages]
-
-// Generate conversation ID for two users
-function getConversationId(user1, user2) {
-    return [user1, user2].sort().join('_');
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+if (!fs.existsSync('uploads/profiles')) {
+    fs.mkdirSync('uploads/profiles');
 }
 
-// Get user's conversation partners
-function getUserConversations(username) {
-    const userConversations = [];
-    
-    for (const [conversationId, messages] of allConversations) {
-        const usersInConv = conversationId.split('_');
-        if (usersInConv.includes(username)) {
-            const partner = usersInConv.find(user => user !== username);
-            if (partner) {
-                // Get last message and timestamp
-                const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-                userConversations.push({
-                    partner,
-                    lastMessage: lastMessage ? {
-                        text: lastMessage.text,
-                        timestamp: lastMessage.timestamp,
-                        sender: lastMessage.sender
-                    } : null,
-                    unreadCount: messages.filter(m => m.receiver === username && !m.read).length
-                });
-            }
+// MongoDB Connection
+const MONGODB_URI = 'mongodb+srv://ellyongiro8:QwXDXE6tyrGpUTNb@cluster0.tyxcmm9.mongodb.net/gramx?retryWrites=true&w=majority&appName=Cluster0';
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => {
+    console.log('✅ Connected to MongoDB Atlas');
+})
+.catch((error) => {
+    console.log('❌ MongoDB connection error:', error);
+});
+
+// MongoDB Schemas
+const userSchema = new mongoose.Schema({
+    username: { type: String, unique: true, required: true },
+    email: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
+    profilePicture: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    isOnline: { type: Boolean, default: false },
+    lastSeen: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now },
+    phoneNumber: { type: String, default: '' },
+    theme: { type: String, enum: ['light', 'dark', 'system'], default: 'light' },
+    notificationEnabled: { type: Boolean, default: true }
+});
+
+const messageSchema = new mongoose.Schema({
+    text: { type: String, required: true },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    conversationId: { type: String, required: true },
+    messageType: { type: String, enum: ['text', 'image', 'file', 'voice'], default: 'text' },
+    fileUrl: { type: String, default: '' },
+    read: { type: Boolean, default: false },
+    readAt: { type: Date },
+    timestamp: { type: Date, default: Date.now },
+    edited: { type: Boolean, default: false },
+    editedAt: { type: Date }
+});
+
+const User = mongoose.model('User', userSchema);
+const Message = mongoose.model('Message', messageSchema);
+
+// Multer configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (file.fieldname === 'profilePicture') {
+            cb(null, 'uploads/profiles/');
+        } else {
+            cb(null, 'uploads/');
         }
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + '-' + file.originalname);
     }
-    
-    return userConversations.sort((a, b) => {
-        const timeA = a.lastMessage ? new Date(a.lastMessage.timestamp) : new Date(0);
-        const timeB = b.lastMessage ? new Date(b.lastMessage.timestamp) : new Date(0);
-        return timeB - timeA; // Most recent first
-    });
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    }
+});
+
+// In-memory for active sessions
+const activeUsers = new Map();
+const userSockets = new Map();
+
+// Helper functions
+function getConversationId(user1, user2) {
+    return [user1, user2].sort().join('_');
 }
 
 // Serve main page
@@ -61,134 +107,301 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-    
-    if (users.has(username)) {
-        return res.json({ success: false, error: 'Username taken' });
+app.post('/register', upload.single('profilePicture'), async (req, res) => {
+    try {
+        const { username, email, password, bio } = req.body;
+        
+        const existingUser = await User.findOne({ 
+            $or: [{ email }, { username }] 
+        });
+        
+        if (existingUser) {
+            return res.json({ success: false, error: 'User already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const profilePicture = req.file ? `/uploads/profiles/${req.file.filename}` : '';
+
+        const user = new User({
+            username,
+            email,
+            password: hashedPassword,
+            profilePicture,
+            bio
+        });
+
+        await user.save();
+        res.json({ success: true, user: { id: user._id, username, email, profilePicture, bio } });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
     }
-    
-    users.set(username, password);
-    res.json({ success: true, username });
 });
 
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    if (users.has(username) && users.get(username) === password) {
-        res.json({ success: true, username });
-    } else {
-        res.json({ success: false, error: 'Invalid credentials' });
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        
+        if (!user) {
+            return res.json({ success: false, error: 'User not found' });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.json({ success: false, error: 'Invalid password' });
+        }
+
+        user.isOnline = true;
+        user.lastSeen = new Date();
+        await user.save();
+
+        res.json({ 
+            success: true, 
+            user: { 
+                id: user._id, 
+                username: user.username, 
+                email: user.email,
+                profilePicture: user.profilePicture,
+                bio: user.bio
+            } 
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
     }
 });
 
-// Get online users
-app.get('/online-users', (req, res) => {
-    const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
-    res.json({ users: onlineUsers });
+app.get('/users', async (req, res) => {
+    try {
+        const users = await User.find({}, 'username profilePicture isOnline lastSeen bio')
+            .sort({ isOnline: -1, username: 1 });
+        res.json({ success: true, users });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
 });
 
-// Get user's conversations
-app.get('/user-conversations/:username', (req, res) => {
-    const { username } = req.params;
-    const conversations = getUserConversations(username);
-    res.json({ conversations });
+app.get('/conversations/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const conversations = await Message.aggregate([
+            {
+                $match: {
+                    $or: [{ sender: mongoose.Types.ObjectId(userId) }, { receiver: mongoose.Types.ObjectId(userId) }]
+                }
+            },
+            {
+                $sort: { timestamp: -1 }
+            },
+            {
+                $group: {
+                    _id: "$conversationId",
+                    lastMessage: { $first: "$$ROOT" },
+                    unreadCount: {
+                        $sum: {
+                            $cond: [
+                                { $and: [
+                                    { $eq: ["$receiver", mongoose.Types.ObjectId(userId)] },
+                                    { $eq: ["$read", false] }
+                                ]},
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "lastMessage.sender",
+                    foreignField: "_id",
+                    as: "senderInfo"
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "lastMessage.receiver",
+                    foreignField: "_id",
+                    as: "receiverInfo"
+                }
+            }
+        ]);
+
+        res.json({ success: true, conversations });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.json({ success: false, error: 'No file uploaded' });
+    }
+    res.json({ success: true, url: `/uploads/${req.file.filename}` });
+});
+
+app.get('/user/profile', async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        const user = await User.findById(userId).select('-password');
+        res.json({ success: true, user });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.put('/user/profile', upload.single('profilePicture'), async (req, res) => {
+    try {
+        const { userId, username, bio, phoneNumber, theme, notificationEnabled } = req.body;
+        const updateData = { username, bio, phoneNumber, theme, notificationEnabled };
+        
+        if (req.file) {
+            updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
+        }
+
+        const user = await User.findByIdAndUpdate(userId, updateData, { new: true }).select('-password');
+        res.json({ success: true, user });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+app.get('/app/info', (req, res) => {
+    res.json({
+        success: true,
+        app: {
+            name: 'gramX',
+            version: '1.0.0',
+            developer: 'Bruce Bera',
+            developerContact: '+254743982206',
+            website: 'https://gramx.com',
+            supportEmail: 'support@gramx.com'
+        }
+    });
 });
 
 // Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    socket.on('user-login', (username) => {
-        const userData = { username, userId: socket.id };
-        activeUsers.set(socket.id, userData);
-        userSockets.set(username, socket.id);
-        
-        // Notify all users about new online user
-        io.emit('user-online', username);
-        
-        // Send list of online users to the new user
-        const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
-        socket.emit('online-users', onlineUsers);
-        
-        // Send user's conversation history
-        const userConversations = getUserConversations(username);
-        socket.emit('user-conversations', userConversations);
+    socket.on('user-login', async (userData) => {
+        try {
+            activeUsers.set(socket.id, userData);
+            userSockets.set(userData.id, socket.id);
+
+            await User.findByIdAndUpdate(userData.id, { 
+                isOnline: true,
+                lastSeen: new Date()
+            });
+
+            io.emit('user-online', userData);
+            const onlineUsers = await User.find({ isOnline: true }, 'username profilePicture');
+            socket.emit('online-users', onlineUsers);
+
+        } catch (error) {
+            console.error('Login error:', error);
+        }
     });
 
-    socket.on('join-conversation', (data) => {
-        const { currentUser, targetUser } = data;
-        const conversationId = getConversationId(currentUser, targetUser);
-        
-        // Get conversation messages (create empty array if doesn't exist)
-        const conversationMessages = allConversations.get(conversationId) || [];
-        
-        // Mark messages as read when user opens conversation
-        conversationMessages.forEach(message => {
-            if (message.receiver === currentUser && !message.read) {
-                message.read = true;
+    socket.on('join-conversation', async (data) => {
+        try {
+            const { currentUser, targetUser } = data;
+            const conversationId = getConversationId(currentUser.id, targetUser.id);
+
+            const messages = await Message.find({ conversationId })
+                .populate('sender', 'username profilePicture')
+                .populate('receiver', 'username profilePicture')
+                .sort({ timestamp: 1 });
+
+            await Message.updateMany(
+                {
+                    conversationId,
+                    receiver: currentUser.id,
+                    read: false
+                },
+                {
+                    read: true,
+                    readAt: new Date()
+                }
+            );
+
+            socket.emit('conversation-history', {
+                conversationId,
+                messages,
+                targetUser
+            });
+
+        } catch (error) {
+            console.error('Join conversation error:', error);
+        }
+    });
+
+    socket.on('send-private-message', async (data) => {
+        try {
+            const { sender, receiver, text, messageType = 'text', fileUrl = '' } = data;
+            const conversationId = getConversationId(sender.id, receiver.id);
+
+            const message = new Message({
+                text,
+                sender: sender.id,
+                receiver: receiver.id,
+                conversationId,
+                messageType,
+                fileUrl,
+                timestamp: new Date()
+            });
+
+            await message.save();
+            await message.populate('sender', 'username profilePicture');
+            await message.populate('receiver', 'username profilePicture');
+
+            socket.emit('new-private-message', message);
+            const receiverSocketId = userSockets.get(receiver.id);
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('new-private-message', message);
             }
-        });
 
-        socket.emit('conversation-history', {
-            conversationId,
-            messages: conversationMessages,
-            targetUser: targetUser
-        });
+        } catch (error) {
+            console.error('Send message error:', error);
+        }
     });
 
-    socket.on('send-private-message', (data) => {
-        const { sender, receiver, text } = data;
-        const conversationId = getConversationId(sender, receiver);
-        
-        const message = {
-            id: Date.now() + Math.random(),
-            text,
-            sender,
-            receiver,
-            timestamp: new Date(),
-            conversationId,
-            read: false // Initially unread
-        };
-
-        // Initialize conversation if it doesn't exist
-        if (!allConversations.has(conversationId)) {
-            allConversations.set(conversationId, []);
-        }
-
-        // Add message to conversation history
-        allConversations.get(conversationId).push(message);
-        
-        // Keep last 1000 messages per conversation (much higher limit)
-        if (allConversations.get(conversationId).length > 1000) {
-            allConversations.get(conversationId).shift();
-        }
-
-        // Send to sender immediately
-        socket.emit('new-private-message', message);
-        
-        // Update sender's conversation list
-        const senderConversations = getUserConversations(sender);
-        socket.emit('user-conversations', senderConversations);
-
-        // Send to receiver if online
-        const receiverSocketId = userSockets.get(receiver);
+    socket.on('typing-start', (data) => {
+        const receiverSocketId = userSockets.get(data.receiverId);
         if (receiverSocketId) {
-            io.to(receiverSocketId).emit('new-private-message', message);
-            
-            // Update receiver's conversation list
-            const receiverConversations = getUserConversations(receiver);
-            io.to(receiverSocketId).emit('user-conversations', receiverConversations);
+            io.to(receiverSocketId).emit('user-typing', {
+                senderId: data.senderId,
+                senderName: data.senderName
+            });
         }
     });
 
-    socket.on('disconnect', () => {
-        const userData = activeUsers.get(socket.id);
-        if (userData) {
-            const { username } = userData;
-            activeUsers.delete(socket.id);
-            userSockets.delete(username);
-            io.emit('user-offline', username);
+    socket.on('typing-stop', (data) => {
+        const receiverSocketId = userSockets.get(data.receiverId);
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('user-stopped-typing', {
+                senderId: data.senderId
+            });
+        }
+    });
+
+    socket.on('disconnect', async () => {
+        try {
+            const userData = activeUsers.get(socket.id);
+            if (userData) {
+                activeUsers.delete(socket.id);
+                userSockets.delete(userData.id);
+
+                await User.findByIdAndUpdate(userData.id, { 
+                    isOnline: false,
+                    lastSeen: new Date()
+                });
+
+                io.emit('user-offline', userData);
+            }
+        } catch (error) {
+            console.error('Disconnect error:', error);
         }
     });
 });
@@ -197,5 +410,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 gramX server running on port ${PORT}`);
     console.log(`📱 Open http://localhost:${PORT} in your browser`);
-    console.log(`💾 Conversation persistence: ENABLED`);
+    console.log(`💾 MongoDB Atlas: CONNECTED`);
+    console.log(`👨‍💻 Developer: Bruce Bera (+254743982206)`);
 });
