@@ -146,6 +146,7 @@
             align-items: center;
             gap: 12px;
             cursor: pointer;
+            position: relative;
         }
 
         .conversation-item:active, .user-item:active {
@@ -214,13 +215,20 @@
             font-weight: 600;
         }
 
-        .online-dot {
-            width: 10px;
-            height: 10px;
+        .user-status-dot {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            width: 12px;
+            height: 12px;
             background: #4CAF50;
+            border: 2px solid white;
             border-radius: 50%;
-            margin-right: 5px;
-            display: inline-block;
+            transform: translateY(-50%);
+        }
+
+        .user-status-dot.offline {
+            background: #ccc;
         }
 
         .empty-state {
@@ -409,11 +417,29 @@
             max-width: 500px;
             max-height: 80vh;
             overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-back-button {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #0088cc;
+            z-index: 1001;
         }
 
         .modal-header {
             text-align: center;
             margin-bottom: 20px;
+            padding: 0 40px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
         }
 
         /* SETTINGS STYLES */
@@ -535,18 +561,26 @@
             font-weight: 600;
             font-size: 18px;
             margin-bottom: 5px;
+            color: #333;
         }
 
         .developer-contact {
             color: #0088cc;
             text-decoration: none;
             font-size: 14px;
+            display: block;
+            margin: 5px 0;
+        }
+
+        .developer-contact:hover {
+            text-decoration: underline;
         }
 
         .theme-options {
             display: flex;
             gap: 10px;
             margin-top: 10px;
+            justify-content: center;
         }
 
         .theme-option {
@@ -608,6 +642,8 @@
         @media (max-width: 340px) {
             .message { max-width: 75%; }
             .auth-box { max-width: 280px; }
+            .modal-content { padding: 15px; }
+            .modal-back-button { left: 15px; top: 15px; }
         }
 
         [data-theme="dark"] {
@@ -630,6 +666,11 @@
             background: #3d3d3d;
             color: white;
             border-color: #555;
+        }
+
+        [data-theme="dark"] .form-label,
+        [data-theme="dark"] .developer-name {
+            color: white;
         }
     </style>
 </head>
@@ -655,7 +696,7 @@
             <div class="auth-box">
                 <h1 class="auth-title">Create Account</h1>
                 
-                <div class="profile-upload">
+                        <div class="profile-upload">
                     <img id="profile-preview" class="profile-preview" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMDA4OGNjIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIzMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIj5QPC90ZXh0Pgo8L3N2Zz4=">
                     <input type="file" id="profile-upload" accept="image/*" style="display: none;" onchange="previewProfileImage(this)">
                     <button onclick="document.getElementById('profile-upload').click()" style="padding: 8px 15px; background: #0088cc; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Choose Photo</button>
@@ -684,21 +725,21 @@
         
         <div class="tabs">
             <div class="tab active" onclick="showTab('conversations')">Chats</div>
-            <div class="tab" onclick="showTab('online')">Online</div>
+            <div class="tab" onclick="showTab('online')">Users</div>
         </div>
 
         <!-- Conversations Tab -->
         <div id="conversations-tab" class="conversations-list">
             <div class="empty-state" id="no-conversations">
                 No conversations yet<br>
-                <small>Start a chat with someone online!</small>
+                <small>Start a chat with someone!</small>
             </div>
         </div>
 
         <!-- Online Users Tab -->
         <div id="online-tab" class="users-list" style="display: none;">
             <div class="empty-state" id="no-online-users">
-                No other users online
+                No users found
             </div>
         </div>
     </div>
@@ -726,6 +767,7 @@
     <!-- Advanced Settings Modal -->
     <div id="advanced-settings-modal" class="modal">
         <div class="modal-content" style="max-width: 500px;">
+            <button class="modal-back-button" onclick="closeModal('advanced-settings-modal')">←</button>
             <div class="modal-header">
                 <h3>Settings & Preferences</h3>
             </div>
@@ -773,6 +815,7 @@
                         <div class="developer-avatar">B</div>
                         <div class="developer-name">Bruce Bera</div>
                         <a href="tel:+254743982206" class="developer-contact">📞 +254 743 982 206</a>
+                        <a href="https://wa.me/254743982206" class="developer-contact" target="_blank">💬 WhatsApp</a>
                         <div style="font-size: 12px; color: #666; margin-top: 5px;">Full Stack Developer</div>
                     </div>
                     <div class="settings-item" onclick="showAppInfo()">
@@ -808,6 +851,7 @@
     <!-- Edit Profile Modal -->
     <div id="edit-profile-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-back-button" onclick="closeModal('edit-profile-modal')">←</button>
             <div class="modal-header">
                 <h3>Edit Profile</h3>
             </div>
@@ -843,6 +887,7 @@
     <!-- Theme Selector Modal -->
     <div id="theme-selector-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-back-button" onclick="closeModal('theme-selector-modal')">←</button>
             <div class="modal-header">
                 <h3>Choose Theme</h3>
             </div>
@@ -865,6 +910,7 @@
         let currentUser = null;
         let currentTargetUser = null;
         let onlineUsers = [];
+        let allUsers = [];
         let userConversations = [];
         let currentTheme = 'light';
         let typingTimeout = null;
@@ -876,15 +922,26 @@
         };
 
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
             document.getElementById(screenId).classList.add('active');
         }
 
         function showTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            const tabIndex = tabName === 'conversations' ? 1 : 2;
+            document.querySelector(`.tab:nth-child(${tabIndex})`).classList.add('active');
+            
             document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
             document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
+            
+            if (tabName === 'online' && allUsers.length === 0) {
+                loadAllUsers();
+            }
         }
 
         function showOnlineUsers() {
@@ -924,22 +981,36 @@
             }
 
             try {
-                const response = await fetch('/register', { method: 'POST', body: formData });
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+
                 const result = await response.json();
                 if (result.success) {
                     alert('Registration successful! Please login.');
                     showScreen('login-screen');
+                    // Clear form
+                    document.getElementById('register-username').value = '';
+                    document.getElementById('register-email').value = '';
+                    document.getElementById('register-password').value = '';
+                    document.getElementById('register-bio').value = '';
                 } else {
                     alert('Error: ' + result.error);
                 }
             } catch (error) {
-                alert('Registration failed');
+                alert('Registration failed. Please try again.');
             }
         }
 
         async function login() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+
+            if (!email || !password) {
+                alert('Please enter both email and password');
+                return;
+            }
 
             try {
                 const response = await fetch('/login', {
@@ -953,57 +1024,159 @@
                     currentUser = result.user;
                     initializeSocket();
                     showScreen('chat-list-screen');
+                    loadAllUsers();
                 } else {
                     alert('Login failed: ' + result.error);
                 }
             } catch (error) {
-                alert('Login failed');
+                alert('Login failed. Please check your connection and try again.');
             }
         }
 
         function initializeSocket() {
             socket = io();
-            socket.on('connect', () => socket.emit('user-login', currentUser));
-            socket.on('online-users', (users) => {
-                onlineUsers = users.filter(user => user._id !== currentUser.id);
-                updateOnlineUsersList();
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('user-login', currentUser);
             });
+
+            socket.on('all-users', (users) => {
+                allUsers = users.filter(user => user._id !== currentUser.id);
+                updateAllUsersList();
+            });
+
+            socket.on('online-users', (users) => {
+                onlineUsers = users;
+                updateOnlineStatus();
+            });
+
             socket.on('user-conversations', (conversations) => {
                 userConversations = conversations;
                 updateConversationsList();
             });
-            socket.on('user-online', (username) => {
-                if (username !== currentUser.username && !onlineUsers.includes(username)) {
-                    onlineUsers.push(username);
-                    updateOnlineUsersList();
+
+            socket.on('user-online', (userData) => {
+                // Update user's online status
+                const userIndex = allUsers.findIndex(user => user._id === userData.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].isOnline = true;
                 }
+                updateAllUsersList();
             });
-            socket.on('user-offline', (username) => {
-                onlineUsers = onlineUsers.filter(user => user.username !== username);
-                updateOnlineUsersList();
+
+            socket.on('user-offline', (userData) => {
+                // Update user's offline status
+                const userIndex = allUsers.findIndex(user => user._id === userData.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].isOnline = false;
+                }
+                updateAllUsersList();
             });
+
             socket.on('conversation-history', (data) => {
                 const container = document.getElementById('private-messages-container');
                 container.innerHTML = '';
-                if (data.messages.length === 0) {
+                
+                if (data.messages && data.messages.length === 0) {
                     container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
-                } else {
-                    data.messages.forEach(message => addPrivateMessageToChat(message));
+                } else if (data.messages) {
+                    data.messages.forEach(message => {
+                        addPrivateMessageToChat(message);
+                    });
                 }
             });
+
             socket.on('new-private-message', (message) => {
-                if (message.sender._id === currentTargetUser?._id || message.receiver._id === currentTargetUser?._id) {
+                if (currentTargetUser && 
+                    (message.sender._id === currentTargetUser._id || 
+                     message.receiver._id === currentTargetUser._id)) {
                     addPrivateMessageToChat(message);
                 }
             });
+
             socket.on('user-typing', (data) => {
-                if (data.senderId === currentTargetUser?._id) {
+                if (currentTargetUser && data.senderId === currentTargetUser._id) {
                     showTypingIndicator(data.senderName);
                 }
             });
+
             socket.on('user-stopped-typing', (data) => {
-                if (data.senderId === currentTargetUser?._id) {
+                if (currentTargetUser && data.senderId === currentTargetUser._id) {
                     hideTypingIndicator();
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+        }
+
+        async function loadAllUsers() {
+            try {
+                const response = await fetch('/users');
+                const result = await response.json();
+                if (result.success) {
+                    allUsers = result.users.filter(user => user._id !== currentUser.id);
+                    updateAllUsersList();
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function updateAllUsersList() {
+            const container = document.getElementById('online-tab');
+            const emptyState = document.getElementById('no-online-users');
+            
+            if (!allUsers || allUsers.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            allUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'user-item';
+                userElement.onclick = () => startPrivateChat(user);
+                
+                userElement.innerHTML = `
+                    <img class="profile-avatar" src="${user.profilePicture || getInitialsAvatar(user.username)}" alt="${user.username}">
+                    <div class="user-info">
+                        <div class="user-name">${user.username}</div>
+                        <div class="user-status">
+                            <span class="online-dot" style="background: ${user.isOnline ? '#4CAF50' : '#ccc'}"></span>
+                            ${user.isOnline ? 'Online' : 'Offline'}
+                        </div>
+                    </div>
+                    <div class="user-status-dot ${user.isOnline ? '' : 'offline'}"></div>
+                `;
+                
+                container.appendChild(userElement);
+            });
+        }
+
+        function updateOnlineStatus() {
+            // Update online status for all users
+            const userElements = document.querySelectorAll('.user-item');
+            userElements.forEach(element => {
+                const userName = element.querySelector('.user-name').textContent;
+                const user = allUsers.find(u => u.username === userName);
+                
+                if (user) {
+                    const statusDot = element.querySelector('.user-status-dot');
+                    const statusText = element.querySelector('.user-status');
+                    
+                    if (statusDot) {
+                        statusDot.style.background = user.isOnline ? '#4CAF50' : '#ccc';
+                        statusDot.classList.toggle('offline', !user.isOnline);
+                    }
+                    if (statusText) {
+                        statusText.innerHTML = `<span class="online-dot" style="background: ${user.isOnline ? '#4CAF50' : '#ccc'}"></span>${user.isOnline ? 'Online' : 'Offline'}`;
+                    }
                 }
             });
         }
@@ -1011,88 +1184,89 @@
         function updateConversationsList() {
             const container = document.getElementById('conversations-tab');
             const emptyState = document.getElementById('no-conversations');
-            if (userConversations.length === 0) {
+            
+            if (!userConversations || userConversations.length === 0) {
                 emptyState.style.display = 'block';
                 container.innerHTML = '';
                 return;
             }
+            
             emptyState.style.display = 'none';
             container.innerHTML = '';
+            
             userConversations.forEach(conv => {
-                const lastMessage = conv.lastMessage;
-                const partner = lastMessage.sender._id === currentUser.id ? lastMessage.receiver : lastMessage.sender;
-                const lastMessageTime = new Date(lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const lastMessageText = lastMessage.sender._id === currentUser.id ? 'You: ' + lastMessage.text : lastMessage.text;
-                
-                const convElement = document.createElement('div');
-                convElement.className = 'conversation-item';
-                convElement.onclick = () => startPrivateChat(partner);
-                convElement.innerHTML = `
-                    <img class="profile-avatar" src="${partner.profilePicture || getInitialsAvatar(partner.username)}" alt="${partner.username}">
-                    <div class="conversation-info">
-                        <div class="conversation-name">${partner.username}</div>
-                        <div class="conversation-preview">${lastMessageText}</div>
-                    </div>
-                    <div class="conversation-meta">
-                        <div class="conversation-time">${lastMessageTime}</div>
-                        ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
-                    </div>
-                `;
-                container.appendChild(convElement);
-            });
-        }
-
-        function updateOnlineUsersList() {
-            const container = document.getElementById('online-tab');
-            const emptyState = document.getElementById('no-online-users');
-            if (onlineUsers.length === 0) {
-                emptyState.style.display = 'block';
-                container.innerHTML = '';
-                return;
-            }
-            emptyState.style.display = 'none';
-            container.innerHTML = '';
-            onlineUsers.forEach(user => {
-                const userElement = document.createElement('div');
-                userElement.className = 'user-item';
-                userElement.onclick = () => startPrivateChat(user);
-                userElement.innerHTML = `
-                    <img class="profile-avatar" src="${user.profilePicture || getInitialsAvatar(user.username)}" alt="${user.username}">
-                    <div class="user-info">
-                        <div class="user-name">${user.username}</div>
-                        <div class="user-status"><span class="online-dot"></span>Online</div>
-                    </div>
-                `;
-                container.appendChild(userElement);
+                if (conv.lastMessage) {
+                    const lastMessage = conv.lastMessage;
+                    const partner = lastMessage.sender._id === currentUser.id ? lastMessage.receiver : lastMessage.sender;
+                    const lastMessageTime = new Date(lastMessage.timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                    const lastMessageText = lastMessage.sender._id === currentUser.id ? 
+                        'You: ' + (lastMessage.text || 'Sent a message') : 
+                        (lastMessage.text || 'Sent a message');
+                    
+                    const convElement = document.createElement('div');
+                    convElement.className = 'conversation-item';
+                    convElement.onclick = () => startPrivateChat(partner);
+                    
+                    convElement.innerHTML = `
+                        <img class="profile-avatar" src="${partner.profilePicture || getInitialsAvatar(partner.username)}" alt="${partner.username}">
+                        <div class="conversation-info">
+                            <div class="conversation-name">${partner.username}</div>
+                            <div class="conversation-preview">${lastMessageText}</div>
+                        </div>
+                        <div class="conversation-meta">
+                            <div class="conversation-time">${lastMessageTime}</div>
+                            ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+                        </div>
+                    `;
+                    
+                    container.appendChild(convElement);
+                }
             });
         }
 
         function startPrivateChat(targetUser) {
             currentTargetUser = targetUser;
             document.getElementById('chat-target-name').textContent = targetUser.username;
-            const isOnline = onlineUsers.some(user => user._id === targetUser._id);
+            
+            const isOnline = targetUser.isOnline;
             document.getElementById('chat-target-status').textContent = isOnline ? 'online' : 'offline';
             document.getElementById('chat-target-status').style.color = isOnline ? '#4CAF50' : '#666';
-            socket.emit('join-conversation', { currentUser, targetUser });
+            
+            socket.emit('join-conversation', {
+                currentUser: currentUser,
+                targetUser: targetUser
+            });
+            
             showScreen('private-chat-screen');
         }
 
         function backToChatList() {
             showScreen('chat-list-screen');
-            socket.emit('user-login', currentUser);
+            // Refresh conversations
+            if (socket) {
+                socket.emit('user-login', currentUser);
+            }
         }
 
         function addPrivateMessageToChat(message) {
             const container = document.getElementById('private-messages-container');
             const messageDiv = document.createElement('div');
+            
             const isMyMessage = message.sender._id === currentUser.id;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
-            const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
             messageDiv.innerHTML = `
                 ${!isMyMessage ? `<div class="message-sender">${message.sender.username}</div>` : ''}
                 <div class="message-text">${message.text}</div>
                 <div class="message-time">${time}</div>
             `;
+            
             container.appendChild(messageDiv);
             container.scrollTop = container.scrollHeight;
         }
@@ -1111,7 +1285,9 @@
 
         function hideTypingIndicator() {
             const indicator = document.getElementById('typing-indicator');
-            if (indicator) indicator.remove();
+            if (indicator) {
+                indicator.remove();
+            }
         }
 
         function handleTyping() {
@@ -1121,9 +1297,13 @@
                     senderName: currentUser.username,
                     receiverId: currentTargetUser._id
                 });
+                
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => {
-                    socket.emit('typing-stop', { senderId: currentUser.id, receiverId: currentTargetUser._id });
+                    socket.emit('typing-stop', {
+                        senderId: currentUser.id,
+                        receiverId: currentTargetUser._id
+                    });
                 }, 1000);
             }
         }
@@ -1131,14 +1311,21 @@
         function sendPrivateMessage() {
             const input = document.getElementById('private-message-input');
             const text = input.value.trim();
+            
             if (text && socket && currentTargetUser) {
-                socket.emit('send-private-message', { sender: currentUser, receiver: currentTargetUser, text });
+                socket.emit('send-private-message', {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    text: text
+                });
                 input.value = '';
             }
         }
 
         function handlePrivateKeyPress(event) {
-            if (event.key === 'Enter') sendPrivateMessage();
+            if (event.key === 'Enter') {
+                sendPrivateMessage();
+            }
         }
 
         function getInitialsAvatar(username) {
@@ -1168,10 +1355,10 @@
                 const response = await fetch('/user/profile?userId=' + currentUser.id);
                 const result = await response.json();
                 if (result.success) {
-                    document.getElementById('notification-toggle').checked = result.user.notificationEnabled;
+                    document.getElementById('notification-toggle').checked = result.user.notificationEnabled !== false;
                 }
             } catch (error) {
-                console.error('Error loading settings:', error);
+                console.error('Error loading user settings:', error);
             }
         }
 
@@ -1181,19 +1368,27 @@
                 const response = await fetch('/user/profile', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: currentUser.id, notificationEnabled: enabled })
+                    body: JSON.stringify({
+                        userId: currentUser.id,
+                        notificationEnabled: enabled
+                    })
                 });
-                if (!response.ok) alert('Failed to update settings');
+                const result = await response.json();
+                if (!result.success) {
+                    alert('Failed to update notification settings');
+                }
             } catch (error) {
                 console.error('Error updating notifications:', error);
             }
         }
 
         function editProfile() {
+            // Load current user data into the form
             document.getElementById('edit-username').value = currentUser.username;
             document.getElementById('edit-bio').value = currentUser.bio || '';
             document.getElementById('edit-phone').value = currentUser.phoneNumber || '';
             document.getElementById('edit-profile-preview').src = currentUser.profilePicture || getInitialsAvatar(currentUser.username);
+            
             closeModal('advanced-settings-modal');
             showModal('edit-profile-modal');
         }
@@ -1204,21 +1399,28 @@
             formData.append('username', document.getElementById('edit-username').value);
             formData.append('bio', document.getElementById('edit-bio').value);
             formData.append('phoneNumber', document.getElementById('edit-phone').value);
+            
             const profileInput = document.getElementById('edit-profile-upload');
-            if (profileInput.files[0]) formData.append('profilePicture', profileInput.files[0]);
+            if (profileInput.files[0]) {
+                formData.append('profilePicture', profileInput.files[0]);
+            }
 
             try {
-                const response = await fetch('/user/profile', { method: 'PUT', body: formData });
+                const response = await fetch('/user/profile', {
+                    method: 'PUT',
+                    body: formData
+                });
+
                 const result = await response.json();
                 if (result.success) {
                     currentUser = result.user;
-                    alert('Profile updated!');
+                    alert('Profile updated successfully!');
                     closeModal('edit-profile-modal');
                 } else {
                     alert('Error: ' + result.error);
                 }
             } catch (error) {
-                alert('Failed to update profile');
+                alert('Failed to update profile. Please try again.');
             }
         }
 
@@ -1227,7 +1429,9 @@
         }
 
         function selectTheme(theme) {
-            document.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+            document.querySelectorAll('.theme-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
             document.querySelector(`.theme-${theme}`).classList.add('active');
             currentTheme = theme;
         }
@@ -1236,6 +1440,7 @@
             localStorage.setItem('gramx-theme', currentTheme);
             document.body.setAttribute('data-theme', currentTheme);
             closeModal('theme-selector-modal');
+            alert('Theme applied successfully!');
         }
 
         function showAppInfo() {
@@ -1247,19 +1452,34 @@
         }
 
         function logout() {
-            if (socket) socket.disconnect();
+            if (socket) {
+                socket.disconnect();
+            }
             currentUser = null;
+            currentTargetUser = null;
             showScreen('login-screen');
         }
 
-        // Initialize
+        // Initialize theme
         window.addEventListener('load', () => {
             const savedTheme = localStorage.getItem('gramx-theme');
             if (savedTheme) {
                 currentTheme = savedTheme;
                 document.body.setAttribute('data-theme', currentTheme);
             }
+            
+            // Add test users for demo
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('Development mode: Pre-filled test credentials');
+            }
+        });
+
+        // Handle page refresh/closing
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.disconnect();
+            }
         });
     </script>
 </body>
-</html>
+        </html> 
