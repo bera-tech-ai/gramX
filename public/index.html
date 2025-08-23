@@ -696,8 +696,8 @@
             <div class="auth-box">
                 <h1 class="auth-title">Create Account</h1>
                 
-                        <div class="profile-upload">
-                    <img id="profile-preview" class="profile-preview" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjMDA4OGNjIi8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIzMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIj5QPC90ZXh0Pgo8L3N2Zz4=">
+                <div class="profile-upload">
+                    <img id="profile-preview" class="profile-preview" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBzaGFwZS1yZW5kZXJpbmc6IGNyaXNwRWRnZXM7IGZpbGw6ICMwMDg4Y2M7Ii8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIzMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIj5QPC90ZXh0Pgo8L3N2Zz4=">
                     <input type="file" id="profile-upload" accept="image/*" style="display: none;" onchange="previewProfileImage(this)">
                     <button onclick="document.getElementById('profile-upload').click()" style="padding: 8px 15px; background: #0088cc; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">Choose Photo</button>
                 </div>
@@ -1056,24 +1056,6 @@
                 updateConversationsList();
             });
 
-            socket.on('user-online', (userData) => {
-                // Update user's online status
-                const userIndex = allUsers.findIndex(user => user._id === userData.id);
-                if (userIndex !== -1) {
-                    allUsers[userIndex].isOnline = true;
-                }
-                updateAllUsersList();
-            });
-
-            socket.on('user-offline', (userData) => {
-                // Update user's offline status
-                const userIndex = allUsers.findIndex(user => user._id === userData.id);
-                if (userIndex !== -1) {
-                    allUsers[userIndex].isOnline = false;
-                }
-                updateAllUsersList();
-            });
-
             socket.on('conversation-history', (data) => {
                 const container = document.getElementById('private-messages-container');
                 container.innerHTML = '';
@@ -1088,6 +1070,7 @@
             });
 
             socket.on('new-private-message', (message) => {
+                console.log('New message received:', message);
                 if (currentTargetUser && 
                     (message.sender._id === currentTargetUser._id || 
                      message.receiver._id === currentTargetUser._id)) {
@@ -1467,11 +1450,6 @@
                 currentTheme = savedTheme;
                 document.body.setAttribute('data-theme', currentTheme);
             }
-            
-            // Add test users for demo
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('Development mode: Pre-filled test credentials');
-            }
         });
 
         // Handle page refresh/closing
@@ -1482,4 +1460,4 @@
         });
     </script>
 </body>
-        </html> 
+</html>
