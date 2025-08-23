@@ -63,7 +63,7 @@ body { background-color: var(--bg-color); color: var(--text-color); }
             <span>Settings</span>
             <div style="width: 48px;"></div>
         </div>
-
+<script>
 // ==================== CONFIGURATION & INITIALIZATION ==================== let socket= null; let currentUser= null; let currentTargetUser= null; let onlineUsers= []; let userConversations= []; let isTyping= false; let typingTimeout= null; let selectedMessage= null;
 
 // Local Database for offline support class LocalDB{ constructor() { this.dbName = 'GramXDB'; this.version = 2; this.db = null; }
@@ -243,6 +243,6 @@ function logout() { currentUser = null; currentTargetUser = null; onlineUsers = 
 // Start initialization when page loads window.onload= init;
 
 // Pre-fill for testing document.getElementById('login-username').value= 'user1'; document.getElementById('login-password').value= 'pass';
-
+</script >
 </body>
 </html>
