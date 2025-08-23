@@ -34,6 +34,69 @@
             background: #ff6b6b;
             display: block;
         }
+        /* Add this to your CSS */
+.theme-light {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --secondary-bg: #f0f2f5;
+    --border-color: #e0e0e0;
+}
+
+.theme-dark {
+    --bg-color: #1a1a1a;
+    --text-color: #ffffff;
+    --secondary-bg: #2d2d2d;
+    --border-color: #404040;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.auth-container {
+    background: var(--bg-color);
+}
+
+.auth-input {
+    background: var(--secondary-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.conversations-list, .users-list {
+    background: var(--bg-color);
+}
+
+.conversation-item, .user-item {
+    border-bottom-color: var(--border-color);
+}
+
+.conversation-item:hover, .user-item:hover {
+    background: var(--secondary-bg);
+}
+
+.message-input-container {
+    background: var(--secondary-bg);
+    border-top-color: var(--border-color);
+}
+
+.message-input {
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+.settings-list {
+    background: var(--bg-color);
+}
+
+.settings-item {
+    border-bottom-color: var(--border-color);
+}
+
+.settings-item:active {
+    background: var(--secondary-bg);
+}
 
         /* AUTH SCREENS */
         .auth-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: white; }
@@ -627,7 +690,87 @@
             </div>
         </div>
     </div>
+<div id="settings-screen" class="screen">
+    <div class="settings-header">
+        <button class="back-button" onclick="backToChatList()">←</button>
+        <span>Settings</span>
+        <div style="width: 48px;"></div>
+    </div>
 
+    <div class="settings-list">
+        <div class="settings-item" onclick="changeUsername()">
+            <div class="settings-icon"><i class="fas fa-user"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Change Username</div>
+                <div class="settings-desc">Update your display name</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="changeNotifications()">
+            <div class="settings-icon"><i class="fas fa-bell"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Notifications</div>
+                <div class="settings-desc">Enable/disable notifications</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="changePrivacy()">
+            <div class="settings-icon"><i class="fas fa-lock"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Privacy & Security</div>
+                <div class="settings-desc">Last seen, read receipts</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="changeTheme()">
+            <div class="settings-icon"><i class="fas fa-palette"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Theme</div>
+                <div class="settings-desc">Light, dark, or system</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="manageBlockedUsers()">
+            <div class="settings-icon"><i class="fas fa-ban"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Blocked Users</div>
+                <div class="settings-desc">Manage blocked contacts</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="blockUser()">
+            <div class="settings-icon"><i class="fas fa-user-slash"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Block User</div>
+                <div class="settings-desc">Block a specific user</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="showStorage()">
+            <div class="settings-icon"><i class="fas fa-database"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Storage Usage</div>
+                <div class="settings-desc">Manage local storage</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+        
+        <div class="settings-item" onclick="logout()">
+            <div class="settings-icon"><i class="fas fa-sign-out-alt"></i></div>
+            <div class="settings-content">
+                <div class="settings-title">Logout</div>
+                <div class="settings-desc">Sign out of your account</div>
+            </div>
+            <div class="settings-arrow">›</div>
+        </div>
+    </div>
+</div>
     <!-- Settings Screen -->
     <div id="settings-screen" class="screen">
         <div class="settings-header">
@@ -1538,7 +1681,385 @@ function backToChatList() {
         socket.emit('user-login', currentUser);
     }
 }
+// ==================== SETTINGS FUNCTIONS ====================
+async function openSettings() {
+    try {
+        // Load user settings from server
+        const response = await fetch(`/user-settings/${currentUser}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Store settings globally
+            window.userSettings = result.settings;
+            
+            // Update settings UI based on current settings
+            updateSettingsUI(result.settings);
+            
+            // Show settings screen
+            showScreen('settings-screen');
+        } else {
+            alert('Failed to load settings');
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        alert('Failed to load settings. Please check your connection.');
+    }
+}
 
+function updateSettingsUI(settings) {
+    // This function would update the settings UI based on the current settings
+    // For now, we'll just store the settings globally
+    window.userSettings = settings;
+}
+
+async function changeUsername() {
+    const newUsername = prompt('Enter new username:');
+    if (newUsername && newUsername !== currentUser) {
+        try {
+            // In a real app, you'd have a proper API endpoint for username changes
+            const response = await fetch('/change-username', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    currentUsername: currentUser, 
+                    newUsername 
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                alert('Username changed successfully! Please login again.');
+                logout();
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            alert('Failed to change username. Please try again.');
+        }
+    }
+}
+
+async function changeNotifications() {
+    const newSetting = !window.userSettings.notifications;
+    
+    try {
+        const response = await fetch(`/user-settings/${currentUser}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                settings: {
+                    ...window.userSettings,
+                    notifications: newSetting,
+                    updatedAt: new Date()
+                }
+            })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            window.userSettings.notifications = newSetting;
+            alert(`Notifications ${newSetting ? 'enabled' : 'disabled'}`);
+        } else {
+            alert('Failed to update notification settings');
+        }
+    } catch (error) {
+        alert('Failed to update settings. Please check your connection.');
+    }
+}
+
+async function changePrivacy() {
+    const privacyOptions = [
+        { value: 'everyone', label: 'Everyone' },
+        { value: 'contacts', label: 'My Contacts' },
+        { value: 'nobody', label: 'Nobody' }
+    ];
+    
+    const selectedOption = prompt(
+        `Set who can see your last seen:\n${privacyOptions.map(opt => `${opt.value} - ${opt.label}`).join('\n')}`,
+        window.userSettings.privacy?.lastSeen || 'everyone'
+    );
+    
+    if (selectedOption && privacyOptions.some(opt => opt.value === selectedOption)) {
+        try {
+            const response = await fetch(`/user-settings/${currentUser}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    settings: {
+                        ...window.userSettings,
+                        privacy: {
+                            ...window.userSettings.privacy,
+                            lastSeen: selectedOption
+                        },
+                        updatedAt: new Date()
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                window.userSettings.privacy.lastSeen = selectedOption;
+                alert(`Privacy settings updated to: ${selectedOption}`);
+            } else {
+                alert('Failed to update privacy settings');
+            }
+        } catch (error) {
+            alert('Failed to update settings. Please check your connection.');
+        }
+    }
+}
+
+async function changeTheme() {
+    const themes = ['light', 'dark', 'system'];
+    const currentTheme = window.userSettings.theme || 'light';
+    
+    const newTheme = prompt(
+        `Select theme:\n${themes.map(theme => `${theme}${theme === currentTheme ? ' (current)' : ''}`).join('\n')}`,
+        currentTheme
+    );
+    
+    if (newTheme && themes.includes(newTheme)) {
+        try {
+            const response = await fetch(`/user-settings/${currentUser}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    settings: {
+                        ...window.userSettings,
+                        theme: newTheme,
+                        updatedAt: new Date()
+                    }
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                window.userSettings.theme = newTheme;
+                applyTheme(newTheme);
+                alert(`Theme changed to ${newTheme}`);
+            } else {
+                alert('Failed to change theme');
+            }
+        } catch (error) {
+            alert('Failed to update theme. Please check your connection.');
+        }
+    }
+}
+
+function applyTheme(theme) {
+    // Remove existing theme classes
+    document.body.classList.remove('theme-light', 'theme-dark');
+    
+    if (theme === 'system') {
+        // Check system preference
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.body.classList.add(isDarkMode ? 'theme-dark' : 'theme-light');
+    } else {
+        document.body.classList.add(`theme-${theme}`);
+    }
+    
+    // Store theme preference in local storage for persistence
+    localStorage.setItem('gramX-theme', theme);
+}
+
+async function showStorage() {
+    try {
+        // Calculate storage usage
+        const estimate = await navigator.storage.estimate();
+        const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
+        const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
+        
+        alert(`Storage Usage:\n${usageMB} MB used of ${quotaMB} MB available\n\nYou can clear cached data by logging out.`);
+    } catch (error) {
+        alert('Unable to calculate storage usage.');
+    }
+}
+
+async function manageBlockedUsers() {
+    try {
+        const response = await fetch(`/blocked-users/${currentUser}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const blockedUsers = result.blockedUsers || [];
+            
+            if (blockedUsers.length === 0) {
+                alert('You haven\'t blocked any users yet.');
+                return;
+            }
+            
+            let action = prompt(
+                `Blocked Users:\n${blockedUsers.join('\n')}\n\nEnter username to unblock, or type "cancel":`
+            );
+            
+            if (action && action !== 'cancel' && blockedUsers.includes(action)) {
+                const confirmUnblock = confirm(`Are you sure you want to unblock ${action}?`);
+                if (confirmUnblock) {
+                    const unblockResponse = await fetch(`/unblock-user/${currentUser}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userToUnblock: action })
+                    });
+                    
+                    const unblockResult = await unblockResponse.json();
+                    if (unblockResult.success) {
+                        alert(`${action} has been unblocked.`);
+                    } else {
+                        alert('Failed to unblock user.');
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        alert('Failed to load blocked users.');
+    }
+}
+
+async function blockUser() {
+    const userToBlock = prompt('Enter username to block:');
+    if (userToBlock && userToBlock !== currentUser) {
+        try {
+            // Check if user exists
+            const userCheck = await fetch(`/check-user/${userToBlock}`);
+            const userResult = await userCheck.json();
+            
+            if (!userResult.exists) {
+                alert('User not found.');
+                return;
+            }
+            
+            const confirmBlock = confirm(`Are you sure you want to block ${userToBlock}? You won't be able to message each other.`);
+            if (confirmBlock) {
+                const response = await fetch(`/block-user/${currentUser}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userToBlock })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`${userToBlock} has been blocked.`);
+                } else {
+                    alert('Failed to block user.');
+                }
+            }
+        } catch (error) {
+            alert('Failed to block user. Please check your connection.');
+        }
+    }
+}
+
+// Add these missing server endpoints to your server.js
+// Add this to your server.js after the existing routes:
+
+// Check if user exists
+app.get('/check-user/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const user = await db.collection(COLLECTIONS.USERS).findOne({ username });
+        res.json({ exists: !!user });
+    } catch (error) {
+        res.status(500).json({ exists: false });
+    }
+});
+
+// Change username endpoint
+app.post('/change-username', async (req, res) => {
+    try {
+        const { currentUsername, newUsername } = req.body;
+        
+        // Check if new username is available
+        const existingUser = await db.collection(COLLECTIONS.USERS).findOne({ username: newUsername });
+        if (existingUser) {
+            return res.json({ success: false, error: 'Username already taken' });
+        }
+        
+        // Update username across all collections
+        await db.collection(COLLECTIONS.USERS).updateOne(
+            { username: currentUsername },
+            { $set: { username: newUsername } }
+        );
+        
+        await db.collection(COLLECTIONS.USER_SETTINGS).updateOne(
+            { username: currentUsername },
+            { $set: { username: newUsername } }
+        );
+        
+        // Update messages where user is sender or receiver
+        await db.collection(COLLECTIONS.MESSAGES).updateMany(
+            { sender: currentUsername },
+            { $set: { sender: newUsername } }
+        );
+        
+        await db.collection(COLLECTIONS.MESSAGES).updateMany(
+            { receiver: currentUsername },
+            { $set: { receiver: newUsername } }
+        );
+        
+        // Update conversation IDs in messages
+        const messagesToUpdate = await db.collection(COLLECTIONS.MESSAGES).find({
+            conversationId: { $regex: currentUsername }
+        }).toArray();
+        
+        for (const message of messagesToUpdate) {
+            const newConversationId = message.conversationId.replace(
+                currentUsername, 
+                newUsername
+            );
+            await db.collection(COLLECTIONS.MESSAGES).updateOne(
+                { _id: message._id },
+                { $set: { conversationId: newConversationId } }
+            );
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to change username' });
+    }
+});
+
+// Also update your settings item click handlers:
+function setupSettingsHandlers() {
+    // Replace the existing settings item functions with these:
+    const settingsItems = {
+        'changeUsername': changeUsername,
+        'changeNotifications': changeNotifications,
+        'changePrivacy': changePrivacy,
+        'changeTheme': changeTheme,
+        'showStorage': showStorage,
+        'manageBlockedUsers': manageBlockedUsers,
+        'blockUser': blockUser,
+        'logout': logout
+    };
+    
+    // Add click listeners to settings items
+    document.querySelectorAll('.settings-item').forEach(item => {
+        const action = item.getAttribute('onclick');
+        if (action) {
+            const handlerName = action.replace('()', '');
+            if (settingsItems[handlerName]) {
+                item.onclick = settingsItems[handlerName];
+            }
+        }
+    });
+}
+
+// Initialize settings when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load saved theme
+    const savedTheme = localStorage.getItem('gramX-theme') || 'light';
+    applyTheme(savedTheme);
+    
+    // Setup settings handlers
+    setupSettingsHandlers();
+});
+
+// Update your settings HTML to use these functions:
+// Replace the settings section in your HTML with this:
+
+
+
+        
 // ==================== SETTINGS FUNCTIONS ====================
 function changeUsername() {
     const newUsername = prompt('Enter new username:');
