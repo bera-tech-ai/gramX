@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>gramX - Telegram-like Messaging</title>
+    <title>gramX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,7 +17,7 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
         .screen.active { display: flex; }
 
-        /* AUTH SCREENS */
+        /* AUTH SCREENS - Enhanced with Telegram-like styling */
         .auth-container { 
             flex: 1; 
             display: flex; 
@@ -74,7 +74,7 @@
         .auth-switch { text-align: center; color: #666; }
         .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
 
-        /* CHAT LIST SCREEN */
+        /* CHAT LIST SCREEN - Enhanced with Telegram-like styling */
         .chat-list-header {
             background: #0088cc;
             color: white;
@@ -290,7 +290,7 @@
             opacity: 0.5;
         }
 
-        /* ONLINE USERS LIST */
+        /* ONLINE USERS LIST - Enhanced styles */
         .online-users-header { 
             padding: 15px; 
             background: #f8f9fa; 
@@ -334,16 +334,8 @@
             display: inline-block; 
             box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
         }
-        .offline-dot { 
-            width: 10px; 
-            height: 10px; 
-            background: #ccc; 
-            border-radius: 50%; 
-            margin-right: 5px; 
-            display: inline-block; 
-        }
 
-        /* CHAT SCREEN */
+        /* CHAT SCREEN - Enhanced with Telegram-like features */
         .chat-header { 
             background: #0088cc; 
             color: white; 
@@ -518,7 +510,7 @@
         /* Floating action button */
         .floating-button {
             position: fixed;
-            bottom: 70px;
+            bottom: 20px;
             right: 20px;
             width: 56px;
             height: 56px;
@@ -588,13 +580,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Last seen indicator */
-        .last-seen {
-            font-size: 12px;
-            color: #999;
-            font-style: italic;
-        }
-
         /* Responsive */
         @media (max-width: 340px) {
             .message { max-width: 75%; }
@@ -657,7 +642,6 @@
         <div class="tabs">
             <div class="tab active" onclick="showTab('conversations')">Chats</div>
             <div class="tab" onclick="showTab('online')">Online</div>
-            <div class="tab" onclick="showTab('all')">All Users</div>
         </div>
 
         <!-- Conversations Tab -->
@@ -665,7 +649,7 @@
             <div class="empty-state" id="no-conversations">
                 <div class="empty-icon">💬</div>
                 No conversations yet<br>
-                <small>Start a chat with someone!</small>
+                <small>Start a chat with someone online!</small>
             </div>
             <!-- Conversations will be listed here -->
         </div>
@@ -678,18 +662,9 @@
             </div>
             <!-- Online users will be listed here -->
         </div>
-
-        <!-- All Users Tab -->
-        <div id="all-tab" class="users-list" style="display: none;">
-            <div class="empty-state" id="no-all-users">
-                <div class="empty-icon">👥</div>
-                No other users available
-            </div>
-            <!-- All users will be listed here -->
-        </div>
         
         <!-- Floating action button -->
-        <div class="floating-button" onclick="showAllUsers()">
+        <div class="floating-button" onclick="showOnlineUsers()">
             <i class="fas fa-edit"></i>
         </div>
         
@@ -753,7 +728,6 @@
         let currentUser = null;
         let currentTargetUser = null;
         let onlineUsers = [];
-        let allUsers = [];
         let userConversations = [];
         let pendingMessages = {};
 
@@ -766,18 +740,10 @@
 
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            
-            if (tabName === 'conversations') {
-                document.querySelector('.tab:nth-child(1)').classList.add('active');
-            } else if (tabName === 'online') {
-                document.querySelector('.tab:nth-child(2)').classList.add('active');
-            } else {
-                document.querySelector('.tab:nth-child(3)').classList.add('active');
-            }
+            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
             
             document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
             document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
-            document.getElementById('all-tab').style.display = tabName === 'all' ? 'block' : 'none';
         }
 
         function toggleSearch() {
@@ -802,10 +768,6 @@
             showTab('online');
         }
 
-        function showAllUsers() {
-            showTab('all');
-        }
-
         async function register() {
             const username = document.getElementById('register-username').value;
             const password = document.getElementById('register-password').value;
@@ -815,11 +777,14 @@
                 return;
             }
 
+            // Simple encryption for demo purposes (in a real app, use proper hashing)
+            const encryptedPassword = btoa(password);
+
             try {
                 const response = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password: encryptedPassword })
                 });
 
                 const result = await response.json();
@@ -845,6 +810,9 @@
                 return;
             }
 
+            // Simple encryption for demo purposes
+            const encryptedPassword = btoa(password);
+
             try {
                 const button = document.querySelector('#login-screen .auth-button');
                 const originalText = button.textContent;
@@ -854,7 +822,7 @@
                 const response = await fetch('/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password: encryptedPassword })
                 });
 
                 const result = await response.json();
@@ -879,73 +847,104 @@
         }
 
         function initializeSocket() {
-            // In a real app, this would connect to your server
-            // For this demo, we'll simulate the behavior
+            socket = io();
             
-            // Simulate getting online users
-            onlineUsers = ['user2', 'user3'];
-            
-            // Simulate getting all users
-            allUsers = ['user2', 'user3', 'user4', 'user5'];
-            
-            // Simulate getting user conversations
-            userConversations = [
-                { partner: 'user2', lastMessage: { sender: 'user2', text: 'Hey there!', timestamp: new Date(Date.now() - 100000) }, unreadCount: 1 },
-                { partner: 'user3', lastMessage: { sender: 'user3', text: 'How are you?', timestamp: new Date(Date.now() - 500000) }, unreadCount: 0 },
-                { partner: 'user4', lastMessage: { sender: 'user1', text: 'I sent this while you were offline', timestamp: new Date(Date.now() - 1000000) }, unreadCount: 0 }
-            ];
-            
-            updateOnlineUsersList();
-            updateAllUsersList();
-            updateConversationsList();
-            
-            // Simulate receiving messages when coming online
-            setTimeout(() => {
-                // Check if we have any pending messages for the current user
-                const pendingForUser = getPendingMessages(currentUser);
-                if (pendingForUser.length > 0 && socket) {
-                    alert(`You have ${pendingForUser.length} new messages received while you were offline`);
+            socket.on('connect', () => {
+                socket.emit('user-login', currentUser);
+            });
+
+            socket.on('online-users', (users) => {
+                onlineUsers = users.filter(user => user !== currentUser);
+                updateOnlineUsersList();
+            });
+
+            socket.on('user-conversations', (conversations) => {
+                userConversations = conversations;
+                updateConversationsList();
+            });
+
+            socket.on('user-online', (username) => {
+                if (username !== currentUser && !onlineUsers.includes(username)) {
+                    onlineUsers.push(username);
+                    updateOnlineUsersList();
                     
-                    // Add these messages to relevant conversations
-                    pendingForUser.forEach(message => {
-                        // Find or create conversation
-                        let conversation = userConversations.find(c => c.partner === message.sender);
-                        if (!conversation) {
-                            conversation = { partner: message.sender, lastMessage: message, unreadCount: 1 };
-                            userConversations.push(conversation);
-                        } else {
-                            conversation.lastMessage = message;
-                            conversation.unreadCount = (conversation.unreadCount || 0) + 1;
-                        }
-                        
-                        // If we're currently chatting with this user, show the message
-                        if (currentTargetUser === message.sender) {
-                            addPrivateMessageToChat(message);
-                        }
-                    });
-                    
-                    updateConversationsList();
-                    
-                    // Clear pending messages for this user
-                    clearPendingMessages(currentUser);
+                    // Update status if we're chatting with this user
+                    if (currentTargetUser === username) {
+                        document.getElementById('status-text').textContent = 'online';
+                        document.getElementById('status-dot').style.background = '#4CAF50';
+                    }
                 }
-            }, 2000);
-        }
+            });
 
-        // Simulated server functions for demo purposes
-        function getPendingMessages(username) {
-            const pending = localStorage.getItem(`pending_${username}`);
-            return pending ? JSON.parse(pending) : [];
-        }
+            socket.on('user-offline', (username) => {
+                onlineUsers = onlineUsers.filter(user => user !== username);
+                updateOnlineUsersList();
+                
+                // Update status if we're chatting with this user
+                if (currentTargetUser === username) {
+                    document.getElementById('status-text').textContent = 'offline';
+                    document.getElementById('status-dot').style.background = '#666';
+                }
+            });
 
-        function addPendingMessage(message) {
-            const pending = getPendingMessages(message.receiver);
-            pending.push(message);
-            localStorage.setItem(`pending_${message.receiver}`, JSON.stringify(pending));
-        }
+            socket.on('conversation-history', (data) => {
+                const container = document.getElementById('private-messages-container');
+                container.innerHTML = '';
+                
+                if (data.messages.length === 0) {
+                    container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
+                } else {
+                    data.messages.forEach(message => {
+                        addPrivateMessageToChat(message);
+                    });
+                }
+                
+                // Mark messages as read
+                if (socket && currentTargetUser) {
+                    socket.emit('mark-as-read', {
+                        currentUser: currentUser,
+                        targetUser: currentTargetUser
+                    });
+                }
+            });
 
-        function clearPendingMessages(username) {
-            localStorage.removeItem(`pending_${username}`);
+            socket.on('new-private-message', (message) => {
+                if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
+                    addPrivateMessageToChat(message);
+                    
+                    // Mark as read if it's from the current chat
+                    if (message.sender === currentTargetUser && socket) {
+                        socket.emit('mark-as-read', {
+                            currentUser: currentUser,
+                            targetUser: currentTargetUser
+                        });
+                    }
+                }
+                
+                // Update conversations list when new message arrives
+                if (socket) {
+                    socket.emit('user-login', currentUser); // Refresh conversations
+                }
+            });
+            
+            socket.on('message-delivered', (data) => {
+                // Update message status to delivered
+                if (pendingMessages[data.tempId]) {
+                    const messageElement = document.querySelector(`[data-temp-id="${data.tempId}"]`);
+                    if (messageElement) {
+                        const statusElement = messageElement.querySelector('.message-status');
+                        if (statusElement) {
+                            statusElement.textContent = 'Delivered';
+                        }
+                    }
+                    delete pendingMessages[data.tempId];
+                }
+            });
+            
+            socket.on('error', (error) => {
+                console.error('Socket error:', error);
+                alert('Connection error: ' + error.message);
+            });
         }
 
         function updateConversationsList() {
@@ -979,8 +978,6 @@
                 const isMuted = Math.random() > 0.8;
                 const isVerified = Math.random() > 0.9;
                 
-                const isOnline = onlineUsers.includes(conv.partner);
-                
                 convElement.innerHTML = `
                     <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
                     <div class="conversation-info">
@@ -996,7 +993,6 @@
                     </div>
                     <div class="conversation-meta">
                         <div class="conversation-time">${lastMessageTime}</div>
-                        ${isOnline ? '<span class="online-dot"></span>' : ''}
                         ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
                     </div>
                 `;
@@ -1041,46 +1037,6 @@
             });
         }
 
-        function updateAllUsersList() {
-            const container = document.getElementById('all-tab');
-            const emptyState = document.getElementById('no-all-users');
-            
-            if (allUsers.length === 0) {
-                emptyState.style.display = 'flex';
-                container.innerHTML = '';
-                return;
-            }
-            
-            emptyState.style.display = 'none';
-            container.innerHTML = '';
-            
-            allUsers.forEach(user => {
-                if (user === currentUser) return;
-                
-                const userElement = document.createElement('div');
-                userElement.className = 'user-item';
-                userElement.onclick = () => startPrivateChat(user);
-                
-                const isOnline = onlineUsers.includes(user);
-                const isVerified = Math.random() > 0.8;
-                
-                userElement.innerHTML = `
-                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
-                    <div class="user-info">
-                        <div class="user-name">
-                            ${user}
-                            ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
-                        </div>
-                        <div class="user-status">
-                            ${isOnline ? '<span class="online-dot"></span>Online' : '<span class="offline-dot"></span>Offline'}
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(userElement);
-            });
-        }
-
         function startPrivateChat(targetUser) {
             currentTargetUser = targetUser;
             document.getElementById('chat-target-name').textContent = targetUser;
@@ -1090,45 +1046,23 @@
             document.getElementById('status-text').textContent = isOnline ? 'online' : 'offline';
             document.getElementById('status-dot').style.background = isOnline ? '#4CAF50' : '#666';
             
-            // In a real app, this would fetch conversation history from the server
-            const container = document.getElementById('private-messages-container');
-            container.innerHTML = '';
-            
-            // Add some sample messages
-            const sampleMessages = [
-                { sender: targetUser, text: 'Hey there!', timestamp: new Date(Date.now() - 3600000), status: 'delivered' },
-                { sender: currentUser, text: 'Hello! How are you?', timestamp: new Date(Date.now() - 3500000), status: 'delivered' },
-                { sender: targetUser, text: 'I\'m doing great! Thanks for asking.', timestamp: new Date(Date.now() - 3400000), status: 'delivered' }
-            ];
-            
-            if (!isOnline) {
-                sampleMessages.push({ 
-                    sender: 'system', 
-                    text: `${targetUser} is offline. They will receive your messages when they come online.`, 
-                    timestamp: new Date() 
-                });
-            }
-            
-            sampleMessages.forEach(msg => addPrivateMessageToChat(msg));
+            socket.emit('join-conversation', {
+                currentUser: currentUser,
+                targetUser: targetUser
+            });
             
             showScreen('private-chat-screen');
         }
 
         function backToChatList() {
             showScreen('chat-list-screen');
+            // Refresh conversations to update read status
+            socket.emit('user-login', currentUser);
         }
 
         function addPrivateMessageToChat(message) {
             const container = document.getElementById('private-messages-container');
             const messageDiv = document.createElement('div');
-            
-            if (message.sender === 'system') {
-                messageDiv.className = 'system-message';
-                messageDiv.textContent = message.text;
-                container.appendChild(messageDiv);
-                container.scrollTop = container.scrollHeight;
-                return;
-            }
             
             const isMyMessage = message.sender === currentUser;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
@@ -1171,53 +1105,51 @@
             const input = document.getElementById('private-message-input');
             const text = input.value.trim();
             
-            if (text && currentTargetUser) {
+            if (text && socket && currentTargetUser) {
                 const tempId = 'temp-' + Date.now();
                 const messageData = {
                     sender: currentUser,
                     receiver: currentTargetUser,
                     text: text,
-                    tempId: tempId,
-                    timestamp: new Date()
+                    tempId: tempId
                 };
                 
-                // Check if target is online
-                const isOnline = onlineUsers.includes(currentTargetUser);
+                // Add message immediately to UI with "sending" status
+                const tempMessage = {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    text: text,
+                    tempId: tempId,
+                    timestamp: new Date(),
+                    status: 'sending'
+                };
                 
-                if (isOnline) {
-                    // If online, send immediately (simulated)
-                    messageData.status = 'delivered';
-                    addPrivateMessageToChat(messageData);
-                    
-                    // In a real app, this would be sent via WebSocket
-                    console.log('Message sent via WebSocket:', messageData);
-                } else {
-                    // If offline, store message for later delivery
-                    messageData.status = 'pending';
-                    addPrivateMessageToChat(messageData);
-                    
-                    // Store message in pending messages (simulating server storage)
-                    addPendingMessage(messageData);
-                    console.log('Message stored for offline user:', messageData);
-                    
-                    // Show notification that message will be delivered when user comes online
-                    const notification = document.createElement('div');
-                    notification.className = 'system-message';
-                    notification.textContent = `${currentTargetUser} is offline. They will receive this message when they come online.`;
-                    document.getElementById('private-messages-container').appendChild(notification);
-                }
+                addPrivateMessageToChat(tempMessage);
+                pendingMessages[tempId] = true;
                 
-                // Update conversation list
-                let conversation = userConversations.find(c => c.partner === currentTargetUser);
-                if (!conversation) {
-                    conversation = { partner: currentTargetUser, lastMessage: messageData, unreadCount: 0 };
-                    userConversations.push(conversation);
-                } else {
-                    conversation.lastMessage = messageData;
-                }
+                // Disable input and show loading
+                input.disabled = true;
+                const sendButton = document.getElementById('send-button');
+                sendButton.innerHTML = '<div class="loading"></div>';
                 
-                updateConversationsList();
-                input.value = '';
+                socket.emit('send-private-message', messageData, (response) => {
+                    // Re-enable input
+                    input.disabled = false;
+                    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    
+                    if (response.success) {
+                        input.value = '';
+                    } else {
+                        // Show error message
+                        alert('Failed to send message: ' + response.error);
+                        // Remove the failed message from UI
+                        const failedMessage = document.querySelector(`[data-temp-id="${tempId}"]`);
+                        if (failedMessage) {
+                            failedMessage.remove();
+                        }
+                        delete pendingMessages[tempId];
+                    }
+                });
             }
         }
 
