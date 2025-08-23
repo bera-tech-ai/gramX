@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>gramX</title>
+    <title>gramX - Real Messaging</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,7 +17,7 @@
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
         .screen.active { display: flex; }
 
-        /* AUTH SCREENS - Enhanced with Telegram-like styling */
+        /* AUTH SCREENS */
         .auth-container { 
             flex: 1; 
             display: flex; 
@@ -73,8 +73,15 @@
         }
         .auth-switch { text-align: center; color: #666; }
         .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
+        .error-message {
+            color: #ff3b30;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
 
-        /* CHAT LIST SCREEN - Enhanced with Telegram-like styling */
+        /* CHAT LIST SCREEN */
         .chat-list-header {
             background: #0088cc;
             color: white;
@@ -290,7 +297,7 @@
             opacity: 0.5;
         }
 
-        /* ONLINE USERS LIST - Enhanced styles */
+        /* ONLINE USERS LIST */
         .online-users-header { 
             padding: 15px; 
             background: #f8f9fa; 
@@ -334,8 +341,16 @@
             display: inline-block; 
             box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
         }
+        .offline-dot { 
+            width: 10px; 
+            height: 10px; 
+            background: #ccc; 
+            border-radius: 50%; 
+            margin-right: 5px; 
+            display: inline-block; 
+        }
 
-        /* CHAT SCREEN - Enhanced with Telegram-like features */
+        /* CHAT SCREEN */
         .chat-header { 
             background: #0088cc; 
             color: white; 
@@ -510,7 +525,7 @@
         /* Floating action button */
         .floating-button {
             position: fixed;
-            bottom: 20px;
+            bottom: 70px;
             right: 20px;
             width: 56px;
             height: 56px;
@@ -580,6 +595,13 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Last seen indicator */
+        .last-seen {
+            font-size: 12px;
+            color: #999;
+            font-style: italic;
+        }
+
         /* Responsive */
         @media (max-width: 340px) {
             .message { max-width: 75%; }
@@ -593,8 +615,9 @@
         <div class="auth-container">
             <div class="auth-box">
                 <h1 class="auth-title">gramX</h1>
-                <input type="text" id="login-username" class="auth-input" placeholder="Username" value="user1">
-                <input type="password" id="login-password" class="auth-input" placeholder="Password" value="pass">
+                <div class="error-message" id="login-error"></div>
+                <input type="text" id="login-username" class="auth-input" placeholder="Username">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password">
                 <button class="auth-button" onclick="login()">Login</button>
                 <div class="auth-switch">
                     Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
@@ -608,6 +631,7 @@
         <div class="auth-container">
             <div class="auth-box">
                 <h1 class="auth-title">Create Account</h1>
+                <div class="error-message" id="register-error"></div>
                 <input type="text" id="register-username" class="auth-input" placeholder="Choose username">
                 <input type="password" id="register-password" class="auth-input" placeholder="Choose password">
                 <button class="auth-button" onclick="register()">Create Account</button>
@@ -642,6 +666,7 @@
         <div class="tabs">
             <div class="tab active" onclick="showTab('conversations')">Chats</div>
             <div class="tab" onclick="showTab('online')">Online</div>
+            <div class="tab" onclick="showTab('all')">All Users</div>
         </div>
 
         <!-- Conversations Tab -->
@@ -649,7 +674,7 @@
             <div class="empty-state" id="no-conversations">
                 <div class="empty-icon">💬</div>
                 No conversations yet<br>
-                <small>Start a chat with someone online!</small>
+                <small>Start a chat with someone!</small>
             </div>
             <!-- Conversations will be listed here -->
         </div>
@@ -662,9 +687,18 @@
             </div>
             <!-- Online users will be listed here -->
         </div>
+
+        <!-- All Users Tab -->
+        <div id="all-tab" class="users-list" style="display: none;">
+            <div class="empty-state" id="no-all-users">
+                <div class="empty-icon">👥</div>
+                No other users available
+            </div>
+            <!-- All users will be listed here -->
+        </div>
         
         <!-- Floating action button -->
-        <div class="floating-button" onclick="showOnlineUsers()">
+        <div class="floating-button" onclick="showAllUsers()">
             <i class="fas fa-edit"></i>
         </div>
         
@@ -722,15 +756,175 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket = null;
+        // Data storage functions
+        function getItem(key) {
+            try {
+                return JSON.parse(localStorage.getItem(key)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function setItem(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        // User management
+        function getUsers() {
+            return getItem('gramx_users');
+        }
+
+        function saveUser(user) {
+            const users = getUsers();
+            if (!users.find(u => u.username === user.username)) {
+                users.push(user);
+                setItem('gramx_users', users);
+            }
+        }
+
+        function getUser(username) {
+            return getUsers().find(u => u.username === username);
+        }
+
+        // Message management
+        function getMessages() {
+            return getItem('gramx_messages');
+        }
+
+        function saveMessage(message) {
+            const messages = getMessages();
+            messages.push(message);
+            setItem('gramx_messages', messages);
+            return message;
+        }
+
+        function getMessagesBetweenUsers(user1, user2) {
+            const messages = getMessages();
+            return messages.filter(m => 
+                (m.sender === user1 && m.receiver === user2) || 
+                (m.sender === user2 && m.receiver === user1)
+            ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        }
+
+        function getConversationsForUser(username) {
+            const messages = getMessages();
+            const conversations = {};
+            
+            messages.forEach(message => {
+                if (message.sender === username || message.receiver === username) {
+                    const otherUser = message.sender === username ? message.receiver : message.sender;
+                    if (!conversations[otherUser] || new Date(message.timestamp) > new Date(conversations[otherUser].timestamp)) {
+                        conversations[otherUser] = {
+                            partner: otherUser,
+                            lastMessage: message,
+                            unreadCount: message.receiver === username && message.status !== 'read' ? 1 : 0
+                        };
+                    } else if (message.receiver === username && message.status !== 'read') {
+                        conversations[otherUser].unreadCount += 1;
+                    }
+                }
+            });
+            
+            return Object.values(conversations).sort((a, b) => 
+                new Date(b.lastMessage.timestamp) - new Date(a.lastMessage.timestamp)
+            );
+        }
+
+        function markMessagesAsRead(user1, user2) {
+            const messages = getMessages();
+            const updatedMessages = messages.map(m => {
+                if (m.sender === user2 && m.receiver === user1 && m.status !== 'read') {
+                    return {...m, status: 'read'};
+                }
+                return m;
+            });
+            setItem('gramx_messages', updatedMessages);
+        }
+
+        // Online users management
+        function getOnlineUsers() {
+            return getItem('gramx_online_users');
+        }
+
+        function setUserOnline(username) {
+            const onlineUsers = getOnlineUsers();
+            if (!onlineUsers.includes(username)) {
+                onlineUsers.push(username);
+                setItem('gramx_online_users', onlineUsers);
+            }
+            return onlineUsers;
+        }
+
+        function setUserOffline(username) {
+            let onlineUsers = getOnlineUsers();
+            onlineUsers = onlineUsers.filter(u => u !== username);
+            setItem('gramx_online_users', onlineUsers);
+            return onlineUsers;
+        }
+
+        // Initialize with some demo users if none exist
+        function initializeDemoData() {
+            if (getUsers().length === 0) {
+                // Create demo users
+                const demoUsers = [
+                    { username: 'alice', password: 'pass123', name: 'Alice' },
+                    { username: 'bob', password: 'pass123', name: 'Bob' },
+                    { username: 'charlie', password: 'pass123', name: 'Charlie' }
+                ];
+                
+                setItem('gramx_users', demoUsers);
+                
+                // Set some users as online
+                setItem('gramx_online_users', ['alice', 'bob']);
+                
+                // Create some demo messages
+                const demoMessages = [
+                    {
+                        sender: 'alice',
+                        receiver: 'bob',
+                        text: 'Hey Bob, how are you?',
+                        timestamp: new Date(Date.now() - 3600000).toISOString(),
+                        status: 'read'
+                    },
+                    {
+                        sender: 'bob',
+                        receiver: 'alice',
+                        text: 'Hi Alice! I\'m doing great, thanks for asking!',
+                        timestamp: new Date(Date.now() - 3500000).toISOString(),
+                        status: 'read'
+                    },
+                    {
+                        sender: 'alice',
+                        receiver: 'bob',
+                        text: 'Want to grab lunch tomorrow?',
+                        timestamp: new Date(Date.now() - 3400000).toISOString(),
+                        status: 'delivered'
+                    }
+                ];
+                
+                setItem('gramx_messages', demoMessages);
+            }
+        }
+
+        // App state
         let currentUser = null;
         let currentTargetUser = null;
-        let onlineUsers = [];
-        let userConversations = [];
-        let pendingMessages = {};
+        
+        // Initialize the app
+        function initializeApp() {
+            initializeDemoData();
+            
+            // Check if user is already logged in
+            const loggedInUser = localStorage.getItem('gramx_current_user');
+            if (loggedInUser) {
+                currentUser = loggedInUser;
+                showScreen('chat-list-screen');
+                loadChatList();
+            }
+        }
 
+        // UI Functions
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(screen => {
                 screen.classList.remove('active');
@@ -738,12 +932,37 @@
             document.getElementById(screenId).classList.add('active');
         }
 
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
+            
+            if (tabName === 'conversations') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+            } else if (tabName === 'online') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+            }
             
             document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
             document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
+            document.getElementById('all-tab').style.display = tabName === 'all' ? 'block' : 'none';
+            
+            if (tabName === 'conversations') {
+                loadConversations();
+            } else if (tabName === 'online') {
+                loadOnlineUsers();
+            } else {
+                loadAllUsers();
+            }
         }
 
         function toggleSearch() {
@@ -764,194 +983,86 @@
             alert('Chat options menu would open here');
         }
 
-        function showOnlineUsers() {
-            showTab('online');
+        function showAllUsers() {
+            showTab('all');
         }
 
-        async function register() {
-            const username = document.getElementById('register-username').value;
-            const password = document.getElementById('register-password').value;
-
-            if (!username || !password) {
-                alert('Please enter both username and password');
-                return;
-            }
-
-            // Simple encryption for demo purposes (in a real app, use proper hashing)
-            const encryptedPassword = btoa(password);
-
-            try {
-                const response = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password: encryptedPassword })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('Registration successful! Please login.');
-                    showScreen('login-screen');
-                } else {
-                    alert('Error: ' + result.error);
-                }
-            } catch (error) {
-                alert('Network error. Please try again.');
-                console.error('Registration error:', error);
-            }
-        }
-
-        async function login() {
+        // Authentication functions
+        function login() {
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
-
+            
             if (!username || !password) {
-                alert('Please enter both username and password');
+                showError('login-error', 'Please enter both username and password');
                 return;
             }
-
-            // Simple encryption for demo purposes
-            const encryptedPassword = btoa(password);
-
-            try {
-                const button = document.querySelector('#login-screen .auth-button');
-                const originalText = button.textContent;
-                button.innerHTML = '<div class="loading"></div>';
-                button.disabled = true;
-
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password: encryptedPassword })
-                });
-
-                const result = await response.json();
-                
-                button.textContent = originalText;
-                button.disabled = false;
-                
-                if (result.success) {
-                    currentUser = username;
-                    initializeSocket();
-                    showScreen('chat-list-screen');
-                } else {
-                    alert('Login failed: ' + result.error);
-                }
-            } catch (error) {
-                alert('Network error. Please try again.');
-                console.error('Login error:', error);
-                const button = document.querySelector('#login-screen .auth-button');
-                button.textContent = 'Login';
-                button.disabled = false;
+            
+            const user = getUser(username);
+            
+            if (!user || user.password !== password) {
+                showError('login-error', 'Invalid username or password');
+                return;
             }
+            
+            // Login successful
+            currentUser = username;
+            localStorage.setItem('gramx_current_user', username);
+            
+            // Set user as online
+            setUserOnline(username);
+            
+            showScreen('chat-list-screen');
+            loadChatList();
         }
 
-        function initializeSocket() {
-            socket = io();
+        function register() {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
             
-            socket.on('connect', () => {
-                socket.emit('user-login', currentUser);
-            });
-
-            socket.on('online-users', (users) => {
-                onlineUsers = users.filter(user => user !== currentUser);
-                updateOnlineUsersList();
-            });
-
-            socket.on('user-conversations', (conversations) => {
-                userConversations = conversations;
-                updateConversationsList();
-            });
-
-            socket.on('user-online', (username) => {
-                if (username !== currentUser && !onlineUsers.includes(username)) {
-                    onlineUsers.push(username);
-                    updateOnlineUsersList();
-                    
-                    // Update status if we're chatting with this user
-                    if (currentTargetUser === username) {
-                        document.getElementById('status-text').textContent = 'online';
-                        document.getElementById('status-dot').style.background = '#4CAF50';
-                    }
-                }
-            });
-
-            socket.on('user-offline', (username) => {
-                onlineUsers = onlineUsers.filter(user => user !== username);
-                updateOnlineUsersList();
-                
-                // Update status if we're chatting with this user
-                if (currentTargetUser === username) {
-                    document.getElementById('status-text').textContent = 'offline';
-                    document.getElementById('status-dot').style.background = '#666';
-                }
-            });
-
-            socket.on('conversation-history', (data) => {
-                const container = document.getElementById('private-messages-container');
-                container.innerHTML = '';
-                
-                if (data.messages.length === 0) {
-                    container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
-                } else {
-                    data.messages.forEach(message => {
-                        addPrivateMessageToChat(message);
-                    });
-                }
-                
-                // Mark messages as read
-                if (socket && currentTargetUser) {
-                    socket.emit('mark-as-read', {
-                        currentUser: currentUser,
-                        targetUser: currentTargetUser
-                    });
-                }
-            });
-
-            socket.on('new-private-message', (message) => {
-                if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
-                    addPrivateMessageToChat(message);
-                    
-                    // Mark as read if it's from the current chat
-                    if (message.sender === currentTargetUser && socket) {
-                        socket.emit('mark-as-read', {
-                            currentUser: currentUser,
-                            targetUser: currentTargetUser
-                        });
-                    }
-                }
-                
-                // Update conversations list when new message arrives
-                if (socket) {
-                    socket.emit('user-login', currentUser); // Refresh conversations
-                }
-            });
+            if (!username || !password) {
+                showError('register-error', 'Please enter both username and password');
+                return;
+            }
             
-            socket.on('message-delivered', (data) => {
-                // Update message status to delivered
-                if (pendingMessages[data.tempId]) {
-                    const messageElement = document.querySelector(`[data-temp-id="${data.tempId}"]`);
-                    if (messageElement) {
-                        const statusElement = messageElement.querySelector('.message-status');
-                        if (statusElement) {
-                            statusElement.textContent = 'Delivered';
-                        }
-                    }
-                    delete pendingMessages[data.tempId];
-                }
-            });
+            if (getUser(username)) {
+                showError('register-error', 'Username already exists');
+                return;
+            }
             
-            socket.on('error', (error) => {
-                console.error('Socket error:', error);
-                alert('Connection error: ' + error.message);
-            });
+            // Create new user
+            saveUser({ username, password, name: username });
+            
+            showError('register-error', 'Registration successful! Please login.');
+            setTimeout(() => {
+                showScreen('login-screen');
+            }, 1500);
         }
 
-        function updateConversationsList() {
+        function logout() {
+            if (currentUser) {
+                setUserOffline(currentUser);
+                localStorage.removeItem('gramx_current_user');
+                currentUser = null;
+            }
+            showScreen('login-screen');
+        }
+
+        // Chat list functions
+        function loadChatList() {
+            loadConversations();
+            loadOnlineUsers();
+            loadAllUsers();
+        }
+
+        function loadConversations() {
             const container = document.getElementById('conversations-tab');
             const emptyState = document.getElementById('no-conversations');
             
-            if (userConversations.length === 0) {
+            if (!currentUser) return;
+            
+            const conversations = getConversationsForUser(currentUser);
+            
+            if (conversations.length === 0) {
                 emptyState.style.display = 'flex';
                 container.innerHTML = '';
                 return;
@@ -960,7 +1071,7 @@
             emptyState.style.display = 'none';
             container.innerHTML = '';
             
-            userConversations.forEach(conv => {
+            conversations.forEach(conv => {
                 const convElement = document.createElement('div');
                 convElement.className = 'conversation-item';
                 convElement.onclick = () => startPrivateChat(conv.partner);
@@ -973,26 +1084,21 @@
                     (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 
                     'No messages yet';
                 
-                // Add some Telegram-like features randomly for demo
-                const isPinned = Math.random() > 0.7;
-                const isMuted = Math.random() > 0.8;
-                const isVerified = Math.random() > 0.9;
+                const isOnline = getOnlineUsers().includes(conv.partner);
                 
                 convElement.innerHTML = `
                     <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
                     <div class="conversation-info">
                         <div class="conversation-name">
                             ${conv.partner}
-                            ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
                         </div>
                         <div class="conversation-preview">
-                            ${isPinned ? '<i class="fas fa-thumbtack pinned-icon"></i>' : ''}
-                            ${isMuted ? '<i class="fas fa-volume-mute muted-icon"></i>' : ''}
                             ${lastMessageText}
                         </div>
                     </div>
                     <div class="conversation-meta">
                         <div class="conversation-time">${lastMessageTime}</div>
+                        ${isOnline ? '<span class="online-dot"></span>' : ''}
                         ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
                     </div>
                 `;
@@ -1001,9 +1107,11 @@
             });
         }
 
-        function updateOnlineUsersList() {
+        function loadOnlineUsers() {
             const container = document.getElementById('online-tab');
             const emptyState = document.getElementById('no-online-users');
+            
+            const onlineUsers = getOnlineUsers().filter(user => user !== currentUser);
             
             if (onlineUsers.length === 0) {
                 emptyState.style.display = 'flex';
@@ -1019,16 +1127,10 @@
                 userElement.className = 'user-item';
                 userElement.onclick = () => startPrivateChat(user);
                 
-                // Add verification badge randomly for demo
-                const isVerified = Math.random() > 0.8;
-                
                 userElement.innerHTML = `
                     <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
                     <div class="user-info">
-                        <div class="user-name">
-                            ${user}
-                            ${isVerified ? '<i class="fas fa-check-circle verified-badge"></i>' : ''}
-                        </div>
+                        <div class="user-name">${user}</div>
                         <div class="user-status"><span class="online-dot"></span>Online</div>
                     </div>
                 `;
@@ -1037,39 +1139,99 @@
             });
         }
 
+        function loadAllUsers() {
+            const container = document.getElementById('all-tab');
+            const emptyState = document.getElementById('no-all-users');
+            
+            const allUsers = getUsers()
+                .map(user => user.username)
+                .filter(user => user !== currentUser);
+            
+            if (allUsers.length === 0) {
+                emptyState.style.display = 'flex';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            allUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'user-item';
+                userElement.onclick = () => startPrivateChat(user);
+                
+                const isOnline = getOnlineUsers().includes(user);
+                
+                userElement.innerHTML = `
+                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user}</div>
+                        <div class="user-status">
+                            ${isOnline ? '<span class="online-dot"></span>Online' : '<span class="offline-dot"></span>Offline'}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(userElement);
+            });
+        }
+
+        // Chat functions
         function startPrivateChat(targetUser) {
+            if (!currentUser) return;
+            
             currentTargetUser = targetUser;
             document.getElementById('chat-target-name').textContent = targetUser;
             
             // Check if target is online
-            const isOnline = onlineUsers.includes(targetUser);
+            const isOnline = getOnlineUsers().includes(targetUser);
             document.getElementById('status-text').textContent = isOnline ? 'online' : 'offline';
             document.getElementById('status-dot').style.background = isOnline ? '#4CAF50' : '#666';
             
-            socket.emit('join-conversation', {
-                currentUser: currentUser,
-                targetUser: targetUser
-            });
+            // Load conversation history
+            loadConversationHistory();
+            
+            // Mark messages as read
+            markMessagesAsRead(currentUser, targetUser);
             
             showScreen('private-chat-screen');
         }
 
-        function backToChatList() {
-            showScreen('chat-list-screen');
-            // Refresh conversations to update read status
-            socket.emit('user-login', currentUser);
+        function loadConversationHistory() {
+            const container = document.getElementById('private-messages-container');
+            container.innerHTML = '';
+            
+            if (!currentUser || !currentTargetUser) return;
+            
+            const messages = getMessagesBetweenUsers(currentUser, currentTargetUser);
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
+                return;
+            }
+            
+            messages.forEach(message => {
+                addMessageToChat(message);
+            });
+            
+            container.scrollTop = container.scrollHeight;
         }
 
-        function addPrivateMessageToChat(message) {
+        function addMessageToChat(message) {
             const container = document.getElementById('private-messages-container');
             const messageDiv = document.createElement('div');
             
+            if (message.sender === 'system') {
+                messageDiv.className = 'system-message';
+                messageDiv.textContent = message.text;
+                container.appendChild(messageDiv);
+                container.scrollTop = container.scrollHeight;
+                return;
+            }
+            
             const isMyMessage = message.sender === currentUser;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
-            
-            if (message.tempId) {
-                messageDiv.setAttribute('data-temp-id', message.tempId);
-            }
             
             const time = new Date(message.timestamp).toLocaleTimeString([], { 
                 hour: '2-digit', minute: '2-digit' 
@@ -1077,12 +1239,10 @@
             
             let statusHtml = '';
             if (isMyMessage) {
-                if (message.status === 'delivered') {
+                if (message.status === 'delivered' || message.status === 'read') {
                     statusHtml = '<i class="fas fa-check-double" style="color: #0088cc;"></i>';
-                } else if (message.status === 'sent') {
-                    statusHtml = '<i class="fas fa-check"></i>';
                 } else {
-                    statusHtml = '<i class="fas fa-clock"></i>';
+                    statusHtml = '<i class="fas fa-check"></i>';
                 }
             }
             
@@ -1090,11 +1250,6 @@
                 ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
                 <div class="message-text">${message.text}</div>
                 <div class="message-time">${time} ${statusHtml}</div>
-                <div class="message-actions">
-                    <button class="message-action">
-                        <i class="fas fa-reply"></i>
-                    </button>
-                </div>
             `;
             
             container.appendChild(messageDiv);
@@ -1105,52 +1260,46 @@
             const input = document.getElementById('private-message-input');
             const text = input.value.trim();
             
-            if (text && socket && currentTargetUser) {
-                const tempId = 'temp-' + Date.now();
+            if (text && currentUser && currentTargetUser) {
                 const messageData = {
                     sender: currentUser,
                     receiver: currentTargetUser,
                     text: text,
-                    tempId: tempId
+                    timestamp: new Date().toISOString(),
+                    status: 'sent'
                 };
                 
-                // Add message immediately to UI with "sending" status
-                const tempMessage = {
-                    sender: currentUser,
-                    receiver: currentTargetUser,
-                    text: text,
-                    tempId: tempId,
-                    timestamp: new Date(),
-                    status: 'sending'
-                };
+                // Check if target is online
+                const isOnline = getOnlineUsers().includes(currentTargetUser);
                 
-                addPrivateMessageToChat(tempMessage);
-                pendingMessages[tempId] = true;
+                if (isOnline) {
+                    messageData.status = 'delivered';
+                }
                 
-                // Disable input and show loading
-                input.disabled = true;
-                const sendButton = document.getElementById('send-button');
-                sendButton.innerHTML = '<div class="loading"></div>';
+                // Save message
+                saveMessage(messageData);
                 
-                socket.emit('send-private-message', messageData, (response) => {
-                    // Re-enable input
-                    input.disabled = false;
-                    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
-                    
-                    if (response.success) {
-                        input.value = '';
-                    } else {
-                        // Show error message
-                        alert('Failed to send message: ' + response.error);
-                        // Remove the failed message from UI
-                        const failedMessage = document.querySelector(`[data-temp-id="${tempId}"]`);
-                        if (failedMessage) {
-                            failedMessage.remove();
-                        }
-                        delete pendingMessages[tempId];
-                    }
-                });
+                // Add to chat
+                addMessageToChat(messageData);
+                
+                // If recipient is offline, message will be delivered when they come online
+                if (!isOnline) {
+                    const notification = document.createElement('div');
+                    notification.className = 'system-message';
+                    notification.textContent = `${currentTargetUser} is offline. They will receive this message when they come online.`;
+                    document.getElementById('private-messages-container').appendChild(notification);
+                }
+                
+                // Update conversation list
+                loadConversations();
+                
+                input.value = '';
             }
+        }
+
+        function backToChatList() {
+            showScreen('chat-list-screen');
+            loadConversations();
         }
 
         function handlePrivateKeyPress(event) {
@@ -1159,11 +1308,8 @@
             }
         }
 
-        // Pre-fill for testing
-        window.onload = () => {
-            document.getElementById('login-username').value = 'user1';
-            document.getElementById('login-password').value = 'pass';
-        };
+        // Initialize the app when page loads
+        window.onload = initializeApp;
     </script>
 </body>
 </html>
