@@ -1,678 +1,2008 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>gramX</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      height: 100vh; overscroll-behavior: none;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>gramX - Enhanced</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme (Default) */
+            --primary-color: #0088cc;
+            --primary-gradient: linear-gradient(135deg, #0088cc, #00a8ff);
+            --bg-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --input-bg: #f8f9fa;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --error-color: #f44336;
+            --online-status: #4CAF50;
+            --offline-status: #999999;
+            
+            /* Chat specific */
+            --my-message-bg: #d3eddb;
+            --their-message-bg: #ffffff;
+            --system-message-bg: rgba(0, 0, 0, 0.05);
+            
+            /* Theme transition */
+            --transition: all 0.3s ease;
+        }
 
-    .theme-light { --bg-color:#ffffff; --text-color:#000000; --secondary-bg:#f0f2f5; --border-color:#e0e0e0; }
-    .theme-dark  { --bg-color:#1a1a1a; --text-color:#ffffff; --secondary-bg:#2d2d2d; --border-color:#404040; }
+        .theme-dark {
+            --primary-color: #2d88ff;
+            --primary-gradient: linear-gradient(135deg, #2d88ff, #0066cc);
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border-color: #333333;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --input-bg: #2a2a2a;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --error-color: #f44336;
+            --online-status: #4CAF50;
+            --offline-status: #666666;
+            
+            /* Chat specific */
+            --my-message-bg: #1e3a4e;
+            --their-message-bg: #2d2d2d;
+            --system-message-bg: rgba(255, 255, 255, 0.07);
+        }
 
-    body { background-color: var(--bg-color); color: var(--text-color); }
-    .screen { display:none; height:100%; }
-    .screen.active { display:block; }
-    .connection-status-bar { padding:8px 12px; background:var(--secondary-bg); border-bottom:1px solid var(--border-color); }
-    .settings-header { display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid var(--border-color); }
-    .back-button { background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-color); }
-    .tabs { display:flex; border-bottom:1px solid var(--border-color); }
-    .tab { padding:10px 14px; cursor:pointer; }
-    .tab.active { border-bottom:2px solid currentColor; font-weight:600; }
-    .list { height:calc(100vh - 130px); overflow:auto; }
-    .placeholder { padding:14px; opacity:.7; }
-    .chat-header { padding:10px 14px; border-bottom:1px solid var(--border-color); }
-    .messages { height:calc(100vh - 180px); overflow:auto; padding:12px; }
-    .message { margin:8px 0; }
-    .message.out { text-align:right; }
-    .message .bubble { display:inline-block; padding:8px 10px; border-radius:10px; background:var(--secondary-bg); }
-    .message-status-indicator { font-size:12px; opacity:.6; margin-left:6px; }
-    .message-input-container { display:flex; gap:8px; padding:10px; border-top:1px solid var(--border-color); background:var(--secondary-bg); }
-    .message-input { flex:1; padding:10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color); }
-    #emoji-picker { position:absolute; bottom:70px; left:10px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; padding:8px; display:none; max-width:260px; max-height:180px; overflow:auto; }
-    #emoji-grid { display:grid; grid-template-columns: repeat(8, 1fr); gap:6px; font-size:18px; }
-    #context-menu { position:absolute; display:none; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; overflow:hidden; }
-    #context-menu button { display:block; width:100%; padding:8px 12px; border:0; text-align:left; background:none; cursor:pointer; }
-    #search-container { display:none; padding:8px; border-bottom:1px solid var(--border-color); }
-    input, button { color:inherit; }
-  </style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+        
+        body { 
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overscroll-behavior: none;
+            transition: var(--transition);
+        }
+
+        .screen { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            flex-direction: column; 
+        }
+        
+        .screen.active { 
+            display: flex; 
+        }
+
+        /* Enhanced Connection Status Bar */
+        .connection-status-bar {
+            background: var(--warning-color);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            display: none;
+            position: relative;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        
+        .connection-status-bar.online {
+            background: var(--success-color);
+            display: block;
+        }
+        
+        .connection-status-bar.offline {
+            background: var(--error-color);
+            display: block;
+        }
+
+        /* Enhanced Auth Screens */
+        .auth-container { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; 
+            background: var(--bg-color);
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230088cc' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            transition: var(--transition);
+        }
+        
+        .auth-box { 
+            width: 100%; 
+            max-width: 400px; 
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .auth-title { 
+            text-align: center; 
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 32px; 
+            font-weight: bold; 
+            margin-bottom: 30px; 
+            letter-spacing: 1px;
+        }
+        
+        .auth-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .auth-input { 
+            width: 100%; 
+            padding: 16px 16px 16px 45px; 
+            border: 2px solid var(--border-color);
+            border-radius: 12px; 
+            font-size: 16px; 
+            background: var(--input-bg);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+        
+        .auth-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.2);
+        }
+        
+        .auth-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .auth-button { 
+            width: 100%; 
+            padding: 16px; 
+            background: var(--primary-gradient);
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            margin-bottom: 20px; 
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(0, 136, 204, 0.3);
+        }
+        
+        .auth-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 136, 204, 0.4);
+        }
+        
+        .auth-switch { 
+            text-align: center; 
+            color: var(--text-secondary); 
+            font-size: 14px;
+        }
+        
+        .auth-switch a { 
+            color: var(--primary-color); 
+            text-decoration: none; 
+            font-weight: 500; 
+        }
+        
+        .theme-selector {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .theme-btn.light {
+            background: linear-gradient(135deg, #ffffff, #f0f2f5);
+        }
+        
+        .theme-btn.dark {
+            background: linear-gradient(135deg, #121212, #2d2d2d);
+        }
+        
+        .theme-btn.blue {
+            background: linear-gradient(135deg, #0088cc, #00a8ff);
+        }
+        
+        .theme-btn.purple {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+        }
+        
+        .theme-btn.active {
+            border-color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        /* Enhanced Chat List Screen */
+        .chat-list-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .header-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(15deg);
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-color);
+            transition: var(--transition);
+        }
+
+        .conversation-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+            background: var(--card-bg);
+        }
+
+        .conversation-item:hover {
+            background: var(--input-bg);
+            transform: translateX(5px);
+        }
+
+        .conversation-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: var(--shadow);
+        }
+
+        .conversation-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+        }
+
+        .conversation-preview {
+            font-size: 14px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-meta {
+            text-align: right;
+            margin-left: 8px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .conversation-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .unread-badge {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .message-status {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        /* Enhanced Settings Screen */
+        .settings-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .back-button { 
+            background: rgba(255, 255, 255, 0.2); 
+            border: none; 
+            color: white; 
+            font-size: 20px; 
+            cursor: pointer; 
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .settings-list {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-color);
+            padding: 10px;
+            transition: var(--transition);
+        }
+
+        .settings-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            background: var(--card-bg);
+            margin-bottom: 10px;
+            border-radius: 12px;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .settings-item:active {
+            background: var(--input-bg);
+            transform: scale(0.98);
+        }
+        
+        .settings-item:hover {
+            transform: translateX(5px);
+        }
+
+        .settings-icon {
+            width: 40px;
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+
+        .settings-content {
+            flex: 1;
+        }
+
+        .settings-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .settings-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .settings-arrow {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        
+        /* Theme Customization Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .theme-modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+        }
+        
+        .theme-modal h2 {
+            margin-bottom: 20px;
+            color: var(--text-color);
+            text-align: center;
+        }
+        
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .theme-option {
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition);
+            border: 2px solid var(--border-color);
+        }
+        
+        .theme-option:hover {
+            transform: translateY(-3px);
+        }
+        
+        .theme-option.active {
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .theme-option.light {
+            background: linear-gradient(135deg, #ffffff, #f0f2f5);
+            color: #333;
+        }
+        
+        .theme-option.dark {
+            background: linear-gradient(135deg, #121212, #2d2d2d);
+            color: #fff;
+        }
+        
+        .theme-option.blue {
+            background: linear-gradient(135deg, #0088cc, #00a8ff);
+            color: #fff;
+        }
+        
+        .theme-option.purple {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #fff;
+        }
+        
+        .theme-option.green {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: #fff;
+        }
+        
+        .theme-option.sunset {
+            background: linear-gradient(135deg, #ff6e7f, #bfe9ff);
+            color: #333;
+        }
+        
+        .bg-patterns {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .bg-pattern {
+            height: 60px;
+            border-radius: 8px;
+            cursor: pointer;
+            background-size: cover;
+            transition: var(--transition);
+            border: 2px solid var(--border-color);
+        }
+        
+        .bg-pattern.active {
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .modal-btn.cancel {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+        
+        .modal-btn.apply {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .auth-box {
+                padding: 20px;
+                margin: 0 15px;
+            }
+            
+            .theme-options {
+                grid-template-columns: 1fr;
+            }
+            
+            .bg-patterns {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Add these styles for the enhanced chat interface */
+        .messages-container {
+            background: var(--bg-color);
+            transition: var(--transition);
+        }
+        
+        .my-message {
+            background: var(--my-message-bg);
+        }
+        
+        .their-message {
+            background: var(--their-message-bg);
+        }
+        
+        .system-message {
+            background: var(--system-message-bg);
+        }
+        
+        .message-input-container {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .message-input {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+    </style>
 </head>
-<body class="theme-light">
-  <!-- Connection Status Bar -->
-  <div id="connection-status-bar" class="connection-status-bar">
-    <span id="connection-status-text">Connecting...</span>
-  </div>
-
-  <!-- Simple Auth UI (optional; keep ids used by your JS) -->
-  <div id="auth-screen" class="screen active">
-    <div style="padding:12px;">
-      <h3>Login</h3>
-      <div style="margin-top:8px;">
-        <input id="login-username" placeholder="username" class="message-input" />
-      </div>
-      <div style="margin-top:8px;">
-        <input id="login-password" placeholder="password" type="password" class="message-input" />
-      </div>
-      <div style="margin-top:10px;">
-        <button onclick="login()">Login</button>
-        <button onclick="register()">Register</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Chat List Screen -->
-  <div id="chat-list-screen" class="screen">
-    <div class="settings-header">
-      <strong>Chats</strong>
-      <div>
-        <button onclick="openSearch()"><i class="fa fa-search"></i></button>
-        <button onclick="openSettings()"><i class="fa fa-gear"></i></button>
-      </div>
+<body>
+    <!-- Connection Status Bar -->
+    <div id="connection-status-bar" class="connection-status-bar">
+        <span id="connection-status-text">Connecting...</span>
     </div>
 
-    <div id="search-container">
-      <input id="search-input" class="message-input" placeholder="Search..." />
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="auth-title">gramX</h1>
+                
+                <div class="auth-input-container">
+                    <i class="fas fa-user auth-icon"></i>
+                    <input type="text" id="login-username" class="auth-input" placeholder="Username" value="user1">
+                </div>
+                
+                <div class="auth-input-container">
+                    <i class="fas fa-lock auth-icon"></i>
+                    <input type="password" id="login-password" class="auth-input" placeholder="Password" value="pass">
+                </div>
+                
+                <button class="auth-button" onclick="login()">Login</button>
+                
+                <div class="auth-switch">
+                    Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
+                </div>
+                
+                <div class="theme-selector">
+                    <div class="theme-btn light active" onclick="changeTheme('light')"></div>
+                    <div class="theme-btn dark" onclick="changeTheme('dark')"></div>
+                    <div class="theme-btn blue" onclick="changeTheme('blue')"></div>
+                    <div class="theme-btn purple" onclick="changeTheme('purple')"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="tabs">
-      <div class="tab active" data-tab="conversations" onclick="showTab('conversations')">Conversations</div>
-      <div class="tab" data-tab="online" onclick="showTab('online')">Online</div>
+    <!-- Register Screen -->
+    <div id="register-screen" class="screen">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="auth-title">Create Account</h1>
+                
+                <div class="auth-input-container">
+                    <i class="fas fa-user auth-icon"></i>
+                    <input type="text" id="register-username" class="auth-input" placeholder="Choose username">
+                </div>
+                
+                <div class="auth-input-container">
+                    <i class="fas fa-lock auth-icon"></i>
+                    <input type="password" id="register-password" class="auth-input" placeholder="Choose password">
+                </div>
+                
+                <div class="auth-input-container">
+                    <i class="fas fa-lock auth-icon"></i>
+                    <input type="password" id="register-confirm-password" class="auth-input" placeholder="Confirm password">
+                </div>
+                
+                <button class="auth-button" onclick="register()">Create Account</button>
+                
+                <div class="auth-switch">
+                    Already have an account? <a href="#" onclick="showScreen('login-screen')">Login</a>
+                </div>
+                
+                <div class="theme-selector">
+                    <div class="theme-btn light active" onclick="changeTheme('light')"></div>
+                    <div class="theme-btn dark" onclick="changeTheme('dark')"></div>
+                    <div class="theme-btn blue" onclick="changeTheme('blue')"></div>
+                    <div class="theme-btn purple" onclick="changeTheme('purple')"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="conversations-tab" class="list">
-      <div id="no-conversations" class="placeholder">No conversations yet.</div>
+    <!-- Chat List Screen -->
+    <div id="chat-list-screen" class="screen">
+        <div class="chat-list-header">
+            <button class="header-button" onclick="openSettings()"><i class="fas fa-bars"></i></button>
+            <span>gramX</span>
+            <div class="header-buttons">
+                <button class="header-button" onclick="openSearch()"><i class="fas fa-search"></i></button>
+                <button class="header-button" onclick="showOnlineUsers()"><i class="fas fa-user-plus"></i></button>
+            </div>
+        </div>
+        
+        <!-- Search Container -->
+        <div class="search-container" id="search-container" style="display: none;">
+            <input type="text" class="search-input" placeholder="Search conversations..." id="search-input">
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('conversations')">Chats</div>
+            <div class="tab" onclick="showTab('online')">Online</div>
+        </div>
+
+        <!-- Conversations Tab -->
+        <div id="conversations-tab" class="conversations-list">
+            <div class="empty-state" id="no-conversations">
+                No conversations yet<br>
+                <small>Start a chat with someone online!</small>
+            </div>
+            <!-- Conversations will be listed here -->
+        </div>
+
+        <!-- Online Users Tab -->
+        <div id="online-tab" class="users-list" style="display: none;">
+            <div class="empty-state" id="no-online-users">
+                No other users online
+            </div>
+            <!-- Online users will be listed here -->
+        </div>
     </div>
-    <div id="online-tab" class="list" style="display:none;">
-      <div id="no-online-users" class="placeholder">No online users.</div>
+
+    <!-- Private Chat Screen -->
+    <div id="private-chat-screen" class="screen">
+        <div class="chat-header">
+            <button class="back-button" onclick="backToChatList()">←</button>
+            <div class="chat-info">
+                <div class="chat-name" id="chat-target-name">User</div>
+                <div class="chat-status" id="chat-target-status">online</div>
+            </div>
+            <button class="header-button" onclick="showChatOptions(event)"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+
+        <div class="messages-container" id="private-messages-container">
+            <div class="typing-indicator" id="typing-indicator">
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="message-input-container">
+            <button class="emoji-button" onclick="toggleEmojiPicker()">😊</button>
+            <textarea 
+                id="private-message-input" 
+                class="message-input" 
+                placeholder="Message" 
+                onkeypress="handlePrivateKeyPress(event)"
+                oninput="handleMessageInput()"
+                rows="1"
+            ></textarea>
+            <button class="send-button" onclick="sendPrivateMessage()">→</button>
+        </div>
+
+        <!-- Emoji Picker -->
+        <div class="emoji-picker" id="emoji-picker">
+            <div class="emoji-grid" id="emoji-grid">
+                <!-- Emojis will be added here -->
+            </div>
+        </div>
+
+        <!-- Context Menu -->
+        <div class="context-menu" id="context-menu">
+            <div class="context-item" onclick="copyMessage()">
+                <div class="context-icon"><i class="fas fa-copy"></i></div>
+                <div>Copy</div>
+            </div>
+            <div class="context-item" onclick="deleteMessage()">
+                <div class="context-icon"><i class="fas fa-trash"></i></div>
+                <div>Delete</div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Private Chat Screen -->
-  <div id="private-chat-screen" class="screen">
-    <div class="chat-header">
-      Chat with <strong id="chat-target-name">—</strong>
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="settings-header">
+            <button class="back-button" onclick="backToChatList()">←</button>
+            <span>Settings</span>
+            <div style="width: 48px;"></div>
+        </div>
+
+        <div class="settings-list">
+            <div class="settings-item" onclick="openThemeCustomization()">
+                <div class="settings-icon"><i class="fas fa-palette"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Appearance</div>
+                    <div class="settings-desc">Themes, backgrounds, and colors</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="changeUsername()">
+                <div class="settings-icon"><i class="fas fa-user-edit"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Edit Profile</div>
+                    <div class="settings-desc">Change username, profile picture</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="changeNotifications()">
+                <div class="settings-icon"><i class="fas fa-bell"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Notifications</div>
+                    <div class="settings-desc">Sounds, alerts, and vibration</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="changePrivacy()">
+                <div class="settings-icon"><i class="fas fa-lock"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Privacy & Security</div>
+                    <div class="settings-desc">Blocked users, last seen</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="changeChatBackground()">
+                <div class="settings-icon"><i class="fas fa-image"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Chat Background</div>
+                    <div class="settings-desc">Set custom background image</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="changeFontSize()">
+                <div class="settings-icon"><i class="fas fa-text-height"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Font Size</div>
+                    <div class="settings-desc">Adjust text size in chats</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="manageStorage()">
+                <div class="settings-icon"><i class="fas fa-database"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Storage Usage</div>
+                    <div class="settings-desc">Manage cache and data</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="showHelp()">
+                <div class="settings-icon"><i class="fas fa-question-circle"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Help & Support</div>
+                    <div class="settings-desc">FAQ, contact support</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+            
+            <div class="settings-item" onclick="logout()">
+                <div class="settings-icon"><i class="fas fa-sign-out-alt"></i></div>
+                <div class="settings-content">
+                    <div class="settings-title">Logout</div>
+                    <div class="settings-desc">Sign out of your account</div>
+                </div>
+                <div class="settings-arrow">›</div>
+            </div>
+        </div>
     </div>
-    <div id="typing-indicator" style="display:none; padding:6px 12px; font-size:12px; opacity:.7;">Typing…</div>
-    <div id="private-messages-container" class="messages"></div>
-    <div class="message-input-container">
-      <button onclick="toggleEmojiPicker()"><i class="fa-regular fa-face-smile"></i></button>
-      <input id="private-message-input" class="message-input" placeholder="Type a message" oninput="handleMessageInput()" onkeypress="handlePrivateKeyPress(event)" />
-      <button onclick="sendPrivateMessage()"><i class="fa fa-paper-plane"></i></button>
+
+    <!-- Theme Customization Modal -->
+    <div class="modal-overlay" id="theme-modal">
+        <div class="theme-modal">
+            <h2>Customize Appearance</h2>
+            
+            <h3>Color Theme</h3>
+            <div class="theme-options">
+                <div class="theme-option light active" onclick="selectThemeOption('light')">Light</div>
+                <div class="theme-option dark" onclick="selectThemeOption('dark')">Dark</div>
+                <div class="theme-option blue" onclick="selectThemeOption('blue')">Blue</div>
+                <div class="theme-option purple" onclick="selectThemeOption('purple')">Purple</div>
+                <div class="theme-option green" onclick="selectThemeOption('green')">Green</div>
+                <div class="theme-option sunset" onclick="selectThemeOption('sunset')">Sunset</div>
+            </div>
+            
+            <h3>Background Pattern</h3>
+            <div class="bg-patterns">
+                <div class="bg-pattern active" style="background-image: url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230088cc' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E')" onclick="selectBgPattern('default')"></div>
+                <div class="bg-pattern" style="background-image: url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Ccircle cx=\"50\" cy=\"50\" r=\"5\" fill=\"%230088cc\" fill-opacity=\"0.1\"/%3E%3C/svg%3E')" onclick="selectBgPattern('dots')"></div>
+                <div class="bg-pattern" style="background-image: url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 50h100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3Cpath d=\"M50 0v100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3C/svg%3E')" onclick="selectBgPattern('grid')"></div>
+                <div class="bg-pattern" style="background-image: url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h50v50H0z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3Cpath d=\"M50 50h50v50H50z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3C/svg%3E')" onclick="selectBgPattern('checker')"></div>
+                <div class="bg-pattern" style="background-image: url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 0l100 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3Cpath d=\"M100 0L0 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3C/svg%3E')" onclick="selectBgPattern('diagonal')"></div>
+                <div class="bg-pattern" style="background-color: #f8f9fa;" onclick="selectBgPattern('none')">None</div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeThemeModal()">Cancel</button>
+                <button class="modal-btn apply" onclick="applyThemeChanges()">Apply</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Settings Screen (only once) -->
-  <div id="settings-screen" class="screen">
-    <div class="settings-header">
-      <button class="back-button" onclick="backToChatList()">←</button>
-      <span>Settings</span>
-      <div style="width:48px;"></div>
-    </div>
-    <div style="padding:12px;">
-      <ul class="settings-list">
-        <li class="settings-item" style="padding:10px 0;"><button onclick="changeUsername()">Change Username</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="changeNotifications()">Notifications</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="changePrivacy()">Privacy</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="changeTheme()">Theme</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="showStorage()">Storage</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="manageBlockedUsers()">Blocked Users</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="blockUser()">Block a User</button></li>
-        <li class="settings-item" style="padding:10px 0;"><button onclick="logout()">Logout</button></li>
-      </ul>
-    </div>
-  </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // ==================== CONFIGURATION & INITIALIZATION ====================
+        let socket = null;
+        let currentUser = null;
+        let currentTargetUser = null;
+        let onlineUsers = [];
+        let userConversations = [];
+        let isTyping = false;
+        let typingTimeout = null;
+        let selectedMessage = null;
+        
+        // Theme management functionality
+        let currentTheme = 'light';
+        let currentBgPattern = 'default';
+        
+        // Local Database for offline support
+        class LocalDB {
+            constructor() {
+                this.dbName = 'GramXDB';
+                this.version = 2;
+                this.db = null;
+            }
 
-  <!-- Emoji Picker -->
-  <div id="emoji-picker">
-    <div id="emoji-grid"></div>
-  </div>
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
 
-  <!-- Context Menu -->
-  <div id="context-menu">
-    <button onclick="copyMessage()">Copy</button>
-    <button onclick="deleteMessage()">Delete</button>
-  </div>
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve(this.db);
+                    };
 
-  <script>
-    // ==================== CONFIGURATION & INITIALIZATION ====================
-    let socket = null;
-    let currentUser = null;
-    let currentTargetUser = null;
-    let onlineUsers = [];
-    let userConversations = [];
-    let isTyping = false;
-    let typingTimeout = null;
-    let selectedMessage = null;
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        
+                        // Create object store for messages
+                        if (!db.objectStoreNames.contains('messages')) {
+                            const store = db.createObjectStore('messages', { keyPath: 'id' });
+                            store.createIndex('conversationId', 'conversationId', { unique: false });
+                            store.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
 
-    // -------- Local Database for offline support --------
-    class LocalDB {
-      constructor() {
-        this.dbName = 'GramXDB';
-        this.version = 2;
-        this.db = null;
-      }
-      async init() {
-        // minimal stub; replace with IndexedDB as needed
-        this.db = { conversations: [] };
-        return true;
-      }
-      async getConversations() {
-        return this.db ? this.db.conversations : [];
-      }
-      async saveConversation(conv) {
-        if (!this.db) return;
-        const idx = this.db.conversations.findIndex(c => c.id === conv.id);
-        if (idx >= 0) this.db.conversations[idx] = conv; else this.db.conversations.push(conv);
-      }
-    }
-    const localDB = new LocalDB();
+                        // Create object store for outbox (unsent messages)
+                        if (!db.objectStoreNames.contains('outbox')) {
+                            const store = db.createObjectStore('outbox', { keyPath: 'localId', autoIncrement: true });
+                            store.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
 
-    // -------- Offline Manager --------
-    class OfflineManager {
-      constructor() {
-        this.isOnline = navigator.onLine;
-        this.outbox = [];
-        this._bind();
-      }
-      _bind() {
-        window.addEventListener('online', () => {
-          this.isOnline = true;
-          document.getElementById('connection-status-text').textContent = 'Online';
-        });
-        window.addEventListener('offline', () => {
-          this.isOnline = false;
-          document.getElementById('connection-status-text').textContent = 'Offline (messages will send when back online)';
-        });
-      }
-      createMessageElement(message) {
-        const div = document.createElement('div');
-        div.className = 'message ' + (message.from === currentUser ? 'out' : 'in');
-        div.dataset.messageId = message.id || '';
-        const bubble = document.createElement('span');
-        bubble.className = 'bubble';
-        bubble.textContent = message.text || '';
-        div.appendChild(bubble);
-        const st = document.createElement('span');
-        st.className = 'message-status-indicator';
-        st.textContent = message.status === 'read' ? '✓✓' : '✓';
-        div.appendChild(st);
-        div.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          showContextMenu(e, message);
-          document.addEventListener('click', hideContextMenu, { once: true });
-        });
-        return div;
-      }
-    }
-    const offlineManager = new OfflineManager();
+                        // Create object store for conversation list
+                        if (!db.objectStoreNames.contains('conversations')) {
+                            db.createObjectStore('conversations', { keyPath: 'partner' });
+                        }
 
-    // ==================== UI FUNCTIONS ====================
-    function showScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      const el = document.getElementById(screenId);
-      if (el) el.classList.add('active');
-    }
+                        // Create object store for user preferences
+                        if (!db.objectStoreNames.contains('preferences')) {
+                            db.createObjectStore('preferences', { keyPath: 'key' });
+                        }
+                    };
+                });
+            }
 
-    function showTab(tabName) {
-      // Tabs headers
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      const index = tabName === 'conversations' ? 1 : 2;
-      const tabEl = document.querySelector(`.tab:nth-child(${index})`);
-      if (tabEl) tabEl.classList.add('active');
+            async storeMessage(message) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['messages'], 'readwrite');
+                    const store = transaction.objectStore('messages');
+                    const request = store.put(message);
 
-      // Tabs content
-      const conv = document.getElementById('conversations-tab');
-      const onl = document.getElementById('online-tab');
-      if (conv && onl) {
-        if (tabName === 'conversations') {
-          conv.style.display = 'block';
-          onl.style.display = 'none';
-        } else {
-          conv.style.display = 'none';
-          onl.style.display = 'block';
-          showOnlineUsers();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getMessages(conversationId, limit = 100) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['messages'], 'readonly');
+                    const store = transaction.objectStore('messages');
+                    const index = store.index('conversationId');
+                    const request = index.getAll(conversationId);
+
+                    request.onsuccess = () => {
+                        const messages = request.result
+                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                            .slice(-limit);
+                        resolve(messages);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async addToOutbox(message) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['outbox'], 'readwrite');
+                    const store = transaction.objectStore('outbox');
+                    const request = store.add({
+                        ...message,
+                        status: 'pending',
+                        timestamp: new Date(),
+                        localId: Date.now() + Math.random()
+                    });
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getOutboxMessages() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['outbox'], 'readonly');
+                    const store = transaction.objectStore('outbox');
+                    const request = store.getAll();
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async removeFromOutbox(localId) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['outbox'], 'readwrite');
+                    const store = transaction.objectStore('outbox');
+                    const request = store.delete(localId);
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async updateConversation(conversation) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['conversations'], 'readwrite');
+                    const store = transaction.objectStore('conversations');
+                    const request = store.put(conversation);
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getConversations() {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['conversations'], 'readonly');
+                    const store = transaction.objectStore('conversations');
+                    const request = store.getAll();
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async setPreference(key, value) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['preferences'], 'readwrite');
+                    const store = transaction.objectStore('preferences');
+                    const request = store.put({ key, value });
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getPreference(key) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['preferences'], 'readonly');
+                    const store = transaction.objectStore('preferences');
+                    const request = store.get(key);
+
+                    request.onsuccess = () => resolve(request.result ? request.result.value : null);
+                    request.onerror = () => reject(request.error);
+                });
+            }
         }
-      }
-    }
 
-    function showOnlineUsers() {
-      updateOnlineUsersList();
-    }
+        const localDB = new LocalDB();
 
-    function openSearch() {
-      const box = document.getElementById('search-container');
-      if (!box) return;
-      box.style.display = box.style.display === 'none' ? 'block' : 'none';
-    }
+        // Offline Manager
+        class OfflineManager {
+            constructor() {
+                this.isOnline = navigator.onLine;
+                this.outbox = [];
+                this.init();
+            }
 
-    function toggleEmojiPicker() {
-      const picker = document.getElementById('emoji-picker');
-      if (!picker) return;
-      picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
-    }
+            init() {
+                window.addEventListener('online', () => this.handleOnline());
+                window.addEventListener('offline', () => this.handleOffline());
+                this.isOnline = navigator.onLine;
+                this.updateUI();
+                this.loadOutbox();
+            }
 
-    function populateEmojiPicker() {
-      const emojiGrid = document.getElementById('emoji-grid');
-      if (!emojiGrid) return;
-      const emojis = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🫣','🤗','🫡','🤔','🫢','🤭','🤫','🤥','😶','🫠','😐','🫤','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🫥','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'];
-      emojiGrid.innerHTML = '';
-      emojis.forEach(e => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = e;
-        b.style.border = 'none';
-        b.style.background = 'none';
-        b.style.fontSize = '20px';
-        b.style.cursor = 'pointer';
-        b.addEventListener('click', () => {
-          const input = document.getElementById('private-message-input');
-          if (input) {
-            input.value += e;
+            handleOnline() {
+                this.isOnline = true;
+                this.updateUI();
+                console.log('Connection restored. Syncing...');
+                this.processOutbox();
+                
+                // Refresh data from server
+                if (socket && currentUser) {
+                    socket.emit('user-login', currentUser);
+                }
+            }
+
+            handleOffline() {
+                this.isOnline = false;
+                this.updateUI();
+                console.log('Connection lost. Working offline...');
+            }
+
+            updateUI() {
+                const statusBar = document.getElementById('connection-status-bar');
+                const statusText = document.getElementById('connection-status-text');
+                
+                if (statusBar && statusText) {
+                    if (this.isOnline) {
+                        statusBar.className = 'connection-status-bar online';
+                        statusText.textContent = 'Online';
+                        setTimeout(() => {
+                            statusBar.style.display = 'none';
+                        }, 2000);
+                    } else {
+                        statusBar.className = 'connection-status-bar offline';
+                        statusText.textContent = 'Offline - Messages will be sent when connection is restored';
+                        statusBar.style.display = 'block';
+                    }
+                }
+            }
+
+            async loadOutbox() {
+                try {
+                    this.outbox = await localDB.getOutboxMessages();
+                    this.updateOutboxBadge();
+                } catch (error) {
+                    console.error('Error loading outbox:', error);
+                }
+            }
+
+            async addToOutbox(message) {
+                try {
+                    const localId = await localDB.addToOutbox(message);
+                    this.outbox.push({ ...message, localId, status: 'pending' });
+                    this.updateOutboxBadge();
+                    this.showLocalMessage(message);
+                    return localId;
+                } catch (error) {
+                    console.error('Error adding to outbox:', error);
+                }
+            }
+
+            async processOutbox() {
+                if (this.outbox.length === 0 || !socket) return;
+
+                console.log(`Processing ${this.outbox.length} queued messages...`);
+                
+                for (const message of [...this.outbox]) {
+                    try {
+                        socket.emit('send-private-message', {
+                            sender: message.sender,
+                            receiver: message.receiver,
+                            text: message.text
+                        });
+                        
+                        await localDB.removeFromOutbox(message.localId);
+                        this.outbox = this.outbox.filter(m => m.localId !== message.localId);
+                        
+                    } catch (error) {
+                        console.error('Failed to send queued message:', error);
+                    }
+                }
+                
+                this.updateOutboxBadge();
+            }
+
+            updateOutboxBadge() {
+                const badge = document.getElementById('outbox-badge');
+                if (badge) {
+                    badge.textContent = this.outbox.length > 0 ? this.outbox.length : '';
+                    badge.style.display = this.outbox.length > 0 ? 'flex' : 'none';
+                }
+            }
+
+            showLocalMessage(message) {
+                const messageElement = this.createMessageElement({
+                    ...message,
+                    status: 'sending',
+                    isLocal: true
+                });
+                
+                const container = document.getElementById('private-messages-container');
+                if (container) {
+                    container.appendChild(messageElement);
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+
+            createMessageElement(message) {
+                const div = document.createElement('div');
+                const isMyMessage = message.sender === currentUser;
+                const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                    hour: '2-digit', minute: '2-digit' 
+                });
+                
+                let statusIcon = '';
+                if (isMyMessage) {
+                    if (message.status === 'sending') statusIcon = '🔄';
+                    else if (message.status === 'sent') statusIcon = '✓';
+                    else if (message.status === 'read') statusIcon = '✓✓';
+                }
+                
+                div.className = `message ${isMyMessage ? 'my-message' : 'their-message'} ${message.isLocal ? 'local' : ''}`;
+                div.innerHTML = `
+                    ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                    <div class="message-text">${message.text}</div>
+                    <div class="message-time">
+                        ${time}
+                        ${statusIcon ? `<span class="message-status-indicator">${statusIcon}</span>` : ''}
+                    </div>
+                `;
+                
+                // Add context menu
+                div.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, message);
+                };
+                
+                return div;
+            }
+        }
+
+        const offlineManager = new OfflineManager();
+
+        // ==================== UI FUNCTIONS ====================
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tabName === 'conversations' ? 1 : 2})`).classList.add('active');
+            
+            document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
+            document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
+        }
+
+        function showOnlineUsers() {
+            showTab('online');
+        }
+
+        function openSettings() {
+            showScreen('settings-screen');
+        }
+
+        function openSearch() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.style.display = searchContainer.style.display === 'none' ? 'block' : 'none';
+            
+            if (searchContainer.style.display === 'block') {
+                document.getElementById('search-input').focus();
+            }
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emoji-picker');
+            picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+            
+            if (picker.style.display === 'block') {
+                populateEmojiPicker();
+            }
+        }
+
+        function populateEmojiPicker() {
+            const emojiGrid = document.getElementById('emoji-grid');
+            const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🫣', '🤗', '🫡', '🤔', '🫢', '🤭', '🤫', '🤥', '😶', '🫠', '😐', '🫤', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🫥', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+            
+            emojiGrid.innerHTML = '';
+            emojis.forEach(emoji => {
+                const emojiElement = document.createElement('div');
+                emojiElement.className = 'emoji';
+                emojiElement.textContent = emoji;
+                emojiElement.onclick = () => {
+                    const input = document.getElementById('private-message-input');
+                    input.value += emoji;
+                    input.focus();
+                    toggleEmojiPicker();
+                };
+                emojiGrid.appendChild(emojiElement);
+            });
+        }
+
+        function showContextMenu(e, message) {
+            selectedMessage = message;
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            
+            // Hide menu when clicking elsewhere
+            setTimeout(() => {
+                document.addEventListener('click', hideContextMenu);
+            }, 100);
+        }
+
+        function hideContextMenu() {
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'none';
+            document.removeEventListener('click', hideContextMenu);
+        }
+
+        function copyMessage() {
+            if (selectedMessage) {
+                navigator.clipboard.writeText(selectedMessage.text);
+                hideContextMenu();
+            }
+        }
+
+        function deleteMessage() {
+            if (selectedMessage) {
+                // Implement message deletion logic
+                console.log('Delete message:', selectedMessage);
+                hideContextMenu();
+            }
+        }
+
+        function showChatOptions(e) {
+            // Implement chat options menu
+            alert('Chat options menu would appear here');
+        }
+
+        // ==================== AUTHENTICATION ====================
+        async function register() {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            if (!username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert("Passwords don't match!");
+                return;
+            }
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Registration successful! Please login.');
+                    showScreen('login-screen');
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Registration failed. Please try again.');
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!username || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = username;
+                    // Store user preference
+                    await localDB.setPreference('currentUser', username);
+                    initializeSocket();
+                    showScreen('chat-list-screen');
+                    loadLocalConversations();
+                } else {
+                    alert('Login failed: ' + result.error);
+                }
+            } catch (error) {
+                // Try offline login
+                const savedUser = await localDB.getPreference('currentUser');
+                if (savedUser === username) {
+                    currentUser = username;
+                    showScreen('chat-list-screen');
+                    loadLocalConversations();
+                    offlineManager.updateUI();
+                } else {
+                    alert('Login failed. Please check your connection.');
+                }
+            }
+        }
+
+        // ==================== SOCKET.IO & MESSAGING ====================
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('user-login', currentUser);
+                offlineManager.handleOnline();
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+                offlineManager.handleOffline();
+            });
+
+            socket.on('online-users', (users) => {
+                onlineUsers = users.filter(user => user !== currentUser);
+                updateOnlineUsersList();
+            });
+
+            socket.on('user-conversations', (conversations) => {
+                userConversations = conversations;
+                updateConversationsList();
+                
+                // Store conversations locally
+                conversations.forEach(conv => {
+                    localDB.updateConversation(conv);
+                });
+            });
+
+            socket.on('user-online', (username) => {
+                if (username !== currentUser && !onlineUsers.includes(username)) {
+                    onlineUsers.push(username);
+                    updateOnlineUsersList();
+                    
+                    // Update status in chat if open
+                    if (currentTargetUser === username) {
+                        document.getElementById('chat-target-status').textContent = 'online';
+                        document.getElementById('chat-target-status').style.color = '#4CAF50';
+                    }
+                }
+            });
+
+            socket.on('user-offline', (username) => {
+                onlineUsers = onlineUsers.filter(user => user !== username);
+                updateOnlineUsersList();
+                
+                // Update status in chat if open
+                if (currentTargetUser === username) {
+                    document.getElementById('chat-target-status').textContent = 'offline';
+                    document.getElementById('chat-target-status').style.color = '#666';
+                }
+            });
+
+            socket.on('conversation-history', (data) => {
+                displayMessages(data.messages);
+                
+                // Store messages locally
+                data.messages.forEach(message => {
+                    localDB.storeMessage(message);
+                });
+            });
+
+            socket.on('new-private-message', async (message) => {
+                // Store message locally
+                await localDB.storeMessage(message);
+                
+                // Update conversation list
+                if (socket) {
+                    socket.emit('user-login', currentUser);
+                }
+                
+                // Display message if in the right chat
+                if (message.sender === currentTargetUser || message.receiver === currentTargetUser) {
+                    addPrivateMessageToChat(message);
+                }
+            });
+
+            socket.on('message-status', (data) => {
+                // Update message status (sent/read)
+                updateMessageStatus(data.messageId, data.status);
+            });
+
+            socket.on('typing-start', (data) => {
+                if (data.sender === currentTargetUser) {
+                    showTypingIndicator();
+                }
+            });
+
+            socket.on('typing-stop', (data) {
+                if (data.sender === currentTargetUser) {
+                    hideTypingIndicator();
+                }
+            });
+        }
+
+        async function loadLocalConversations() {
+            try {
+                const conversations = await localDB.getConversations();
+                if (conversations.length > 0) {
+                    userConversations = conversations;
+                    updateConversationsList();
+                }
+            } catch (error) {
+                console.error('Error loading local conversations:', error);
+            }
+        }
+
+        function updateConversationsList() {
+            const container = document.getElementById('conversations-tab');
+            const emptyState = document.getElementById('no-conversations');
+            
+            if (userConversations.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            userConversations.forEach(conv => {
+                const convElement = document.createElement('div');
+                convElement.className = 'conversation-item';
+                convElement.onclick = () => startPrivateChat(conv.partner);
+                
+                const lastMessageTime = conv.lastMessage ? new Date(conv.lastMessage.timestamp).toLocaleTimeString([], { 
+                    hour: '2-digit', minute: '2-digit' 
+                }) : '';
+                
+                const lastMessageText = conv.lastMessage ? 
+                    (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 
+                    'No messages yet';
+                
+                convElement.innerHTML = `
+                    <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
+                    <div class="conversation-info">
+                        <div class="conversation-name">${conv.partner}</div>
+                        <div class="conversation-preview">${lastMessageText}</div>
+                    </div>
+                    <div class="conversation-meta">
+                        <div class="conversation-time">${lastMessageTime}</div>
+                        ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(convElement);
+            });
+        }
+
+        function updateOnlineUsersList() {
+            const container = document.getElementById('online-tab');
+            const emptyState = document.getElementById('no-online-users');
+            
+            if (onlineUsers.length === 0) {
+                emptyState.style.display = 'block';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            onlineUsers.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'user-item';
+                userElement.onclick = () => startPrivateChat(user);
+                
+                userElement.innerHTML = `
+                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user}</div>
+                        <div class="user-status"><span class="online-dot"></span>Online</div>
+                    </div>
+                `;
+                
+                container.appendChild(userElement);
+            });
+        }
+
+        async function startPrivateChat(targetUser) {
+            currentTargetUser = targetUser;
+            document.getElementById('chat-target-name').textContent = targetUser;
+            
+            // Check if target is online
+            const isOnline = onlineUsers.includes(targetUser);
+            document.getElementById('chat-target-status').textContent = isOnline ? 'online' : 'offline';
+            document.getElementById('chat-target-status').style.color = isOnline ? '#4CAF50' : '#666';
+            
+            // Load messages from local storage first
+            const conversationId = getConversationId(currentUser, targetUser);
+            const localMessages = await localDB.getMessages(conversationId);
+            displayMessages(localMessages);
+            
+            // Then try to get updated messages from server
+            if (socket && offlineManager.isOnline) {
+                socket.emit('join-conversation', {
+                    currentUser: currentUser,
+                    targetUser: targetUser
+                });
+            }
+            
+            showScreen('private-chat-screen');
+        }
+
+        function getConversationId(user1, user2) {
+            return [user1, user2].sort().join('_');
+        }
+
+        function displayMessages(messages) {
+            const container = document.getElementById('private-messages-container');
+            container.innerHTML = '';
+            
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
+                return;
+            }
+            
+            messages.forEach(message => {
+                addPrivateMessageToChat(message);
+            });
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addPrivateMessageToChat(message) {
+            const container = document.getElementById('private-messages-container');
+            const messageDiv = offlineManager.createMessageElement(message);
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateMessageStatus(messageId, status) {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => {
+                if (msg.dataset.messageId === messageId) {
+                    const statusElement = msg.querySelector('.message-status-indicator');
+                    if (statusElement) {
+                        statusElement.textContent = status === 'read' ? '✓✓' : '✓';
+                    }
+                }
+            });
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            indicator.style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            indicator.style.display = 'none';
+        }
+
+        function handleMessageInput() {
+            const input = document.getElementById('private-message-input');
+            
+            // Auto-resize textarea
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+            
+            // Handle typing indicators
+            if (!isTyping && socket && currentTargetUser) {
+                isTyping = true;
+                socket.emit('typing-start', { receiver: currentTargetUser });
+            }
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                if (socket && currentTargetUser) {
+                    isTyping = false;
+                    socket.emit('typing-stop', { receiver: currentTargetUser });
+                }
+            }, 1000);
+        }
+
+        async function sendPrivateMessage() {
+            const input = document.getElementById('private-message-input');
+            const text = input.value.trim();
+            
+            if (!text || !currentTargetUser) return;
+            
+            const messageData = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                text: text,
+                timestamp: new Date(),
+                conversationId: getConversationId(currentUser, currentTargetUser)
+            };
+            
+            if (offlineManager.isOnline && socket) {
+                // Send immediately if online
+                socket.emit('send-private-message', messageData);
+            } else {
+                // Store in outbox if offline
+                await offlineManager.addToOutbox(messageData);
+            }
+            
+            // Reset input
+            input.value = '';
+            input.style.height = 'auto';
             input.focus();
-          }
-        });
-        emojiGrid.appendChild(b);
-      });
-    }
-
-    function showContextMenu(e, message) {
-      selectedMessage = message;
-      const menu = document.getElementById('context-menu');
-      if (!menu) return;
-      menu.style.display = 'block';
-      menu.style.left = e.pageX + 'px';
-      menu.style.top = e.pageY + 'px';
-    }
-
-    function hideContextMenu() {
-      const menu = document.getElementById('context-menu');
-      if (menu) menu.style.display = 'none';
-      document.removeEventListener('click', hideContextMenu);
-    }
-
-    function copyMessage() {
-      if (selectedMessage?.text) {
-        navigator.clipboard.writeText(selectedMessage.text);
-        hideContextMenu();
-      }
-    }
-
-    function deleteMessage() {
-      if (selectedMessage) {
-        // Implement deletion logic here (and update UI)
-        console.log('Delete message:', selectedMessage);
-        hideContextMenu();
-      }
-    }
-
-    // ==================== AUTHENTICATION ====================
-    async function register() {
-      const username = document.getElementById('register-username')?.value;
-      const password = document.getElementById('register-password')?.value;
-      console.log('register()', username, password);
-      // TODO: POST /register
-    }
-
-    async function login() {
-      const username = document.getElementById('login-username')?.value?.trim();
-      const password = document.getElementById('login-password')?.value;
-      if (!username) return alert('Enter username');
-      currentUser = username;
-      showScreen('chat-list-screen');
-      // Optionally: await initializeSocket();
-      await loadLocalConversations();
-    }
-
-    // ==================== SOCKET.IO & MESSAGING ====================
-    function initializeSocket() {
-      // Requires <script src="/socket.io/socket.io.js"></script> served by your backend
-      if (typeof io !== 'function') {
-        console.warn('socket.io client not found on page; skipping initializeSocket()');
-        return;
-      }
-      socket = io();
-      socket.emit('user-login', currentUser);
-    }
-
-    async function loadLocalConversations() {
-      try {
-        const conversations = await localDB.getConversations();
-        if (conversations && conversations.length > 0) {
-          userConversations = conversations;
+            
+            // Stop typing indicator
+            if (socket && currentTargetUser) {
+                isTyping = false;
+                socket.emit('typing-stop', { receiver: currentTargetUser });
+            }
         }
-        updateConversationsList();
-      } catch (error) {
-        console.error('Error loading local conversations:', error);
-      }
-    }
 
-    function updateConversationsList() {
-      const container = document.getElementById('conversations-tab');
-      const emptyState = document.getElementById('no-conversations');
-      if (!container || !emptyState) return;
-
-      container.querySelectorAll('.conversation-item').forEach(n => n.remove());
-      if (!userConversations.length) {
-        emptyState.style.display = 'block';
-        return;
-      }
-      emptyState.style.display = 'none';
-
-      userConversations.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'conversation-item';
-        item.style.padding = '10px 12px';
-        item.style.borderBottom = '1px solid var(--border-color)';
-        item.textContent = c.name || c.id || 'Conversation';
-        item.addEventListener('click', () => {
-          const target = (c.participants || []).find(u => u !== currentUser) || c.name || 'Unknown';
-          startPrivateChat(target);
-        });
-        container.appendChild(item);
-      });
-    }
-
-    function updateOnlineUsersList() {
-      const container = document.getElementById('online-tab');
-      const emptyState = document.getElementById('no-online-users');
-      if (!container || !emptyState) return;
-
-      container.querySelectorAll('.user-item').forEach(n => n.remove());
-      if (!onlineUsers.length) {
-        emptyState.style.display = 'block';
-        return;
-      }
-      emptyState.style.display = 'none';
-
-      onlineUsers.forEach(u => {
-        const item = document.createElement('div');
-        item.className = 'user-item';
-        item.style.padding = '10px 12px';
-        item.style.borderBottom = '1px solid var(--border-color)';
-        item.textContent = u;
-        item.addEventListener('click', () => startPrivateChat(u));
-        container.appendChild(item);
-      });
-    }
-
-    async function startPrivateChat(targetUser) {
-      currentTargetUser = targetUser;
-      const nameEl = document.getElementById('chat-target-name');
-      if (nameEl) nameEl.textContent = targetUser;
-      showScreen('private-chat-screen');
-
-      // Load existing messages for this conversation (from local for now)
-      const convId = getConversationId(currentUser, currentTargetUser);
-      const conv = userConversations.find(c => c.id === convId);
-      displayMessages(conv?.messages || []);
-    }
-
-    function getConversationId(user1, user2) {
-      return [user1, user2].sort().join('_');
-    }
-
-    function displayMessages(messages) {
-      const container = document.getElementById('private-messages-container');
-      if (!container) return;
-      container.innerHTML = '';
-      messages.forEach(msg => addPrivateMessageToChat(msg));
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function addPrivateMessageToChat(message) {
-      const container = document.getElementById('private-messages-container');
-      if (!container) return;
-      const messageDiv = offlineManager.createMessageElement(message);
-      container.appendChild(messageDiv);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function updateMessageStatus(messageId, status) {
-      const messages = document.querySelectorAll('.message');
-      messages.forEach(msg => {
-        if (msg.dataset.messageId === String(messageId)) {
-          const statusElement = msg.querySelector('.message-status-indicator');
-          if (statusElement) statusElement.textContent = status === 'read' ? '✓✓' : '✓';
+        function handlePrivateKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendPrivateMessage();
+            }
         }
-      });
-    }
 
-    function showTypingIndicator() {
-      const indicator = document.getElementById('typing-indicator');
-      if (indicator) indicator.style.display = 'block';
-    }
-
-    function hideTypingIndicator() {
-      const indicator = document.getElementById('typing-indicator');
-      if (indicator) indicator.style.display = 'none';
-    }
-
-    function handleMessageInput() {
-      const input = document.getElementById('private-message-input');
-      if (!input) return;
-      // debounce typing indicator if needed
-    }
-
-    async function sendPrivateMessage() {
-      const input = document.getElementById('private-message-input');
-      if (!input) return;
-      const text = input.value.trim();
-      if (!text || !currentUser || !currentTargetUser) return;
-
-      const message = {
-        id: String(Date.now()),
-        text, from: currentUser, to: currentTargetUser,
-        status: 'sent', ts: Date.now()
-      };
-      addPrivateMessageToChat(message);
-      input.value = '';
-
-      // TODO: emit via socket or POST to server
-      if (socket && offlineManager.isOnline) {
-        // socket.emit('private-message', message);
-      } else {
-        offlineManager.outbox.push(message);
-      }
-    }
-
-    function handlePrivateKeyPress(event) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendPrivateMessage();
-      }
-    }
-
-    function backToChatList() {
-      showScreen('chat-list-screen');
-      if (socket && offlineManager.isOnline) {
-        socket.emit('user-login', currentUser);
-      }
-    }
-
-    // ==================== SETTINGS FUNCTIONS ====================
-    async function openSettings() {
-      try {
-        // Load user settings from server
-        const response = await fetch(`/user-settings/${currentUser}`);
-        const result = await response.json();
-        updateSettingsUI(result?.settings || {});
-        showScreen('settings-screen');
-      } catch (e) {
-        console.error('openSettings failed:', e);
-        showScreen('settings-screen');
-      }
-    }
-
-    function updateSettingsUI(settings) {
-      window.userSettings = settings || {};
-    }
-
-    async function changeUsername() {
-      const newUsername = prompt('Enter new username:');
-      if (newUsername && newUsername !== currentUser) {
-        try {
-          const response = await fetch('/change-username', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ currentUsername: currentUser, newUsername })
-          });
-          const res = await response.json();
-          if (res?.ok) {
-            currentUser = newUsername;
-            alert('Username changed.');
-          } else {
-            alert(res?.message || 'Failed to change username.');
-          }
-        } catch (e) {
-          console.error(e);
-          alert('Error changing username.');
+        function backToChatList() {
+            showScreen('chat-list-screen');
+            // Refresh conversations
+            if (socket && offlineManager.isOnline) {
+                socket.emit('user-login', currentUser);
+            }
         }
-      }
-    }
-
-    async function changeNotifications() {
-      const newSetting = !(window.userSettings?.notifications);
-      try {
-        const res = await fetch('/settings/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: currentUser, notifications: newSetting })
-        });
-        const data = await res.json();
-        if (data?.ok) {
-          window.userSettings.notifications = newSetting;
-          alert('Notifications updated.');
+        
+        function logout() {
+            currentUser = null;
+            currentTargetUser = null;
+            onlineUsers = [];
+            userConversations = [];
+            
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+            
+            showScreen('login-screen');
         }
-      } catch (e) {
-        console.error(e);
-      }
-    }
 
-    async function changePrivacy() {
-      const privacyOptions = [
-        { value: 'everyone', label: 'Everyone' },
-        { value: 'contacts', label: 'My Contacts' },
-        { value: 'nobody',   label: 'Nobody' }
-      ];
-      const choice = prompt('Privacy (everyone / contacts / nobody):', window.userSettings?.privacy || 'everyone');
-      const valid = privacyOptions.map(o => o.value);
-      if (!choice || !valid.includes(choice)) return;
-      try {
-        const res = await fetch('/settings/privacy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: currentUser, privacy: choice })
-        });
-        const data = await res.json();
-        if (data?.ok) {
-          window.userSettings.privacy = choice;
-          alert('Privacy updated.');
+        // ==================== THEME FUNCTIONS ====================
+        function changeTheme(theme) {
+            document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple', 'theme-green', 'theme-sunset');
+            document.body.classList.add(`theme-${theme}`);
+            currentTheme = theme;
+            
+            // Update active buttons
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.theme-btn.${theme}`).classList.add('active');
+            
+            // Save to localStorage
+            localStorage.setItem('gramX-theme', theme);
         }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function changeTheme() {
-      const themes = ['light', 'dark', 'system'];
-      const currentTheme = window.userSettings?.theme || 'light';
-      const next = prompt('Theme (light / dark):', currentTheme) || currentTheme;
-      const theme = themes.includes(next) ? next : 'light';
-      window.userSettings = { ...(window.userSettings || {}), theme };
-      applyTheme(theme);
-      localStorage.setItem('gramX-theme', theme);
-    }
-
-    function applyTheme(theme) {
-      document.body.classList.remove('theme-light', 'theme-dark');
-      if (theme === 'dark') document.body.classList.add('theme-dark');
-      else document.body.classList.add('theme-light');
-    }
-
-    async function showStorage() {
-      try {
-        const estimate = await navigator.storage.estimate();
-        const usageMB = (estimate.usage / (1024 * 1024)).toFixed(2);
-        const quotaMB = (estimate.quota / (1024 * 1024)).toFixed(2);
-        alert(`Storage: ${usageMB} MB of ${quotaMB} MB used`);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function manageBlockedUsers() {
-      try {
-        const response = await fetch(`/blocked-users/${currentUser}`);
-        const result = await response.json();
-        alert(`Blocked users: ${(result?.users || []).join(', ') || 'None'}`);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function blockUser() {
-      const userToBlock = prompt('Enter username to block:');
-      if (userToBlock && userToBlock !== currentUser) {
-        try {
-          const userCheck = await fetch(`/check-user/${userToBlock}`);
-          const userResult = await userCheck.json();
-          if (!userResult?.exists) return alert('User not found.');
-          const res = await fetch('/block-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ by: currentUser, target: userToBlock })
-          });
-          const data = await res.json();
-          if (data?.ok) alert('User blocked.');
-        } catch (e) {
-          console.error(e);
+        
+        function openThemeCustomization() {
+            document.getElementById('theme-modal').style.display = 'flex';
         }
-      }
-    }
+        
+        function closeThemeModal() {
+            document.getElementById('theme-modal').style.display = 'none';
+        }
+        
+        function selectThemeOption(theme) {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            document.querySelector(`.theme-option.${theme}`).classList.add('active');
+            
+            // Preview the theme
+            document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple', 'theme-green', 'theme-sunset');
+            document.body.classList.add(`theme-${theme}`);
+        }
+        
+        function selectBgPattern(pattern) {
+            document.querySelectorAll('.bg-pattern').forEach(bg => {
+                bg.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentBgPattern = pattern;
+        }
+        
+        function applyThemeChanges() {
+            const selectedTheme = document.querySelector('.theme-option.active').classList[1];
+            changeTheme(selectedTheme);
+            
+            // Apply background pattern
+            applyBgPattern(currentBgPattern);
+            
+            // Save settings
+            localStorage.setItem('gramX-theme', selectedTheme);
+            localStorage.setItem('gramX-bgPattern', currentBgPattern);
+            
+            closeThemeModal();
+        }
+        
+        function applyBgPattern(pattern) {
+            const authContainer = document.querySelector('.auth-container');
+            const messagesContainer = document.querySelector('.messages-container');
+            
+            // Reset all patterns
+            authContainer.style.backgroundImage = '';
+            if (messagesContainer) messagesContainer.style.backgroundImage = '';
+            
+            switch(pattern) {
+                case 'dots':
+                    authContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Ccircle cx=\"50\" cy=\"50\" r=\"5\" fill=\"%230088cc\" fill-opacity=\"0.1\"/%3E%3C/svg%3E')";
+                    if (messagesContainer) messagesContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Ccircle cx=\"50\" cy=\"50\" r=\"5\" fill=\"%230088cc\" fill-opacity=\"0.1\"/%3E%3C/svg%3E')";
+                    break;
+                case 'grid':
+                    authContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 50h100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3Cpath d=\"M50 0v100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3C/svg%3E')";
+                    if (messagesContainer) messagesContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 50h100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3Cpath d=\"M50 0v100\" stroke=\"%230088cc\" stroke-opacity=\"0.1\" stroke-width=\"2\"/%3E%3C/svg%3E')";
+                    break;
+                case 'checker':
+                    authContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h50v50H0z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3Cpath d=\"M50 50h50v50H50z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3C/svg%3E')";
+                    if (messagesContainer) messagesContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h50v50H0z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3Cpath d=\"M50 50h50v50H50z\" fill=\"%230088cc\" fill-opacity=\"0.05\"/%3E%3C/svg%3E')";
+                    break;
+                case 'diagonal':
+                    authContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 0l100 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3Cpath d=\"M100 0L0 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3C/svg%3E')";
+                    if (messagesContainer) messagesContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M0 0h100v100H0z\" fill=\"none\"/%3E%3Cpath d=\"M0 0l100 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3Cpath d=\"M100 0L0 100\" stroke=\"%230088cc\" stroke-opacity=\"0.05\" stroke-width=\"2\"/%3E%3C/svg%3E')";
+                    break;
+                case 'none':
+                    authContainer.style.backgroundImage = 'none';
+                    if (messagesContainer) messagesContainer.style.backgroundImage = 'none';
+                    break;
+                default:
+                    authContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230088cc' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E')";
+                    if (messagesContainer) messagesContainer.style.backgroundImage = "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%230088cc' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E')";
+            }
+        }
+        
+        // ==================== SETTINGS FUNCTIONS ====================
+        function changeUsername() {
+            const newUsername = prompt('Enter new username:');
+            if (newUsername) {
+                alert('Username change functionality would be implemented here');
+            }
+        }
+        
+        function changeNotifications() {
+            alert('Notification settings would appear here');
+        }
+        
+        function changePrivacy() {
+            alert('Privacy settings would appear here');
+        }
+        
+        function changeChatBackground() {
+            alert('Chat background customization would appear here');
+        }
+        
+        function changeFontSize() {
+            alert('Font size adjustment would appear here');
+        }
+        
+        function manageStorage() {
+            alert('Storage management would appear here');
+        }
+        
+        function showHelp() {
+            alert('Help and support would appear here');
+        }
 
-    function logout() {
-      currentUser = null;
-      currentTargetUser = null;
-      onlineUsers = [];
-      userConversations = [];
-      showScreen('auth-screen');
-    }
+        // ==================== INITIALIZATION ====================
+        async function init() {
+            try {
+                // Initialize local database
+                await localDB.init();
+                
+                // Check if user was logged in
+                const savedUser = await localDB.getPreference('currentUser');
+                if (savedUser) {
+                    document.getElementById('login-username').value = savedUser;
+                }
+                
+                // Set up emoji picker
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('#emoji-picker') && !e.target.closest('.emoji-button')) {
+                        document.getElementById('emoji-picker').style.display = 'none';
+                    }
+                });
+                
+                // Load saved theme on page load
+                const savedTheme = localStorage.getItem('gramX-theme') || 'light';
+                const savedBgPattern = localStorage.getItem('gramX-bgPattern') || 'default';
+                
+                changeTheme(savedTheme);
+                applyBgPattern(savedBgPattern);
+                
+                // Set active pattern button
+                document.querySelectorAll('.bg-pattern').forEach(bg => {
+                    bg.classList.remove('active');
+                });
+                document.querySelector(`.bg-pattern[onclick="selectBgPattern('${savedBgPattern}')"]`).classList.add('active');
+                
+                console.log('GramX initialized successfully');
+                
+            } catch (error) {
+                console.error('Failed to initialize GramX:', error);
+            }
+        }
 
-    // ==================== INITIALIZATION ====================
-    async function init() {
-      try {
-        await localDB.init();
-        populateEmojiPicker();
+        // Start initialization when page loads
+        window.onload = init;
 
-        // Load saved theme
-        const savedTheme = localStorage.getItem('gramX-theme') || 'light';
-        applyTheme(savedTheme);
-
-        // Prefill for testing if inputs exist
-        const u = document.getElementById('login-username');
-        const p = document.getElementById('login-password');
-        if (u) u.value = 'user1';
-        if (p) p.value = 'pass';
-      } catch (e) {
-        console.error('init failed:', e);
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', init);
-
-    // ==================== NOTES FOR BACKEND ROUTES ====================
-    // Add these to your server.js (example Express/Mongo):
-    //
-    // app.get('/check-user/:username', async (req, res) => { /* return {exists:true/false} */ });
-    // app.post('/change-username', async (req, res) => { /* rename user; return {ok:true} */ });
-    // app.get('/user-settings/:username', async (req, res) => { /* return {settings:{...}} */ });
-    // app.get('/blocked-users/:username', async (req, res) => { /* return {users:[...]} */ });
-    // app.post('/block-user', async (req, res) => { /* block user; return {ok:true} */ });
-  </script>
+        // Pre-fill for testing
+        document.getElementById('login-username').value = 'user1';
+        document.getElementById('login-password').value = 'pass';
+    </script>
 </body>
 </html>
