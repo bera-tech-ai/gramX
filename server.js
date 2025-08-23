@@ -111,6 +111,7 @@ app.post('/register', upload.single('profilePicture'), async (req, res) => {
     try {
         const { username, email, password, bio } = req.body;
         
+        // Check if user exists
         const existingUser = await User.findOne({ 
             $or: [{ email }, { username }] 
         });
@@ -119,7 +120,10 @@ app.post('/register', upload.single('profilePicture'), async (req, res) => {
             return res.json({ success: false, error: 'User already exists' });
         }
 
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
+        
+        // Handle profile picture
         const profilePicture = req.file ? `/uploads/profiles/${req.file.filename}` : '';
 
         const user = new User({
@@ -131,7 +135,16 @@ app.post('/register', upload.single('profilePicture'), async (req, res) => {
         });
 
         await user.save();
-        res.json({ success: true, user: { id: user._id, username, email, profilePicture, bio } });
+        res.json({ 
+            success: true, 
+            user: { 
+                id: user._id, 
+                username: user.username, 
+                email: user.email, 
+                profilePicture: user.profilePicture, 
+                bio: user.bio 
+            } 
+        });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }
@@ -151,6 +164,7 @@ app.post('/login', async (req, res) => {
             return res.json({ success: false, error: 'Invalid password' });
         }
 
+        // Update online status
         user.isOnline = true;
         user.lastSeen = new Date();
         await user.save();
@@ -183,10 +197,14 @@ app.get('/users', async (req, res) => {
 app.get('/conversations/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
+        
         const conversations = await Message.aggregate([
             {
                 $match: {
-                    $or: [{ sender: mongoose.Types.ObjectId(userId) }, { receiver: mongoose.Types.ObjectId(userId) }]
+                    $or: [
+                        { sender: mongoose.Types.ObjectId(userId) },
+                        { receiver: mongoose.Types.ObjectId(userId) }
+                    ]
                 }
             },
             {
@@ -199,10 +217,12 @@ app.get('/conversations/:userId', async (req, res) => {
                     unreadCount: {
                         $sum: {
                             $cond: [
-                                { $and: [
-                                    { $eq: ["$receiver", mongoose.Types.ObjectId(userId)] },
-                                    { $eq: ["$read", false] }
-                                ]},
+                                { 
+                                    $and: [
+                                        { $eq: ["$receiver", mongoose.Types.ObjectId(userId)] },
+                                        { $eq: ["$read", false] }
+                                    ]
+                                },
                                 1,
                                 0
                             ]
@@ -254,13 +274,25 @@ app.get('/user/profile', async (req, res) => {
 app.put('/user/profile', upload.single('profilePicture'), async (req, res) => {
     try {
         const { userId, username, bio, phoneNumber, theme, notificationEnabled } = req.body;
-        const updateData = { username, bio, phoneNumber, theme, notificationEnabled };
+        
+        const updateData = { 
+            username, 
+            bio, 
+            phoneNumber, 
+            theme, 
+            notificationEnabled 
+        };
         
         if (req.file) {
             updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
         }
 
-        const user = await User.findByIdAndUpdate(userId, updateData, { new: true }).select('-password');
+        const user = await User.findByIdAndUpdate(
+            userId, 
+            updateData, 
+            { new: true }
+        ).select('-password');
+        
         res.json({ success: true, user });
     } catch (error) {
         res.json({ success: false, error: error.message });
@@ -290,6 +322,7 @@ io.on('connection', (socket) => {
             activeUsers.set(socket.id, userData);
             userSockets.set(userData.id, socket.id);
 
+            // Update user online status in DB
             await User.findByIdAndUpdate(userData.id, { 
                 isOnline: true,
                 lastSeen: new Date()
@@ -300,17 +333,22 @@ io.on('connection', (socket) => {
                 .sort({ isOnline: -1, username: 1 });
             
             // Get online users for status updates
-            const onlineUsers = allUsers.filter(user => user.isOnline && user._id.toString() !== userData.id);
+            const onlineUsers = allUsers.filter(user => 
+                user.isOnline && user._id.toString() !== userData.id
+            );
             
             // Send both all users and online users
             socket.emit('all-users', allUsers);
             socket.emit('online-users', onlineUsers);
 
-            // Send user's conversation history
+            // Get user's conversation history
             const userConversations = await Message.aggregate([
                 {
                     $match: {
-                        $or: [{ sender: mongoose.Types.ObjectId(userData.id) }, { receiver: mongoose.Types.ObjectId(userData.id) }]
+                        $or: [
+                            { sender: mongoose.Types.ObjectId(userData.id) },
+                            { receiver: mongoose.Types.ObjectId(userData.id) }
+                        ]
                     }
                 },
                 {
@@ -323,15 +361,33 @@ io.on('connection', (socket) => {
                         unreadCount: {
                             $sum: {
                                 $cond: [
-                                    { $and: [
-                                        { $eq: ["$receiver", mongoose.Types.ObjectId(userData.id)] },
-                                        { $eq: ["$read", false] }
-                                    ]},
+                                    { 
+                                        $and: [
+                                            { $eq: ["$receiver", mongoose.Types.ObjectId(userData.id)] },
+                                            { $eq: ["$read", false] }
+                                        ]
+                                    },
                                     1,
                                     0
                                 ]
                             }
                         }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "lastMessage.sender",
+                        foreignField: "_id",
+                        as: "senderInfo"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "lastMessage.receiver",
+                        foreignField: "_id",
+                        as: "receiverInfo"
                     }
                 }
             ]);
@@ -348,11 +404,13 @@ io.on('connection', (socket) => {
             const { currentUser, targetUser } = data;
             const conversationId = getConversationId(currentUser.id, targetUser.id);
 
+            // Get conversation messages
             const messages = await Message.find({ conversationId })
                 .populate('sender', 'username profilePicture')
                 .populate('receiver', 'username profilePicture')
                 .sort({ timestamp: 1 });
 
+            // Mark messages as read
             await Message.updateMany(
                 {
                     conversationId,
@@ -392,8 +450,12 @@ io.on('connection', (socket) => {
             });
 
             await message.save();
+            
+            // Populate sender and receiver details
             await message.populate('sender', 'username profilePicture');
             await message.populate('receiver', 'username profilePicture');
+
+            console.log('Message saved:', message);
 
             // Send to sender
             socket.emit('new-private-message', message);
@@ -435,13 +497,16 @@ io.on('connection', (socket) => {
                 activeUsers.delete(socket.id);
                 userSockets.delete(userData.id);
 
+                // Update user offline status in DB
                 await User.findByIdAndUpdate(userData.id, { 
                     isOnline: false,
                     lastSeen: new Date()
                 });
 
-                // Notify all users that this user went offline
+                // Get updated user list
                 const allUsers = await User.find({}, 'username profilePicture isOnline lastSeen bio');
+                
+                // Notify all users about the change
                 io.emit('all-users', allUsers);
                 
                 const onlineUsers = allUsers.filter(user => user.isOnline);
@@ -459,4 +524,25 @@ server.listen(PORT, () => {
     console.log(`📱 Open http://localhost:${PORT} in your browser`);
     console.log(`💾 MongoDB Atlas: CONNECTED`);
     console.log(`👨‍💻 Developer: Bruce Bera (+254743982206)`);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('Shutting down server...');
+    
+    // Set all users offline
+    try {
+        await User.updateMany({ isOnline: true }, { 
+            isOnline: false,
+            lastSeen: new Date()
+        });
+        console.log('All users set to offline');
+    } catch (error) {
+        console.error('Error setting users offline:', error);
+    }
+    
+    server.close(() => {
+        console.log('Server shut down');
+        process.exit(0);
+    });
 });
