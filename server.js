@@ -1,11 +1,8 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { MongoClient, ObjectId } = require('mongodb'); // 1. Import MongoClient and ObjectId
 
 const app = express();
 const server = http.createServer(app);
@@ -14,535 +11,295 @@ const io = socketIo(server);
 // Middleware
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
 
-// Ensure uploads directory exists
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
-}
-if (!fs.existsSync('uploads/profiles')) {
-    fs.mkdirSync('uploads/profiles');
-}
+// 2. MongoDB Connection Setup
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://ellyongiro8:QwXDXE6tyrGpUTNb@cluster0.tyxcmm9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const DB_NAME = 'gramXDB'; // You can change this to whatever you want
+const COLLECTIONS = {
+    USERS: 'users',
+    CONVERSATIONS: 'conversations',
+    MESSAGES: 'messages' // Alternative approach: storing messages in separate collection
+};
 
-// MongoDB Connection
-const MONGODB_URI = 'mongodb+srv://ellyongiro8:QwXDXE6tyrGpUTNb@cluster0.tyxcmm9.mongodb.net/gramx?retryWrites=true&w=majority&appName=Cluster0';
+let db; // This will hold our database connection
 
-mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    console.log('✅ Connected to MongoDB Atlas');
-})
-.catch((error) => {
-    console.log('❌ MongoDB connection error:', error);
-});
-
-// MongoDB Schemas
-const userSchema = new mongoose.Schema({
-    username: { type: String, unique: true, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    profilePicture: { type: String, default: '' },
-    bio: { type: String, default: '' },
-    isOnline: { type: Boolean, default: false },
-    lastSeen: { type: Date, default: Date.now },
-    createdAt: { type: Date, default: Date.now },
-    phoneNumber: { type: String, default: '' },
-    theme: { type: String, enum: ['light', 'dark', 'system'], default: 'light' },
-    notificationEnabled: { type: Boolean, default: true }
-});
-
-const messageSchema = new mongoose.Schema({
-    text: { type: String, required: true },
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    conversationId: { type: String, required: true },
-    messageType: { type: String, enum: ['text', 'image', 'file', 'voice'], default: 'text' },
-    fileUrl: { type: String, default: '' },
-    read: { type: Boolean, default: false },
-    readAt: { type: Date },
-    timestamp: { type: Date, default: Date.now },
-    edited: { type: Boolean, default: false },
-    editedAt: { type: Date }
-});
-
-const User = mongoose.model('User', userSchema);
-const Message = mongoose.model('Message', messageSchema);
-
-// Multer configuration
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        if (file.fieldname === 'profilePicture') {
-            cb(null, 'uploads/profiles/');
-        } else {
-            cb(null, 'uploads/');
-        }
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
+// 3. Connect to MongoDB
+async function connectToDatabase() {
+    try {
+        const client = new MongoClient(MONGODB_URI);
+        await client.connect();
+        console.log('✅ Connected successfully to MongoDB Atlas');
+        
+        db = client.db(DB_NAME);
+        
+        // Create indexes for better performance
+        await db.collection(COLLECTIONS.USERS).createIndex({ username: 1 }, { unique: true });
+        await db.collection(COLLECTIONS.MESSAGES).createIndex({ conversationId: 1, timestamp: 1 });
+        await db.collection(COLLECTIONS.MESSAGES).createIndex({ receiver: 1, read: 1 });
+        
+        return client;
+    } catch (error) {
+        console.error('❌ Failed to connect to MongoDB', error);
+        process.exit(1);
     }
-});
+}
 
-const upload = multer({ 
-    storage: storage,
-    limits: {
-        fileSize: 10 * 1024 * 1024
-    }
-});
+// In-memory storage for active users (still useful for real-time features)
+const activeUsers = new Map(); // socket.id -> {username, userId}
+const userSockets = new Map(); // username -> socket.id
 
-// In-memory for active sessions
-const activeUsers = new Map();
-const userSockets = new Map();
-
-// Helper functions
+// Generate conversation ID for two users (unchanged)
 function getConversationId(user1, user2) {
     return [user1, user2].sort().join('_');
 }
 
-// Serve main page
+// 4. Modified: Get user's conversation partners from DB
+async function getUserConversations(username) {
+    try {
+        // Get all conversations where this user is involved
+        const userConversations = [];
+        
+        // Get distinct conversation partners from messages
+        const conversations = await db.collection(COLLECTIONS.MESSAGES)
+            .aggregate([
+                { $match: { $or: [{ sender: username }, { receiver: username }] } },
+                { $group: { _id: "$conversationId" } }
+            ])
+            .toArray();
+        
+        // For each conversation, get the last message and unread count
+        for (const conv of conversations) {
+            const conversationId = conv._id;
+            const usersInConv = conversationId.split('_');
+            const partner = usersInConv.find(user => user !== username);
+            
+            if (partner) {
+                // Get last message
+                const lastMessage = await db.collection(COLLECTIONS.MESSAGES)
+                    .find({ conversationId })
+                    .sort({ timestamp: -1 })
+                    .limit(1)
+                    .next();
+                
+                // Get unread count
+                const unreadCount = await db.collection(COLLECTIONS.MESSAGES)
+                    .countDocuments({ 
+                        conversationId, 
+                        receiver: username, 
+                        read: false 
+                    });
+                
+                userConversations.push({
+                    partner,
+                    lastMessage: lastMessage ? {
+                        text: lastMessage.text,
+                        timestamp: lastMessage.timestamp,
+                        sender: lastMessage.sender
+                    } : null,
+                    unreadCount
+                });
+            }
+        }
+        
+        return userConversations.sort((a, b) => {
+            const timeA = a.lastMessage ? new Date(a.lastMessage.timestamp) : new Date(0);
+            const timeB = b.lastMessage ? new Date(b.lastMessage.timestamp) : new Date(0);
+            return timeB - timeA; // Most recent first
+        });
+    } catch (error) {
+        console.error('Error getting user conversations:', error);
+        return [];
+    }
+}
+
+// Serve main page (unchanged)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// API Routes
-app.post('/register', upload.single('profilePicture'), async (req, res) => {
+// 5. Modified: API Routes with MongoDB
+
+app.post('/register', async (req, res) => {
     try {
-        const { username, email, password, bio } = req.body;
+        const { username, password } = req.body;
         
-        // Check if user exists
-        const existingUser = await User.findOne({ 
-            $or: [{ email }, { username }] 
-        });
-        
+        // Check if user already exists
+        const existingUser = await db.collection(COLLECTIONS.USERS).findOne({ username });
         if (existingUser) {
-            return res.json({ success: false, error: 'User already exists' });
+            return res.json({ success: false, error: 'Username taken' });
         }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 12);
         
-        // Handle profile picture
-        const profilePicture = req.file ? `/uploads/profiles/${req.file.filename}` : '';
-
-        const user = new User({
+        // Create new user
+        await db.collection(COLLECTIONS.USERS).insertOne({
             username,
-            email,
-            password: hashedPassword,
-            profilePicture,
-            bio
+            password, // In production, you should hash passwords!
+            createdAt: new Date()
         });
-
-        await user.save();
-        res.json({ 
-            success: true, 
-            user: { 
-                id: user._id, 
-                username: user.username, 
-                email: user.email, 
-                profilePicture: user.profilePicture, 
-                bio: user.bio 
-            } 
-        });
+        
+        res.json({ success: true, username });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.json({ success: false, error: 'Registration failed' });
     }
 });
 
 app.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        const { username, password } = req.body;
         
-        if (!user) {
-            return res.json({ success: false, error: 'User not found' });
+        const user = await db.collection(COLLECTIONS.USERS).findOne({ username, password });
+        if (user) {
+            res.json({ success: true, username });
+        } else {
+            res.json({ success: false, error: 'Invalid credentials' });
         }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.json({ success: false, error: 'Invalid password' });
-        }
-
-        // Update online status
-        user.isOnline = true;
-        user.lastSeen = new Date();
-        await user.save();
-
-        res.json({ 
-            success: true, 
-            user: { 
-                id: user._id, 
-                username: user.username, 
-                email: user.email,
-                profilePicture: user.profilePicture,
-                bio: user.bio
-            } 
-        });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.json({ success: false, error: 'Login failed' });
     }
 });
 
-app.get('/users', async (req, res) => {
+// Get online users (unchanged - still in-memory)
+app.get('/online-users', (req, res) => {
+    const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
+    res.json({ users: onlineUsers });
+});
+
+// Modified: Get user's conversations from DB
+app.get('/user-conversations/:username', async (req, res) => {
     try {
-        const users = await User.find({}, 'username profilePicture isOnline lastSeen bio')
-            .sort({ isOnline: -1, username: 1 });
-        res.json({ success: true, users });
+        const { username } = req.params;
+        const conversations = await getUserConversations(username);
+        res.json({ conversations });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.status(500).json({ error: 'Failed to get conversations' });
     }
 });
 
-app.get('/conversations/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        
-        const conversations = await Message.aggregate([
-            {
-                $match: {
-                    $or: [
-                        { sender: mongoose.Types.ObjectId(userId) },
-                        { receiver: mongoose.Types.ObjectId(userId) }
-                    ]
-                }
-            },
-            {
-                $sort: { timestamp: -1 }
-            },
-            {
-                $group: {
-                    _id: "$conversationId",
-                    lastMessage: { $first: "$$ROOT" },
-                    unreadCount: {
-                        $sum: {
-                            $cond: [
-                                { 
-                                    $and: [
-                                        { $eq: ["$receiver", mongoose.Types.ObjectId(userId)] },
-                                        { $eq: ["$read", false] }
-                                    ]
-                                },
-                                1,
-                                0
-                            ]
-                        }
-                    }
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "lastMessage.sender",
-                    foreignField: "_id",
-                    as: "senderInfo"
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "lastMessage.receiver",
-                    foreignField: "_id",
-                    as: "receiverInfo"
-                }
-            }
-        ]);
+// 6. Modified: Socket.io handling with MongoDB
 
-        res.json({ success: true, conversations });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
-app.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.json({ success: false, error: 'No file uploaded' });
-    }
-    res.json({ success: true, url: `/uploads/${req.file.filename}` });
-});
-
-app.get('/user/profile', async (req, res) => {
-    try {
-        const userId = req.query.userId;
-        const user = await User.findById(userId).select('-password');
-        res.json({ success: true, user });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
-app.put('/user/profile', upload.single('profilePicture'), async (req, res) => {
-    try {
-        const { userId, username, bio, phoneNumber, theme, notificationEnabled } = req.body;
-        
-        const updateData = { 
-            username, 
-            bio, 
-            phoneNumber, 
-            theme, 
-            notificationEnabled 
-        };
-        
-        if (req.file) {
-            updateData.profilePicture = `/uploads/profiles/${req.file.filename}`;
-        }
-
-        const user = await User.findByIdAndUpdate(
-            userId, 
-            updateData, 
-            { new: true }
-        ).select('-password');
-        
-        res.json({ success: true, user });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
-app.get('/app/info', (req, res) => {
-    res.json({
-        success: true,
-        app: {
-            name: 'gramX',
-            version: '1.0.0',
-            developer: 'Bruce Bera',
-            developerContact: '+254743982206',
-            website: 'https://gramx.com',
-            supportEmail: 'support@gramx.com'
-        }
-    });
-});
-
-// Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    socket.on('user-login', async (userData) => {
+    socket.on('user-login', async (username) => {
+        const userData = { username, userId: socket.id };
+        activeUsers.set(socket.id, userData);
+        userSockets.set(username, socket.id);
+        
+        // Notify all users about new online user
+        io.emit('user-online', username);
+        
+        // Send list of online users to the new user
+        const onlineUsers = Array.from(activeUsers.values()).map(user => user.username);
+        socket.emit('online-users', onlineUsers);
+        
+        // Send user's conversation history from DB
         try {
-            activeUsers.set(socket.id, userData);
-            userSockets.set(userData.id, socket.id);
-
-            // Update user online status in DB
-            await User.findByIdAndUpdate(userData.id, { 
-                isOnline: true,
-                lastSeen: new Date()
-            });
-
-            // Get all users for the user list
-            const allUsers = await User.find({}, 'username profilePicture isOnline lastSeen bio')
-                .sort({ isOnline: -1, username: 1 });
-            
-            // Get online users for status updates
-            const onlineUsers = allUsers.filter(user => 
-                user.isOnline && user._id.toString() !== userData.id
-            );
-            
-            // Send both all users and online users
-            socket.emit('all-users', allUsers);
-            socket.emit('online-users', onlineUsers);
-
-            // Get user's conversation history
-            const userConversations = await Message.aggregate([
-                {
-                    $match: {
-                        $or: [
-                            { sender: mongoose.Types.ObjectId(userData.id) },
-                            { receiver: mongoose.Types.ObjectId(userData.id) }
-                        ]
-                    }
-                },
-                {
-                    $sort: { timestamp: -1 }
-                },
-                {
-                    $group: {
-                        _id: "$conversationId",
-                        lastMessage: { $first: "$$ROOT" },
-                        unreadCount: {
-                            $sum: {
-                                $cond: [
-                                    { 
-                                        $and: [
-                                            { $eq: ["$receiver", mongoose.Types.ObjectId(userData.id)] },
-                                            { $eq: ["$read", false] }
-                                        ]
-                                    },
-                                    1,
-                                    0
-                                ]
-                            }
-                        }
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "users",
-                        localField: "lastMessage.sender",
-                        foreignField: "_id",
-                        as: "senderInfo"
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "users",
-                        localField: "lastMessage.receiver",
-                        foreignField: "_id",
-                        as: "receiverInfo"
-                    }
-                }
-            ]);
-
+            const userConversations = await getUserConversations(username);
             socket.emit('user-conversations', userConversations);
-
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('Error getting conversations:', error);
+            socket.emit('user-conversations', []);
         }
     });
 
     socket.on('join-conversation', async (data) => {
         try {
             const { currentUser, targetUser } = data;
-            const conversationId = getConversationId(currentUser.id, targetUser.id);
-
-            // Get conversation messages
-            const messages = await Message.find({ conversationId })
-                .populate('sender', 'username profilePicture')
-                .populate('receiver', 'username profilePicture')
-                .sort({ timestamp: 1 });
-
-            // Mark messages as read
-            await Message.updateMany(
-                {
-                    conversationId,
-                    receiver: currentUser.id,
-                    read: false
-                },
-                {
-                    read: true,
-                    readAt: new Date()
-                }
+            const conversationId = getConversationId(currentUser, targetUser);
+            
+            // Get conversation messages from DB
+            const conversationMessages = await db.collection(COLLECTIONS.MESSAGES)
+                .find({ conversationId })
+                .sort({ timestamp: 1 })
+                .toArray();
+            
+            // Mark messages as read when user opens conversation
+            await db.collection(COLLECTIONS.MESSAGES).updateMany(
+                { conversationId, receiver: currentUser, read: false },
+                { $set: { read: true } }
             );
 
             socket.emit('conversation-history', {
                 conversationId,
-                messages,
-                targetUser
+                messages: conversationMessages,
+                targetUser: targetUser
             });
-
         } catch (error) {
-            console.error('Join conversation error:', error);
+            console.error('Error joining conversation:', error);
         }
     });
 
     socket.on('send-private-message', async (data) => {
         try {
-            const { sender, receiver, text, messageType = 'text', fileUrl = '' } = data;
-            const conversationId = getConversationId(sender.id, receiver.id);
-
-            const message = new Message({
-                text,
-                sender: sender.id,
-                receiver: receiver.id,
-                conversationId,
-                messageType,
-                fileUrl,
-                timestamp: new Date()
-            });
-
-            await message.save();
+            const { sender, receiver, text } = data;
+            const conversationId = getConversationId(sender, receiver);
             
-            // Populate sender and receiver details
-            await message.populate('sender', 'username profilePicture');
-            await message.populate('receiver', 'username profilePicture');
+            const message = {
+                text,
+                sender,
+                receiver,
+                timestamp: new Date(),
+                conversationId,
+                read: false
+            };
 
-            console.log('Message saved:', message);
+            // Save message to database
+            const result = await db.collection(COLLECTIONS.MESSAGES).insertOne(message);
+            message._id = result.insertedId; // Add the generated ID
 
-            // Send to sender
+            // Send to sender immediately
             socket.emit('new-private-message', message);
             
+            // Update sender's conversation list
+            try {
+                const senderConversations = await getUserConversations(sender);
+                socket.emit('user-conversations', senderConversations);
+            } catch (error) {
+                console.error('Error updating sender conversations:', error);
+            }
+
             // Send to receiver if online
-            const receiverSocketId = userSockets.get(receiver.id);
+            const receiverSocketId = userSockets.get(receiver);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit('new-private-message', message);
-            }
-
-        } catch (error) {
-            console.error('Send message error:', error);
-        }
-    });
-
-    socket.on('typing-start', (data) => {
-        const receiverSocketId = userSockets.get(data.receiverId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('user-typing', {
-                senderId: data.senderId,
-                senderName: data.senderName
-            });
-        }
-    });
-
-    socket.on('typing-stop', (data) => {
-        const receiverSocketId = userSockets.get(data.receiverId);
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('user-stopped-typing', {
-                senderId: data.senderId
-            });
-        }
-    });
-
-    socket.on('disconnect', async () => {
-        try {
-            const userData = activeUsers.get(socket.id);
-            if (userData) {
-                activeUsers.delete(socket.id);
-                userSockets.delete(userData.id);
-
-                // Update user offline status in DB
-                await User.findByIdAndUpdate(userData.id, { 
-                    isOnline: false,
-                    lastSeen: new Date()
-                });
-
-                // Get updated user list
-                const allUsers = await User.find({}, 'username profilePicture isOnline lastSeen bio');
                 
-                // Notify all users about the change
-                io.emit('all-users', allUsers);
-                
-                const onlineUsers = allUsers.filter(user => user.isOnline);
-                io.emit('online-users', onlineUsers);
+                // Update receiver's conversation list
+                try {
+                    const receiverConversations = await getUserConversations(receiver);
+                    io.to(receiverSocketId).emit('user-conversations', receiverConversations);
+                } catch (error) {
+                    console.error('Error updating receiver conversations:', error);
+                }
             }
         } catch (error) {
-            console.error('Disconnect error:', error);
+            console.error('Error sending message:', error);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        const userData = activeUsers.get(socket.id);
+        if (userData) {
+            const { username } = userData;
+            activeUsers.delete(socket.id);
+            userSockets.delete(username);
+            io.emit('user-offline', username);
         }
     });
 });
 
+// 7. Start server after database connection
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`🚀 gramX server running on port ${PORT}`);
-    console.log(`📱 Open http://localhost:${PORT} in your browser`);
-    console.log(`💾 MongoDB Atlas: CONNECTED`);
-    console.log(`👨‍💻 Developer: Bruce Bera (+254743982206)`);
-});
 
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-    console.log('Shutting down server...');
+connectToDatabase().then((client) => {
+    server.listen(PORT, () => {
+        console.log(`🚀 gramX server running on port ${PORT}`);
+        console.log(`📱 Open http://localhost:${PORT} in your browser`);
+        console.log(`💾 MongoDB persistence: ENABLED`);
+    });
     
-    // Set all users offline
-    try {
-        await User.updateMany({ isOnline: true }, { 
-            isOnline: false,
-            lastSeen: new Date()
-        });
-        console.log('All users set to offline');
-    } catch (error) {
-        console.error('Error setting users offline:', error);
-    }
-    
-    server.close(() => {
-        console.log('Server shut down');
+    // Handle graceful shutdown
+    process.on('SIGINT', async () => {
+        await client.close();
+        console.log('MongoDB connection closed.');
         process.exit(0);
     });
 });
