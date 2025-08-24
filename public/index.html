@@ -1,0 +1,4042 @@
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>gramX - Complete Messaging</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            height: 100vh;
+            overscroll-behavior: none;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #0a1a2a 0%, #05121f 100%);
+        }
+
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* AUTH SCREENS */
+        .auth-container { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; 
+            background: white; 
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .auth-container {
+            background: #1e2c3a;
+            color: white;
+        }
+
+        .auth-box { width: 100%; max-width: 340px; }
+        .auth-title { 
+            text-align: center; 
+            color: #0088cc; 
+            font-size: 32px; 
+            font-weight: 800; 
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .dark-theme .auth-title {
+            color: #4eb6e9;
+        }
+
+        .auth-input { 
+            width: 100%; 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            border: 1px solid #e0e0e0; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            background: #f8f9fa; 
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .auth-input {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
+        .auth-input:focus {
+            border-color: #0088cc;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+            outline: none;
+        }
+
+        .dark-theme .auth-input:focus {
+            border-color: #4eb6e9;
+            background: #2a3b4d;
+            box-shadow: 0 0 0 3px rgba(78, 182, 233, 0.2);
+        }
+
+        .auth-button { 
+            width: 100%; 
+            padding: 16px; 
+            background: #0088cc; 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            margin-bottom: 20px; 
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .auth-button {
+            background: #4eb6e9;
+        }
+
+        .auth-button:active {
+            transform: scale(0.98);
+            background: #0066aa;
+        }
+
+        .dark-theme .auth-button:active {
+            background: #3a95c7;
+        }
+
+        .auth-switch { text-align: center; color: #666; }
+        .dark-theme .auth-switch { color: #aaa; }
+        .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
+        .dark-theme .auth-switch a { color: #4eb6e9; }
+        .error-message {
+            color: #ff3b30;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* CHAT LIST SCREEN */
+        .chat-list-header {
+            background: #0088cc;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .chat-list-header {
+            background: #1e2c3a;
+        }
+
+        .header-buttons {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 18px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .header-button:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        .search-container {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dark-theme .search-container {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 18px;
+            padding: 8px 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .search-box {
+            background: #2a3b4d;
+        }
+
+        .search-box i {
+            color: #999;
+            margin-right: 8px;
+        }
+
+        .dark-theme .search-box i {
+            color: #7a8a9c;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            background: transparent;
+        }
+
+        .dark-theme .search-input {
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dark-theme .tabs {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .tab {
+            color: #aaa;
+        }
+
+        .tab.active {
+            color: #0088cc;
+            border-bottom-color: #0088cc;
+        }
+
+        .dark-theme .tab.active {
+            color: #4eb6e9;
+            border-bottom-color: #4eb6e9;
+        }
+
+        .conversations-list {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .dark-theme .conversations-list {
+            background: #15202b;
+        }
+
+        .conversation-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .conversation-item {
+            border-color: #253341;
+        }
+
+        .conversation-item:active {
+            background: #f8f9fa;
+        }
+
+        .dark-theme .conversation-item:active {
+            background: #1e2c3a;
+        }
+
+        .conversation-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .conversation-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dark-theme .conversation-name {
+            color: white;
+        }
+
+        .verified-badge {
+            color: #0088cc;
+            font-size: 14px;
+        }
+
+        .dark-theme .verified-badge {
+            color: #4eb6e9;
+        }
+
+        .conversation-preview {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dark-theme .conversation-preview {
+            color: #8899a6;
+        }
+
+        .conversation-meta {
+            text-align: right;
+            margin-left: 8px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .conversation-time {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .dark-theme .conversation-time {
+            color: #8899a6;
+        }
+
+        .unread-badge {
+            background: #ff3b30;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .muted-icon {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .dark-theme .muted-icon {
+            color: #7a8a9c;
+        }
+
+        .pinned-icon {
+            color: #999;
+            font-size: 14px;
+            transform: rotate(45deg);
+        }
+
+        .dark-theme .pinned-icon {
+            color: #7a8a9c;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #888;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .dark-theme .empty-state {
+            color: #8899a6;
+        }
+        
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        /* ONLINE USERS LIST */
+        .online-users-header { 
+            padding: 15px; 
+            background: #f8f9fa; 
+            font-weight: 600; 
+            color: #666; 
+            border-bottom: 1px solid #e0e0e0; 
+        }
+
+        .dark-theme .online-users-header {
+            background: #1e2c3a;
+            color: #aaa;
+            border-color: #2d3e50;
+        }
+
+        .users-list { flex: 1; overflow-y: auto; background: white; }
+        .dark-theme .users-list { background: #15202b; }
+        .user-item { 
+            padding: 16px; 
+            border-bottom: 1px solid #f0f0f0; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .user-item {
+            border-color: #253341;
+        }
+
+        .user-item:active { background: #f8f9fa; }
+        .dark-theme .user-item:active { background: #1e2c3a; }
+        .user-avatar { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%); 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 18px; 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-size: cover;
+            background-position: center;
+        }
+        .user-info { flex: 1; }
+        .user-name { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 5px; }
+        .dark-theme .user-name { color: white; }
+        .user-status { font-size: 13px; color: #666; display: flex; align-items: center; }
+        .dark-theme .user-status { color: #8899a6; }
+        .online-dot { 
+            width: 10px; 
+            height: 10px; 
+            background: #4CAF50; 
+            border-radius: 50%; 
+            margin-right: 5px; 
+            display: inline-block; 
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+        .offline-dot { 
+            width: 10px; 
+            height: 10px; 
+            background: #ccc; 
+            border-radius: 50%; 
+            margin-right: 5px; 
+            display: inline-block; 
+        }
+
+        /* CHAT SCREEN */
+        .chat-header { 
+            background: #0088cc; 
+            color: white; 
+            padding: 16px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .chat-header {
+            background: #1e2c3a;
+        }
+
+        .back-button { 
+            background: none; 
+            border: none; 
+            color: white; 
+            font-size: 20px; 
+            cursor: pointer; 
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .back-button:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .chat-info { flex: 1; }
+        .chat-name { font-weight: 600; font-size: 17px; display: flex; align-items: center; gap: 5px; }
+        .chat-status { 
+            font-size: 13px; 
+            opacity: 0.9; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .messages-container { 
+            flex: 1; 
+            padding: 16px; 
+            overflow-y: auto; 
+            background: #e6ebf5; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        }
+
+        .dark-theme .messages-container {
+            background: #0d151f;
+        }
+
+        .message { 
+            max-width: 80%; 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            animation: messageSlide 0.3s ease-out; 
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        @keyframes messageSlide { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .my-message { 
+            background: #d3eddb; 
+            align-self: flex-end; 
+            border-bottom-right-radius: 4px; 
+        }
+
+        .dark-theme .my-message {
+            background: #005c4b;
+            color: white;
+        }
+
+        .their-message { 
+            background: white; 
+            align-self: flex-start; 
+            border-bottom-left-radius: 4px; 
+        }
+
+        .dark-theme .their-message {
+            background: #2a3b4d;
+            color: white;
+        }
+
+        .message-sender { 
+            font-weight: 600; 
+            font-size: 14px; 
+            color: #0088cc; 
+            margin-bottom: 4px; 
+        }
+
+        .dark-theme .message-sender {
+            color: #4eb6e9;
+        }
+
+        .message-text { font-size: 16px; line-height: 1.4; }
+        .message-time { 
+            font-size: 11px; 
+            color: #7d7d7d; 
+            text-align: right; 
+            margin-top: 4px; 
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+        }
+
+        .dark-theme .message-time {
+            color: #8899a6;
+        }
+
+        .message-status {
+            font-size: 11px;
+        }
+        .message-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+        .message-action {
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .dark-theme .message-action {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        .system-message { 
+            text-align: center; 
+            color: #7d7d7d; 
+            font-size: 13px; 
+            margin: 8px 0; 
+            font-style: italic; 
+        }
+
+        .dark-theme .system-message {
+            color: #8899a6;
+        }
+
+        .message-input-container { 
+            padding: 12px 16px; 
+            background: #f0f2f5; 
+            border-top: 1px solid #e0e0e0; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+        }
+
+        .dark-theme .message-input-container {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
+        .message-input { 
+            flex: 1; 
+            padding: 12px 16px; 
+            border: none; 
+            border-radius: 22px; 
+            font-size: 16px; 
+            background: white; 
+            outline: none; 
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .message-input {
+            background: #2a3b4d;
+            color: white;
+        }
+
+        .input-button { 
+            background: transparent; 
+            color: #0088cc; 
+            border: none; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            font-size: 18px; 
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .input-button {
+            color: #4eb6e9;
+        }
+
+        .input-button:active {
+            background: rgba(0, 136, 204, 0.1);
+        }
+
+        .dark-theme .input-button:active {
+            background: rgba(78, 182, 233, 0.1);
+        }
+
+        .send-button { 
+            background: #0088cc; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 40px; 
+            height: 40px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            font-size: 18px; 
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .send-button {
+            background: #4eb6e9;
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+            background: #0066aa;
+        }
+
+        .dark-theme .send-button:active {
+            background: #3a95c7;
+        }
+
+        /* Floating action button */
+        .floating-button {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .dark-theme .floating-button {
+            background: #4eb6e9;
+        }
+        
+        .floating-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            padding: 8px 0;
+            border-top: 1px solid #e0e0e0;
+            z-index: 100;
+        }
+
+        .dark-theme .bottom-nav {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .dark-theme .nav-item {
+            color: #7a8a9c;
+        }
+        
+        .nav-item.active {
+            color: #0088cc;
+        }
+
+        .dark-theme .nav-item.active {
+            color: #4eb6e9;
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Last seen indicator */
+        .last-seen {
+            font-size: 12px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .dark-theme .last-seen {
+            color: #8899a6;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 12px;
+            align-self: flex-start;
+            margin-bottom: 8px;
+            display: none;
+            font-style: italic;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .dark-theme .typing-indicator {
+            background: #2a3b4d;
+            color: #8899a6;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            background: #666;
+            border-radius: 50%;
+            margin: 0 1px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+
+        .dark-theme .typing-dot {
+            background: #8899a6;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        /* SETTINGS SCREEN */
+        .settings-screen {
+            background: white;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .dark-theme .settings-screen {
+            background: #15202b;
+        }
+
+        .settings-header {
+            background: #0088cc;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .settings-header {
+            background: #1e2c3a;
+        }
+
+        .settings-back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .settings-content {
+            padding: 20px;
+        }
+
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 36px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .profile-avatar-edit {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #0088cc;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-theme .profile-avatar-edit {
+            background: #4eb6e9;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .dark-theme .profile-name {
+            color: white;
+        }
+
+        .profile-username {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .dark-theme .profile-username {
+            color: #8899a6;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+        }
+
+        .settings-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .dark-theme .settings-section-title {
+            color: white;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-theme .settings-item {
+            border-color: #253341;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item-info {
+            flex: 1;
+        }
+
+        .settings-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .dark-theme .settings-item-title {
+            color: white;
+        }
+
+        .settings-item-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .dark-theme .settings-item-desc {
+            color: #8899a6;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #0088cc;
+        }
+
+        .dark-theme input:checked + .toggle-slider {
+            background-color: #4eb6e9;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .select-dropdown {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .dark-theme .select-dropdown {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
+        .logout-button {
+            width: 100%;
+            padding: 15px;
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Avatar upload modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-theme .modal-content {
+            background: #1e2c3a;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #333;
+        }
+
+        .dark-theme .modal-title {
+            color: white;
+        }
+
+        .avatar-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .avatar-option.selected {
+            outline: 3px solid #0088cc;
+            outline-offset: 2px;
+        }
+
+        .dark-theme .avatar-option.selected {
+            outline-color: #4eb6e9;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-button.primary {
+            background: #0088cc;
+            color: white;
+        }
+
+        .dark-theme .modal-button.primary {
+            background: #4eb6e9;
+        }
+
+        .modal-button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .dark-theme .modal-button.secondary {
+            background: #2a3b4d;
+            color: white;
+        }
+
+        /* Media message styles */
+        .media-message {
+            padding: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 300px;
+        }
+
+        .media-container {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .media-preview {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .video-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .media-caption {
+            padding: 8px 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .media-download {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .dark-theme .media-download {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
+        /* Media attachment panel */
+        .media-attachment-panel {
+            position: absolute;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 200;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .media-attachment-panel {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
+        .attachment-options {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .attachment-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            min-width: 80px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dark-theme .attachment-option {
+            background: #2a3b4d;
+        }
+
+        .attachment-option:active {
+            background: #e9ecef;
+        }
+
+        .dark-theme .attachment-option:active {
+            background: #3a4b5d;
+        }
+
+        .attachment-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .dark-theme .attachment-icon {
+            background: #4eb6e9;
+        }
+
+        .attachment-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .dark-theme .attachment-label {
+            color: #aaa;
+        }
+
+        /* File upload button */
+        .file-input {
+            display: none;
+        }
+
+        /* Progress bar */
+        .upload-progress {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .dark-theme .upload-progress {
+            background: #2d3e50;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #0088cc;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .dark-theme .progress-bar {
+            background: #4eb6e9;
+        }
+
+        /* Avatar upload options */
+        .avatar-upload-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .dark-theme .avatar-upload-option {
+            background: #2a3b4d;
+        }
+
+        .avatar-upload-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .dark-theme .avatar-upload-icon {
+            background: #4eb6e9;
+        }
+
+        .avatar-upload-text {
+            flex: 1;
+        }
+
+        .avatar-upload-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .dark-theme .avatar-upload-title {
+            color: white;
+        }
+
+        .avatar-upload-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .dark-theme .avatar-upload-desc {
+            color: #aaa;
+        }
+
+        /* Media grid in modal */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .media-grid-item {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .media-grid-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .media-grid-selected {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #0088cc;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            display: none;
+        }
+
+        .media-grid-item.selected .media-grid-selected {
+            display: flex;
+        }
+
+        .media-grid-item.selected::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid #0088cc;
+            border-radius: 8px;
+        }
+
+        /* Media modal */
+        .media-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .media-modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .media-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .media-modal-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+
+        .media-modal-video {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+        }
+
+        /* Audio player */
+        .audio-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            margin: 5px 0;
+        }
+
+        .dark-theme .audio-player {
+            background: #2a3b4d;
+        }
+
+        .audio-play-button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .dark-theme .audio-play-button {
+            background: #4eb6e9;
+        }
+
+        .audio-progress {
+            flex: 1;
+            height: 4px;
+            background: #e0e0e0;
+                    border-radius: 2px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .dark-theme .audio-progress {
+        background: #3a4b5d;
+    }
+
+    .audio-progress-filled {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: #0088cc;
+        border-radius: 2px;
+        width: 0%;
+    }
+
+    .dark-theme .audio-progress-filled {
+        background: #4eb6e9;
+    }
+
+    .audio-duration {
+        font-size: 12px;
+        color: #666;
+        min-width: 40px;
+        text-align: right;
+    }
+
+    .dark-theme .audio-duration {
+        color: #aaa;
+    }
+
+    /* Document message */
+    .document-message {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin: 5px 0;
+    }
+
+    .dark-theme .document-message {
+        background: #2a3b4d;
+    }
+
+    .document-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #0088cc;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .dark-theme .document-icon {
+        background: #4eb6e9;
+    }
+
+    .document-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .document-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #333;
+    }
+
+    .dark-theme .document-name {
+        color: white;
+    }
+
+    .document-size {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .dark-theme .document-size {
+        color: #aaa;
+    }
+
+    .document-download {
+        color: #0088cc;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .dark-theme .document-download {
+        color: #4eb6e9;
+    }
+
+    /* YouTube downloader styles */
+    .youtube-downloader {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin: 10px 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-theme .youtube-downloader {
+        background: #2a3b4d;
+    }
+
+    .youtube-input-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .youtube-input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .dark-theme .youtube-input {
+        background: #1e2c3a;
+        border-color: #3a4b5d;
+        color: white;
+    }
+
+    .youtube-fetch-button {
+        padding: 12px 15px;
+        background: #0088cc;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .dark-theme .youtube-fetch-button {
+        background: #4eb6e9;
+    }
+
+    .youtube-results {
+        display: none;
+    }
+
+    .youtube-thumbnail {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+
+    .youtube-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .dark-theme .youtube-title {
+        color: white;
+    }
+
+    .youtube-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .youtube-option {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .dark-theme .youtube-option {
+        background: #1e2c3a;
+    }
+
+    .youtube-option:active {
+        background: #e9ecef;
+    }
+
+    .dark-theme .youtube-option:active {
+        background: #2d3e50;
+    }
+
+    .youtube-option-quality {
+        font-weight: 600;
+        color: #0088cc;
+        margin-bottom: 5px;
+    }
+
+    .dark-theme .youtube-option-quality {
+        color: #4eb6e9;
+    }
+
+    .youtube-option-size {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .dark-theme .youtube-option-size {
+        color: #aaa;
+    }
+
+    .youtube-downloading {
+        text-align: center;
+        padding: 15px;
+        display: none;
+    }
+
+    .youtube-download-progress {
+        width: 100%;
+        height: 6px;
+        background: #e0e0e0;
+        border-radius: 3px;
+        margin: 10px 0;
+        overflow: hidden;
+    }
+
+    .dark-theme .youtube-download-progress {
+        background: #2d3e50;
+    }
+
+    .youtube-download-bar {
+        height: 100%;
+        background: #0088cc;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .dark-theme .youtube-download-bar {
+        background: #4eb6e9;
+    }
+
+    .youtube-download-status {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .dark-theme .youtube-download-status {
+        color: #aaa;
+    }
+
+    .youtube-error {
+        color: #ff3b30;
+        text-align: center;
+        padding: 10px;
+        display: none;
+    }
+
+    /* YouTube icon in message input */
+    .youtube-button {
+        background: transparent;
+        color: #0088cc;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.2s ease;
+    }
+
+    .dark-theme .youtube-button {
+        color: #4eb6e9;
+    }
+
+    .youtube-button:active {
+        background: rgba(0, 136, 204, 0.1);
+    }
+
+    .dark-theme .youtube-button:active {
+        background: rgba(78, 182, 233, 0.1);
+    }
+
+    /* YouTube download message */
+    .youtube-message {
+        padding: twelvepx;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin: 5px 0;
+    }
+
+    .dark-theme .youtube-message {
+        background: #2a3b4d;
+    }
+
+    .youtube-message-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .youtube-message-icon {
+        color: #ff0000;
+        font-size: 20px;
+    }
+
+    .youtube-message-title {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .dark-theme .youtube-message-title {
+        color: white;
+    }
+
+    .youtube-message-url {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 10px;
+        word-break: break-all;
+    }
+
+    .dark-theme .youtube-message-url {
+        color: #aaa;
+    }
+
+    .youtube-message-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .youtube-message-button {
+        padding: 8px 12px;
+        background: #0088cc;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .dark-theme .youtube-message-button {
+        background: #4eb6e9;
+    }
+
+    /* Responsive */
+    @media (max-width: 340px) {
+        .message { max-width: 75%; }
+        .auth-box { max-width: 280px; }
+    }
+</style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="auth-title">gramX</h1>
+                <div class="error-message" id="login-error"></div>
+                <input type="text" id="login-username" class="auth-input" placeholder="Username">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                <button class="auth-button" onclick="login()">Login</button>
+                <div class="auth-switch">
+                    Don't have an account? <a href="#" onclick="showScreen('register-screen')">Register</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Register Screen -->
+<div id="register-screen" class="screen">
+    <div class="auth-container">
+        <div class="auth-box">
+            <h1 class="auth-title">Create Account</h1>
+            <div class="error-message" id="register-error"></div>
+            <input type="text" id="register-username" class="auth-input" placeholder="Choose username">
+            <input type="password" id="register-password" class="auth-input" placeholder="Choose password">
+            <button class="auth-button" onclick="register()">Create Account</button>
+            <div class="auth-switch">
+                Already have an account? <a href="#" onclick="showScreen('login-screen')">Login</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat List Screen -->
+<div id="chat-list-screen" class="screen">
+    <div class="chat-list-header">
+        gramX
+        <div class="header-buttons">
+            <button class="header-button" onclick="toggleSearch()">
+                <i class="fas fa-search"></i>
+            </button>
+            <button class="header-button" onclick="showSettings()">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="search-container" id="search-container" style="display: none;">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" placeholder="Search" id="search-input">
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('conversations')">Chats</div>
+        <div class="tab" onclick="showTab('online')">Online</div>
+        <div class="tab" onclick="showTab('all')">All Users</div>
+    </div>
+
+    <!-- Conversations Tab -->
+    <div id="conversations-tab" class="conversations-list">
+        <div class="empty-state" id="no-conversations">
+            <div class="empty-icon">💬</div>
+            No conversations yet<br>
+            <small>Start a chat with someone!</small>
+        </div>
+        <!-- Conversations will be listed here -->
+    </div>
+
+    <!-- Online Users Tab -->
+    <div id="online-tab" class="users-list" style="display: none;">
+        <div class="empty-state" id="no-online-users">
+            <div class="empty-icon">🌐</div>
+            No other users online
+        </div>
+        <!-- Online users will be listed here -->
+    </div>
+
+    <!-- All Users Tab -->
+    <div id="all-tab" class="users-list" style="display: none;">
+        <div class="empty-state" id="no-all-users">
+            <div class="empty-icon">👥</div>
+            No other users available
+        </div>
+        <!-- All users will be listed here -->
+    </div>
+    
+    <!-- Floating action button -->
+    <div class="floating-button" onclick="showAllUsers()">
+        <i class="fas fa-edit"></i>
+    </div>
+    
+    <!-- Bottom navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <div class="nav-icon"><i class="fas fa-comment"></i></div>
+            <div>Chats</div>
+        </div>
+        <div class="nav-item">
+            <div class="nav-icon"><i class="fas fa-users"></i></div>
+            <div>Contacts</div>
+        </div>
+        <div class="nav-item">
+            <div class="nav-icon"><i class="fas fa-cog"></i></div>
+            <div>Settings</div>
+        </div>
+    </div>
+</div>
+
+<!-- Private Chat Screen -->
+<div id="private-chat-screen" class="screen">
+    <div class="chat-header">
+        <button class="back-button" onclick="backToChatList()">←</button>
+        <div class="chat-info">
+            <div class="chat-name" id="chat-target-name">
+                User
+                <i class="fas fa-check-circle verified-badge"></i>
+            </div>
+            <div class="chat-status" id="chat-target-status">
+                <span class="online-dot" id="status-dot"></span>
+                <span id="status-text">online</span>
+            </div>
+        </div>
+        <button class="header-button" onclick="showChatOptions()">
+            <i class="fas fa-ellipsis-v"></i>
+        </button>
+    </div>
+
+    <div class="messages-container" id="private-messages-container">
+        <!-- Private messages will appear here -->
+        <div class="typing-indicator" id="typing-indicator">
+            <span id="typing-user"></span> is typing
+            <span class="typing-dots">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </span>
+        </div>
+    </div>
+
+    <div class="message-input-container">
+        <button class="input-button" onclick="toggleMediaPanel()">
+            <i class="fas fa-paperclip"></i>
+        </button>
+        <button class="youtube-button" onclick="toggleYouTubePanel()">
+            <i class="fab fa-youtube"></i>
+        </button>
+        <input type="text" id="private-message-input" class="message-input" placeholder="Message" 
+            onkeypress="handlePrivateKeyPress(event)"
+            oninput="handleTyping()">
+        <button class="input-button">
+            <i class="fas fa-smile"></i>
+        </button>
+        <button class="send-button" onclick="sendPrivateMessage()" id="send-button">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Settings Screen -->
+<div id="settings-screen" class="screen">
+    <div class="settings-header">
+        <button class="settings-back-button" onclick="backToChatList()">←</button>
+        Settings
+    </div>
+    
+    <div class="settings-content">
+        <div class="profile-section">
+            <div class="profile-avatar" id="profile-avatar" onclick="openAvatarModal()">
+                <div class="profile-avatar-edit">
+                    <i class="fas fa-camera"></i>
+                </div>
+            </div>
+            <div class="profile-name" id="profile-name">User Name</div>
+            <div class="profile-username" id="profile-username">@username</div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">Appearance</div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Theme</div>
+                    <div class="settings-item-desc">Change the appearance of the app</div>
+                </div>
+                <select class="select-dropdown" id="theme-selector" onchange="changeTheme()">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="auto">Auto (System)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">Notifications</div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Message Notifications</div>
+                    <div class="settings-item-desc">Receive notifications for new messages</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="notifications-toggle" checked onchange="toggleNotifications()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Sound</div>
+                    <div class="settings-item-desc">Play sounds for new messages</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">Privacy</div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Last Seen</div>
+                    <div class="settings-item-desc">Who can see your last seen time</div>
+                </div>
+                <select class="select-dropdown" id="last-seen-selector" onchange="changeLastSeenPrivacy()">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My Contacts</option>
+                    <option value="nobody">Nobody</option>
+                </select>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Profile Photo</div>
+                    <div class="settings-item-desc">Who can see your profile photo</div>
+                </div>
+                <select class="select-dropdown" id="profile-photo-selector" onchange="changeProfilePhotoPrivacy()">
+                    <option value="everyone">Everyone</option>
+                    <option value="contacts">My Contacts</option>
+                    <option value="nobody">Nobody</option>
+                </select>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-info">
+                    <div class="settings-item-title">Read Receipts</div>
+                    <div class="settings-item-desc">Send read receipts for your messages</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="read-receipts-toggle" checked onchange="toggleReadReceipts()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <button class="logout-button" onclick="logout()">Log Out</button>
+    </div>
+</div>
+
+<!-- Media Attachment Panel -->
+<div class="media-attachment-panel" id="media-attachment-panel">
+    <div class="attachment-options">
+        <div class="attachment-option" onclick="openGallery('image')">
+            <div class="attachment-icon">
+                <i class="fas fa-image"></i>
+            </div>
+            <div class="attachment-label">Photos</div>
+        </div>
+        <div class="attachment-option" onclick="openGallery('video')">
+            <div class="attachment-icon">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="attachment-label">Videos</div>
+        </div>
+        <div class="attachment-option" onclick="openFilePicker('audio')">
+            <div class="attachment-icon">
+                <i class="fas fa-music"></i>
+            </div>
+            <div class="attachment-label">Audio</div>
+        </div>
+        <div class="attachment-option" onclick="openFilePicker('document')">
+            <div class="attachment-icon">
+                <i class="fas fa-file"></i>
+            </div>
+            <div class="attachment-label">Document</div>
+        </div>
+    </div>
+</div>
+
+<!-- YouTube Download Panel -->
+<div class="media-attachment-panel" id="youtube-panel">
+    <div class="youtube-downloader">
+        <div class="youtube-input-container">
+            <input type="text" class="youtube-input" id="youtube-url" placeholder="Paste YouTube URL">
+            <button class="youtube-fetch-button" onclick="fetchYouTubeInfo()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        <div class="youtube-results" id="youtube-results">
+            <img src="" class="youtube-thumbnail" id="youtube-thumbnail">
+            <div class="youtube-title" id="youtube-title"></div>
+            
+            <div class="youtube-options" id="youtube-options">
+                <!-- Options will be populated here -->
+            </div>
+        </div>
+
+        <div class="youtube-downloading" id="youtube-downloading">
+            <div class="loading"></div>
+            <div class="youtube-download-progress">
+                <div class="youtube-download-bar" id="youtube-download-bar"></div>
+            </div>
+            <div class="youtube-download-status" id="youtube-download-status">Preparing download...</div>
+        </div>
+
+        <div class="youtube-error" id="youtube-error"></div>
+    </div>
+</div>
+
+<!-- Hidden file input for media uploads -->
+<input type="file" id="image-input" class="file-input" accept="image/*" multiple>
+<input type="file" id="video-input" class="file-input" accept="video/*">
+<input type="file" id="audio-input" class="file-input" accept="audio/*">
+<input type="file" id="document-input" class="file-input" accept="*">
+
+<!-- Media modal for viewing images/videos -->
+<div class="media-modal" id="media-modal">
+    <div class="media-modal-content">
+        <div class="media-modal-close" onclick="closeMediaModal()">
+            <i class="fas fa-times"></i>
+        </div>
+        <img class="media-modal-img" id="media-modal-img" src="" alt="">
+        <video class="media-modal-video" id="media-modal-video" controls></video>
+    </div>
+</div>
+
+<!-- Avatar Selection Modal -->
+<div class="modal-overlay" id="avatar-modal">
+    <div class="modal-content">
+        <div class="modal-title">Choose Profile Picture</div>
+        
+        <div class="avatar-upload-option" onclick="openAvatarGallery()">
+            <div class="avatar-upload-icon">
+                <i class="fas fa-image"></i>
+            </div>
+            <div class="avatar-upload-text">
+                <div class="avatar-upload-title">Choose from Gallery</div>
+                <div class="avatar-upload-desc">Select a photo from your device</div>
+            </div>
+        </div>
+        
+        <div class="avatar-options">
+            <div class="avatar-option" style="background-color: #0088cc;" onclick="selectAvatar('default1')">U</div>
+            <div class="avatar-option" style="background-color: #4CAF50;" onclick="selectAvatar('default2')">U</div>
+            <div class="avatar-option" style="background-color: #FF9800;" onclick="selectAvatar('default3')">U</div>
+            <div class="avatar-option" style="background-color: #9C27B0;" onclick="selectAvatar('default4')">U</div>
+            <div class="avatar-option" style="background-color: #F44336;" onclick="selectAvatar('default5')">U</div>
+            <div class="avatar-option" style="background-color: #00BCD4;" onclick="selectAvatar('default6')">U</div>
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="modal-button secondary" onclick="closeAvatarModal()">Cancel</button>
+            <button class="modal-button primary" onclick="saveAvatar()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Gallery modal for avatar selection -->
+<div class="modal-overlay" id="avatar-gallery-modal">
+    <div class="modal-content">
+        <div class="modal-title">Select Profile Picture</div>
+        
+        <div class="media-grid" id="avatar-gallery-grid">
+            <!-- Gallery items will be populated here -->
+        </div>
+        
+        <div class="modal-buttons">
+            <button class="modal-button secondary" onclick="closeAvatarGallery()">Cancel</button>
+            <button class="modal-button primary" onclick="confirmAvatarSelection()">Select</button>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // App state
+    let socket = null;
+    let currentUser = null;
+    let currentTargetUser = null;
+    let onlineUsers = [];
+    let allUsers = [];
+    let userConversations = [];
+    let pendingMessages = {};
+    let typingTimeout = null;
+    let currentConversationId = null;
+    let userSettings = {};
+    let selectedAvatar = null;
+    let mediaFiles = [];
+    let selectedMedia = null;
+    let avatarGalleryFiles = [];
+    let selectedAvatarFile = null;
+    let currentYouTubeUrl = '';
+    let youtubeDownloadInProgress = false;
+
+    // Initialize user settings with defaults
+    const defaultSettings = {
+        theme: 'light',
+        notifications: true,
+        sound: true,
+        privacy: {
+            lastSeen: 'everyone',
+            profilePhoto: 'everyone',
+            readReceipts: true
+        },
+        avatar: 'default1'
+    };
+
+    // UI Functions
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function showError(elementId, message) {
+        const errorElement = document.getElementById(elementId);
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        setTimeout(() => {
+            errorElement.style.display = 'none';
+        }, 3000);
+    }
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        
+        if (tabName === 'conversations') {
+            document.querySelector('.tab:nth-child(1)').classList.add('active');
+        } else if (tabName === 'online') {
+            document.querySelector('.tab:nth-child(2)').classList.add('active');
+        } else {
+            document.querySelector('.tab:nth-child(3)').classList.add('active');
+        }
+        
+        document.getElementById('conversations-tab').style.display = tabName === 'conversations' ? 'block' : 'none';
+        document.getElementById('online-tab').style.display = tabName === 'online' ? 'block' : 'none';
+        document.getElementById('all-tab').style.display = tabName === 'all' ? 'block' : 'none';
+    }
+
+    function toggleSearch() {
+        const searchContainer = document.getElementById('search-container');
+        const isVisible = searchContainer.style.display === 'block';
+        searchContainer.style.display = isVisible ? 'none' : 'block';
+        
+        if (!isVisible) {
+            document.getElementById('search-input').focus();
+        }
+    }
+
+    function showSettings() {
+        loadUserSettings();
+        showScreen('settings-screen');
+    }
+
+    function showChatOptions() {
+        alert('Chat options menu would open here');
+    }
+
+    function showAllUsers() {
+        showTab('all');
+    }
+
+    // Settings functions
+    function loadUserSettings() {
+        // Load settings from localStorage or use defaults
+        const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
+        userSettings = savedSettings ? JSON.parse(savedSettings) : {...defaultSettings};
+        
+        // Apply settings to UI
+        document.getElementById('theme-selector').value = userSettings.theme;
+        document.getElementById('notifications-toggle').checked = userSettings.notifications;
+        document.getElementById('sound-toggle').checked = userSettings.sound;
+        document.getElementById('last-seen-selector').value = userSettings.privacy.lastSeen;
+        document.getElementById('profile-photo-selector').value = userSettings.privacy.profilePhoto;
+        document.getElementById('read-receipts-toggle').checked = userSettings.privacy.readReceipts;
+        
+        // Apply theme
+        applyTheme(userSettings.theme);
+        
+        // Update profile info
+        document.getElementById('profile-name').textContent = currentUser;
+        document.getElementById('profile-username').textContent = `@${currentUser}`;
+        
+        // Set avatar
+        setAvatar(userSettings.avatar);
+    }
+
+    function saveUserSettings() {
+        localStorage.setItem(`gramx_settings_${currentUser}`, JSON.stringify(userSettings));
+        
+        // Send to server if connected
+        if (socket) {
+            socket.emit('update-user-settings', userSettings);
+        }
+    }
+
+    function applyTheme(theme) {
+        if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
+    }
+
+    function changeTheme() {
+        userSettings.theme = document.getElementById('theme-selector').value;
+        applyTheme(userSettings.theme);
+        saveUserSettings();
+    }
+
+    function toggleNotifications() {
+        userSettings.notifications = document.getElementById('notifications-toggle').checked;
+        saveUserSettings();
+    }
+
+    function toggleSound() {
+        userSettings.sound = document.getElementById('sound-toggle').checked;
+        saveUserSettings();
+    }
+
+    function changeLastSeenPrivacy() {
+        userSettings.privacy.lastSeen = document.getElementById('last-seen-selector').value;
+        saveUserSettings();
+    }
+
+    function changeProfilePhotoPrivacy() {
+        userSettings.privacy.profilePhoto = document.getElementById('profile-photo-selector').value;
+        saveUserSettings();
+    }
+
+    function toggleReadReceipts() {
+        userSettings.privacy.readReceipts = document.getElementById('read-receipts-toggle').checked;
+        saveUserSettings();
+    }
+
+    function openAvatarModal() {
+        selectedAvatar = userSettings.avatar;
+        document.getElementById('avatar-modal').style.display = 'flex';
+        
+        // Highlight current selection
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        const currentOption = document.querySelector(`.avatar-option[onclick="selectAvatar('${userSettings.avatar}')"]`);
+        if (currentOption) {
+            currentOption.classList.add('selected');
+        }
+    }
+
+    function closeAvatarModal() {
+        document.getElementById('avatar-modal').style.display = 'none';
+    }
+
+    function selectAvatar(avatarId) {
+        selectedAvatar = avatarId;
+        
+        // Update selection UI
+        document.querySelectorAll('.avatar-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        const selectedOption = document.querySelector(`.avatar-option[onclick="selectAvatar('${avatarId}')"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+        }
+    }
+
+    function saveAvatar() {
+        userSettings.avatar = selectedAvatar;
+        setAvatar(selectedAvatar);
+        saveUserSettings();
+        closeAvatarModal();
+    }
+
+    function setAvatar(avatarId) {
+        const avatarElement = document.getElementById('profile-avatar');
+        const color = getAvatarColor(avatarId);
+        const letter = currentUser ? currentUser.charAt(0).toUpperCase() : 'U';
+        
+        avatarElement.style.background = color;
+        avatarElement.textContent = letter;
+        
+        // Also update avatar in chat list if needed
+        updateUserAvatarInUI(currentUser, avatarId);
+    }
+
+    function getAvatarColor(avatarId) {
+        const colors = {
+            'default1': 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)',
+            'default2': 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
+            'default3': 'linear-gradient(135deg, #FF9800 0%, #EF6C00 100%)',
+            'default4': 'linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%)',
+            'default5': 'linear-gradient(135deg, #F44336 0%, #C62828 100%)',
+            'default6': 'linear-gradient(135deg, #00BCD4 0%, #00838F 100%)'
+        };
+        
+        return colors[avatarId] || colors['default1'];
+    }
+
+    function updateUserAvatarInUI(username, avatarId) {
+        // Update in conversations list
+        const conversationItems = document.querySelectorAll('.conversation-item');
+        conversationItems.forEach(item => {
+            const nameElement = item.querySelector('.conversation-name');
+            if (nameElement && nameElement.textContent.includes(username)) {
+                const avatarElement = item.querySelector('.conversation-avatar');
+                if (avatarElement) {
+                    avatarElement.style.background = getAvatarColor(avatarId);
+                    avatarElement.textContent = username.charAt(0).toUpperCase();
+                }
+            }
+        });
+        
+        // Update in users list
+        const userItems = document.querySelectorAll('.user-item');
+        userItems.forEach(item => {
+            const nameElement = item.querySelector('.user-name');
+            if (nameElement && nameElement.textContent.includes(username)) {
+                const avatarElement = item.querySelector('.user-avatar');
+                if (avatarElement) {
+                    avatarElement.style.background = getAvatarColor(avatarId);
+                    avatarElement.textContent = username.charAt(0).toUpperCase();
+                }
+            }
+        });
+    }
+
+    // Authentication functions
+    async function register() {
+        const username = document.getElementById('register-username').value;
+        const password = document.getElementById('register-password').value;
+        
+        if (!username || !password) {
+            showError('register-error', 'Please enter both username and password');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showError('register-error', 'Registration successful! Please login.');
+                setTimeout(() => {
+                    showScreen('login-screen');
+                }, 1500);
+            } else {
+                showError('register-error', result.error);
+            }
+        } catch (error) {
+            showError('register-error', 'Network error. Please try again.');
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        
+        if (!username || !password) {
+            showError('login-error', 'Please enter both username and password');
+            return;
+        }
+        
+        try {
+            const button = document.querySelector('#login-screen .auth-button');
+            const originalText = button.textContent;
+            button.innerHTML = '<div class="loading"></div>';
+            button.disabled = true;
+
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const result = await response.json();
+            
+            button.textContent = originalText;
+            button.disabled = false;
+            
+            if (result.success) {
+                currentUser = username;
+                localStorage.setItem('gramx_current_user', username);
+                initializeSocket();
+                showScreen('chat-list-screen');
+            } else {
+                showError('login-error', result.error);
+            }
+        } catch (error) {
+            showError('login-error', 'Network error. Please try again.');
+            const button = document.querySelector('#login-screen .auth-button');
+            button.textContent = 'Login';
+            button.disabled = false;
+        }
+    }
+
+    function logout() {
+        if (socket) {
+            socket.disconnect();
+        }
+        currentUser = null;
+        localStorage.removeItem('gramx_current_user');
+        showScreen('login-screen');
+    }
+
+    // Socket initialization and event handling
+    function initializeSocket() {
+        socket = io();
+        
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('user-login', currentUser);
+            
+            // Load user settings
+            loadUserSettings();
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+        
+        socket.on('online-users', (users) => {
+            onlineUsers = users.filter(user => user !== currentUser);
+            updateOnlineUsersList();
+        });
+        
+        socket.on('user-online', (username) => {
+            if (username !== currentUser && !onlineUsers.includes(username)) {
+                onlineUsers.push(username);
+                updateOnlineUsersList();
+                
+                // Update status if we're chatting with this user
+                if (currentTargetUser === username) {
+                    document.getElementById('status-text').textContent = 'online';
+                    document.getElementById('status-dot').style.background = '#4CAF50';
+                }
+            }
+        });
+        
+        socket.on('user-offline', (username) => {
+            onlineUsers = onlineUsers.filter(user => user !== username);
+            updateOnlineUsersList();
+            
+            // Update status if we're chatting with this user
+            if (currentTargetUser === username) {
+                document.getElementById('status-text').textContent = 'offline';
+                document.getElementById('status-dot').style.background = '#666';
+            }
+        });
+        
+        socket.on('user-conversations', (conversations) => {
+            userConversations = conversations;
+            updateConversationsList();
+        });
+        
+        socket.on('conversation-history', (data) => {
+            const container = document.getElementById('private-messages-container');
+            container.innerHTML = '';
+            
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(message => {
+                    addMessageToChat(message);
+                });
+            } else {
+                container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
+            }
+            
+            // Add typing indicator at the end
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.id = 'typing-indicator';
+            typingIndicator.innerHTML = `
+                <span id="typing-user"></span> is typing
+                <span class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </span>
+            `;
+            container.appendChild(typingIndicator);
+            
+            container.scrollTop = container.scrollHeight;
+            currentConversationId = data.conversationId;
+        });
+        
+        socket.on('conversation-error', (data) => {
+            alert(data.error);
+            backToChatList();
+        });
+        
+        socket.on('new-private-message', (message) => {
+            if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
+                (message.receiver === currentTargetUser && message.sender === currentUser)) {
+                addMessageToChat(message);
+                
+                // Mark as read if it's from the current chat
+                if (message.sender === currentTargetUser && socket) {
+                    socket.emit('message-read', { messageId: message._id || message.tempId });
+                }
+            }
+            
+            // Update conversations list when new message arrives
+            if (socket && currentUser) {
+                socket.emit('user-login', currentUser);
+            }
+        });
+        
+        socket.on('message-delivered', (data) => {
+            // Update message status to delivered
+            if (pendingMessages[data.tempId]) {
+                const messageElement = document.querySelector(`[data-temp-id="${data.tempId}"]`);
+                if (messageElement) {
+                    const statusElement = messageElement.querySelector('.message-status');
+                    if (statusElement) {
+                        statusElement.innerHTML = '<i class="fas fa-check-double" style="color: #0088cc;"></i>';
+                    }
+                }
+                delete pendingMessages[data.tempId];
+            }
+        });
+        
+        socket.on('message-read', (data) => {
+            // Update message status to read
+            const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
+            if (messageElement) {
+                const statusElement = messageElement.querySelector('.message-status');
+                if (statusElement) {
+                    statusElement.innerHTML = '<i class="fas fa-check-double" style="color: #0088cc;"></i> Read';
+                }
+            }
+        });
+        
+        socket.on('typing-start', (data) => {
+            if (data.conversationId === currentConversationId) {
+                const typingIndicator = document.getElementById('typing-indicator');
+                const typingUser = document.getElementById('typing-user');
+                typingUser.textContent = data.sender;
+                typingIndicator.style.display = 'block';
+                
+                // Auto-scroll to show typing indicator
+                const container = document.getElementById('private-messages-container');
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+        
+        socket.on('typing-stop', (data) => {
+            if (data.conversationId === currentConversationId) {
+                const typingIndicator = document.getElementById('typing-indicator');
+                typingIndicator.style.display = 'none';
+            }
+        });
+        
+        socket.on('error', (error) => {
+            console.error('Socket error:', error);
+            alert('Connection error: ' + error.message);
+        });
+
+        // Listen for settings updates from server
+        socket.on('user-settings-updated', (settings) => {
+            userSettings = settings;
+            loadUserSettings();
+        });
+
+        // Listen for media messages
+        socket.on('new-media-message', (message) => {
+            if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
+                (message.receiver === currentTargetUser && message.sender === currentUser)) {
+                // Add the media message to chat
+                addMediaMessageToChat(message);
+                
+                // Mark as read if it's from the current chat
+                if (message.sender === currentTargetUser && socket) {
+                    socket.emit('message-read', { messageId: message._id || message.tempId });
+                }
+            }
+            
+            // Update conversations list when new message arrives
+            if (socket && currentUser) {
+                socket.emit('user-login', currentUser);
+            }
+        });
+
+        // Listen for YouTube messages
+        socket.on('new-youtube-message', (message) => {
+            if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
+                (message.receiver === currentTargetUser && message.sender === currentUser)) {
+                // Add the YouTube message to chat
+                addYouTubeMessageToChat(message);
+                
+                // Mark as read if it's from the current chat
+                if (message.sender === currentTargetUser && socket) {
+                    socket.emit('message-read', { messageId: message._id || message.tempId });
+                }
+            }
+            
+            // Update conversations list when new message arrives
+            if (socket && currentUser) {
+                socket.emit('user-login', currentUser);
+            }
+        });
+    }
+
+    // Update UI functions
+    function updateConversationsList() {
+        const container = document.getElementById('conversations-tab');
+        const emptyState = document.getElementById('no-conversations');
+        
+        if (userConversations.length === 0) {
+            emptyState.style.display = 'flex';
+            container.innerHTML = '';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        container.innerHTML = '';
+        
+        userConversations.forEach(conv => {
+            const convElement = document.createElement('div');
+            convElement.className = 'conversation-item';
+            convElement.onclick = () => startPrivateChat(conv.partner);
+            
+            const lastMessageTime = conv.lastMessage ? new Date(conv.lastMessage.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            }) : '';
+            
+            const lastMessageText = conv.lastMessage ? 
+                (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 
+                'No messages yet';
+            
+            const isOnline = onlineUsers.includes(conv.partner);
+            
+            // Get avatar color from settings if available
+            let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+            const partnerSettings = localStorage.getItem(`gramx_settings_${conv.partner}`);
+            if (partnerSettings) {
+                try {
+                    const settings = JSON.parse(partnerSettings);
+                    avatarColor = getAvatarColor(settings.avatar);
+                } catch (e) {
+                    console.error('Error parsing partner settings:', e);
+                }
+            }
+            
+            convElement.innerHTML = `
+                <div class="conversation-avatar" style="background: ${avatarColor}">${conv.partner.charAt(0).toUpperCase()}</div>
+                <div class="conversation-info">
+                    <div class="conversation-name">
+                        ${conv.partner}
+                    </div>
+                    <div class="conversation-preview">
+                        ${lastMessageText}
+                    </div>
+                </div>
+                <div class="conversation-meta">
+                    <div class="conversation-time">${lastMessageTime}</div>
+                    ${isOnline ? '<span class="online-dot"></span>' : ''}
+                    ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+                </div>
+            `;
+            
+            container.appendChild(convElement);
+        });
+    }
+
+    function updateOnlineUsersList() {
+        const container = document.getElementById('online-tab');
+        const emptyState = document.getElementById('no-online-users');
+        
+        if (onlineUsers.length === 0) {
+            emptyState.style.display = 'flex';
+            container.innerHTML = '';
+            return;
+        }
+        
+        emptyState.style.display = 'none';
+        container.innerHTML = '';
+        
+        onlineUsers.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'user-item';
+            userElement.onclick = () => startPrivateChat(user);
+            
+            // Get avatar color from settings if available
+            let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+            const userSettings = localStorage.getItem(`gramx_settings_${user}`);
+            if (userSettings) {
+                try {
+                    const settings = JSON.parse(userSettings);
+                    avatarColor = getAvatarColor(settings.avatar);
+                } catch (e) {
+                    console.error('Error parsing user settings:', e);
+                }
+            }
+            
+            userElement.innerHTML = `
+                <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
+                <div class="user-info">
+                    <div class="user-name">${user}</div>
+                    <div class="user-status"><span class="online-dot"></span>Online</div>
+                </div>
+            `;
+            
+            container.appendChild(userElement);
+        });
+    }
+
+    async function loadAllUsers() {
+        const container = document.getElementById('all-tab');
+        const emptyState = document.getElementById('no-all-users');
+        
+        try {
+            // In a real app, you would fetch this from the server
+            // For now, we'll combine online users with some offline users
+            const offlineUsers = ['charlie', 'david', 'emma'].filter(user => 
+                user !== currentUser && !onlineUsers.includes(user)
+            );
+            
+            const allUsersList = [...onlineUsers, ...offlineUsers];
+            
+            if (allUsersList.length === 0) {
+                emptyState.style.display = 'flex';
+                container.innerHTML = '';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            container.innerHTML = '';
+            
+            allUsersList.forEach(user => {
+                const userElement = document.createElement('div');
+                userElement.className = 'user-item';
+                userElement.onclick = () => startPrivateChat(user);
+                
+                const isOnline = onlineUsers.includes(user);
+                
+                // Get avatar color from settings if available
+                let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+                const userSettings = localStorage.getItem(`gramx_settings_${user}`);
+                if (userSettings) {
+                    try {
+                        const settings = JSON.parse(userSettings);
+                        avatarColor = getAvatarColor(settings.avatar);
+                    } catch (e) {
+                        console.error('Error parsing user settings:', e);
+                    }
+                }
+                
+                userElement.innerHTML = `
+                    <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user}</div>
+                        <div class="user-status">
+                            ${isOnline ? '<span class="online-dot"></span>Online' : '<span class="offline-dot"></span>Offline'}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(userElement);
+            });
+        } catch (error) {
+            console.error('Error loading all users:', error);
+            emptyState.style.display = 'flex';
+            emptyState.innerHTML = `
+                <div class="empty-icon">❌</div>
+                Failed to load users
+            `;
+        }
+    }
+
+    // Chat functions
+    function startPrivateChat(targetUser) {
+        if (!currentUser) return;
+        
+        currentTargetUser = targetUser;
+        document.getElementById('chat-target-name').textContent = targetUser;
+        
+        // Check if target is online
+        const isOnline = onlineUsers.includes(targetUser);
+        document.getElementById('status-text').textContent = isOnline ? 'online' : 'offline';
+        document.getElementById('status-dot').style.background = isOnline ? '#4CAF50' : '#666';
+        
+        // Join the conversation
+        socket.emit('join-conversation', {
+            currentUser: currentUser,
+            targetUser: targetUser
+        });
+        
+        showScreen('private-chat-screen');
+    }
+
+    function addMessageToChat(message) {
+        const container = document.getElementById('private-messages-container');
+        
+        // Remove "no messages" system message if it exists
+        const systemMessage = container.querySelector('.system-message');
+        if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+            systemMessage.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        
+        const isMyMessage = message.sender === currentUser;
+        messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+        
+        if (message._id) {
+            messageDiv.setAttribute('data-message-id', message._id);
+        }
+        
+        if (message.tempId) {
+            messageDiv.setAttribute('data-temp-id', message.tempId);
+            pendingMessages[message.tempId] = true;
+        }
+        
+        const time = new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', minute: '2-digit' 
+        });
+        
+        let statusHtml = '';
+        if (isMyMessage) {
+            if (message.read) {
+                statusHtml = '<i class="fas fa-check-double" style="color: #0088cc;"></i> Read';
+            } else if (message.delivered) {
+                statusHtml = '<i class="fas fa-check-double" style="color: #0088cc;"></i>';
+            } else {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+        }
+        
+        messageDiv.innerHTML = `
+            ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+            <div class="message-text">${message.text}</div>
+            <div class="message-time">${time} ${statusHtml}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        
+        // Make sure typing indicator stays at the bottom
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            container.appendChild(typingIndicator);
+        }
+        
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function sendPrivateMessage() {
+        const input = document.getElementById('private-message-input');
+        const text = input.value.trim();
+        
+        if (text && socket && currentTargetUser) {
+            const tempId = 'temp-' + Date.now();
+            const messageData = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                text: text,
+                tempId: tempId
+            };
+            
+            // Add message immediately to UI with "sending" status
+            const tempMessage = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                text: text,
+                tempId: tempId,
+                timestamp: new Date(),
+                read: false,
+                delivered: false
+            };
+            
+            addMessageToChat(tempMessage);
+            
+            // Send typing stop event
+            socket.emit('typing-stop', { receiver: currentTargetUser });
+            
+            // Send the message via socket
+            socket.emit('send-private-message', messageData, (response) => {
+                if (response && response.error) {
+                    alert('Failed to send message: ' + response.error);
+                    // Remove the failed message from UI
+                    const failedMessage = document.querySelector(`[data-temp-id="${tempId}"]`);
+                    if (failedMessage) {
+                        failedMessage.remove();
+                    }
+                    delete pendingMessages[tempId];
+                }
+            });
+            
+            input.value = '';
+        }
+    }
+
+    function handleTyping() {
+        if (!socket || !currentTargetUser) return;
+        
+        // Emit typing start event
+        socket.emit('typing-start', { receiver: currentTargetUser });
+        
+        // Clear previous timeout
+        if (typingTimeout) {
+            clearTimeout(typingTimeout);
+        }
+        
+        // Set timeout to stop typing indicator after 2 seconds
+        typingTimeout = setTimeout(() => {
+            socket.emit('typing-stop', { receiver: currentTargetUser });
+        }, 2000);
+    }
+
+    function handlePrivateKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendPrivateMessage();
+        }
+    }
+
+    function backToChatList() {
+        showScreen('chat-list-screen');
+        // Refresh conversations
+        if (socket && currentUser) {
+            socket.emit('user-login', currentUser);
+        }
+    }
+
+    // Media attachment functions
+    function toggleMediaPanel() {
+        const panel = document.getElementById('media-attachment-panel');
+        const youtubePanel = document.getElementById('youtube-panel');
+        
+        // Hide YouTube panel if shown
+        if (youtubePanel.style.display === 'flex') {
+            youtubePanel.style.display = 'none';
+        }
+        
+        // Toggle media panel
+        panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function toggleYouTubePanel() {
+        const panel = document.getElementById('youtube-panel');
+        const mediaPanel = document.getElementById('media-attachment-panel');
+        
+        // Hide media panel if shown
+        if (mediaPanel.style.display === 'flex') {
+            mediaPanel.style.display = 'none';
+        }
+        
+        // Toggle YouTube panel
+        panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+        
+        // Clear previous results when opening
+        if (panel.style.display === 'flex') {
+            document.getElementById('youtube-url').value = '';
+            document.getElementById('youtube-results').style.display = 'none';
+            document.getElementById('youtube-downloading').style.display = 'none';
+            document.getElementById('youtube-error').style.display = 'none';
+        }
+    }
+
+    function openGallery(type) {
+        const inputId = type === 'image' ? 'image-input' : 'video-input';
+        document.getElementById(inputId).click();
+    }
+
+    function openFilePicker(type) {
+        const inputId = type + '-input';
+        document.getElementById(inputId).click();
+    }
+
+    // Handle file selection
+    function setupFileInputListeners() {
+        // Image input
+        document.getElementById('image-input').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleMediaSelection(e.target.files, 'image');
+            }
+        });
+
+        // Video input
+        document.getElementById('video-input').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleMediaSelection(e.target.files, 'video');
+            }
+        });
+
+        // Audio input
+        document.getElementById('audio-input').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleMediaSelection(e.target.files, 'audio');
+            }
+        });
+
+        // Document input
+        document.getElementById('document-input').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleMediaSelection(e.target.files, 'document');
+            }
+        });
+    }
+
+    function handleMediaSelection(files, type) {
+        // Hide the media panel
+        document.getElementById('media-attachment-panel').style.display = 'none';
+        
+        // For multiple images, send them all
+        if (type === 'image' && files.length > 1) {
+            for (let i = 0; i < files.length; i++) {
+                sendMediaMessage(files[i], type);
+            }
+        } else {
+            // For single files, send the first one
+            sendMediaMessage(files[0], type);
+        }
+    }
+
+    function sendMediaMessage(file, type) {
+        // Create a temporary message while uploading
+        const tempId = 'media-' + Date.now();
+        const messageData = {
+            sender: currentUser,
+            receiver: currentTargetUser,
+            type: type,
+            file: file,
+            tempId: tempId,
+            timestamp: new Date()
+        };
+
+        // Show uploading state
+        addMediaMessageToChat({
+            _id: tempId,
+            sender: currentUser,
+            receiver: currentTargetUser,
+            type: type,
+            file: file,
+            tempId: tempId,
+            timestamp: new Date(),
+            status: 'uploading'
+        });
+
+        // In a real app, you would upload the file to a server here
+        // For this demo, we'll simulate upload progress
+        simulateFileUpload(file, tempId, type);
+    }
+
+    function simulateFileUpload(file, tempId, type) {
+        // Simulate upload progress
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 5;
+            updateUploadProgress(tempId, progress);
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                
+                // After "upload", show the message as sent
+                const messageElement = document.querySelector(`[data-temp-id="${tempId}"]`);
+                if (messageElement) {
+                    const progressElement = messageElement.querySelector('.upload-progress');
+                    if (progressElement) {
+                        progressElement.style.display = 'none';
+                    }
+                    
+                    const statusElement = messageElement.querySelector('.message-status');
+                    if (statusElement) {
+                        statusElement.innerHTML = '<i class="fas fa-check"></i>';
+                    }
+                }
+                
+                // Send the message via socket
+                if (socket) {
+                    // In a real app, you would send the file URL or ID here
+                    socket.emit('send-media-message', {
+                        sender: currentUser,
+                        receiver: currentTargetUser,
+                        type: type,
+                        filename: file.name,
+                        size: file.size,
+                        tempId: tempId
+                    });
+                }
+            }
+        }, 200);
+    }
+
+    function updateUploadProgress(tempId, progress) {
+        const messageElement = document.querySelector(`[data-temp-id="${tempId}"]`);
+        if (messageElement) {
+            const progressBar = messageElement.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = progress + '%';
+            }
+        }
+    }
+
+    function addMediaMessageToChat(message) {
+        const container = document.getElementById('private-messages-container');
+        
+        // Remove "no messages" system message if it exists
+        const systemMessage = container.querySelector('.system-message');
+        if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+            systemMessage.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        
+        const isMyMessage = message.sender === currentUser;
+        messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+        
+        if (message._id) {
+            messageDiv.setAttribute('data-message-id', message._id);
+        }
+        
+        if (message.tempId) {
+            messageDiv.setAttribute('data-temp-id', message.tempId);
+        }
+        
+        let mediaContent = '';
+        
+        switch (message.type) {
+            case 'image':
+                const imageUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                mediaContent = `
+                    <div class="media-message">
+                        <div class="media-container">
+                            <img src="${imageUrl}" class="media-preview" onclick="openMediaModal('${imageUrl}', 'image')">
+                            ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
+                        </div>
+                        ${message.caption ? `<div class="media-caption">${message.caption}</div>` : ''}
+                    </div>
+                `;
+                break;
+                
+            case 'video':
+                const videoUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                mediaContent = `
+                    <div class="media-message">
+                        <div class="media-container">
+                            <video class="media-preview" onclick="openMediaModal('${videoUrl}', 'video')">
+                                <source src="${videoUrl}" type="video/mp4">
+                            </video>
+                            <div class="video-icon">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
+                        </div>
+                        ${message.caption ? `<div class="media-caption">${message.caption}</div>` : ''}
+                    </div>
+                `;
+                break;
+                
+            case 'audio':
+                const audioUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                mediaContent = `
+                    <div class="audio-player">
+                        <div class="audio-play-button" onclick="playAudio(this, '${audioUrl}')">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="audio-progress" onclick="seekAudio(this, event)">
+                            <div class="audio-progress-filled"></div>
+                        </div>
+                        <div class="audio-duration">0:00</div>
+                    </div>
+                    ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
+                `;
+                break;
+                
+            case 'document':
+                mediaContent = `
+                    <div class="document-message">
+                        <div class="document-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="document-info">
+                            <div class="document-name">${message.file.name}</div>
+                            <div class="document-size">${formatFileSize(message.file.size)}</div>
+                        </div>
+                        <div class="document-download" onclick="downloadFile('${URL.createObjectURL(message.file)}', '${message.file.name}')">
+                            <i class="fas fa-download"></i>
+                        </div>
+                    </div>
+                    ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
+                `;
+                break;
+        }
+        
+        const time = new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', minute: '2-digit' 
+        });
+        
+        let statusHtml = '';
+        if (isMyMessage) {
+            if (message.read) {
+                statusHtml = '<i class="fas fa-check-double" style="color: #0088cc;"></i> Read';
+            } else if (message.delivered) {
+                statusHtml = '<i class="fas fa-check-double" style="color: #0088cc;"></i>';
+            } else if (message.status === 'uploading') {
+                statusHtml = '<i class="fas fa-clock"></i>';
+            } else {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+        }
+        
+        messageDiv.innerHTML = `
+            ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+            ${mediaContent}
+            <div class="message-time">${time} ${statusHtml}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        
+        // Make sure typing indicator stays at the bottom
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            container.appendChild(typingIndicator);
+        }
+        
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function openMediaModal(url, type) {
+        const modal = document.getElementById('media-modal');
+        const img = document.getElementById('media-modal-img');
+        const video = document.getElementById('media-modal-video');
+        
+        if (type === 'image') {
+            img.src = url;
+            img.style.display = 'block';
+            video.style.display = 'none';
+        } else {
+            video.src = url;
+            video.style.display = 'block';
+            img.style.display = 'none';
+        }
+        
+        modal.style.display = 'flex';
+    }
+
+    function closeMediaModal() {
+        const modal = document.getElementById('media-modal');
+        const video = document.getElementById('media-modal-video');
+        
+        // Pause video when closing modal
+        video.pause();
+        modal.style.display = 'none';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' bytes';
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        else return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function downloadFile(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Audio player functions
+    function playAudio(button, url) {
+        const icon = button.querySelector('i');
+        const audioPlayer = button.closest('.audio-player');
+        const progress = audioPlayer.querySelector('.audio-progress-filled');
+        const duration = audioPlayer.querySelector('.audio-duration');
+        
+        if (icon.classList.contains('fa-play')) {
+            // Play audio
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+            
+            // In a real app, you would use the Audio API here
+            // For demo, we'll just simulate playback
+            simulateAudioPlayback(progress, duration);
+        } else {
+            // Pause audio
+            icon.classList.remove('fa-pause');
+            icon.classList.add('fa-play');
+            
+            // Stop simulation
+            if (window.audioInterval) {
+                clearInterval(window.audioInterval);
+            }
+        }
+    }
+
+    function simulateAudioPlayback(progress, duration) {
+        let currentTime = 0;
+        const totalTime = 120; // 2 minutes for demo
+        
+        // Update duration text
+        duration.textContent = formatTime(totalTime);
+        
+        if (window.audioInterval) {
+            clearInterval(window.audioInterval);
+        }
+        
+        window.audioInterval = setInterval(() => {
+            currentTime += 1;
+            const percent = (currentTime / totalTime) * 100;
+            progress.style.width = percent + '%';
+            
+            if (currentTime >= totalTime) {
+                clearInterval(window.audioInterval);
+                const button = progress.closest('.audio-player').querySelector('.audio-play-button');
+                const icon = button.querySelector('i');
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+                progress.style.width = '0%';
+            }
+        }, 1000);
+    }
+
+    function seekAudio(progressBar, event) {
+        const rect = progressBar.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const percent = (x / rect.width) * 100;
+        const progress = progressBar.querySelector('.audio-progress-filled');
+        progress.style.width = percent + '%';
+        
+        // In a real app, you would seek the audio to this position
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    // Avatar gallery functions
+    function openAvatarGallery() {
+        // Close the avatar modal
+        closeAvatarModal();
+        
+        // Show the gallery modal
+        document.getElementById('avatar-gallery-modal').style.display = 'flex';
+        
+        // In a real app, you would access the device's photo gallery here
+        // For this demo, we'll simulate some images
+        simulateAvatarGallery();
+    }
+
+    function simulateAvatarGallery() {
+        const grid = document.getElementById('avatar-gallery-grid');
+        grid.innerHTML = '';
+        
+        // Simulate some gallery images (in a real app, these would come from the device)
+        const simulatedImages = [
+            { id: 'gallery1', color: '#FF6B6B', letter: 'A' },
+            { id: 'gallery2', color: '#4ECDC4', letter: 'B' },
+            { id: 'gallery3', color: '#FFE66D', letter: 'C' },
+            { id: 'gallery4', color: '#6A0572', letter: 'D' },
+            { id: 'gallery5', color: '#AB83A1', letter: 'E' },
+            { id: 'gallery6', color: '#5C80BC', letter: 'F' }
+        ];
+        
+        simulatedImages.forEach(img => {
+            const item = document.createElement('div');
+            item.className = 'media-grid-item';
+            item.innerHTML = `
+                <div style="width: 100%; height: 100%; background: ${img.color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">
+                    ${img.letter}
+                </div>
+                <div class="media-grid-selected">
+                    <i class="fas fa-check"></i>
+                </div>
+            `;
+            
+            item.addEventListener('click', () => {
+                // Toggle selection
+                document.querySelectorAll('.media-grid-item').forEach(i => {
+                    i.classList.remove('selected');
+                });
+                item.classList.add('selected');
+                selectedAvatarFile = img.id;
+            });
+            
+            grid.appendChild(item);
+        });
+    }
+
+    function closeAvatarGallery() {
+        document.getElementById('avatar-gallery-modal').style.display = 'none';
+    }
+
+    function confirmAvatarSelection() {
+        if (selectedAvatarFile) {
+            // In a real app, you would process the selected image here
+            // For this demo, we'll just use the selected color
+            const selectedItem = document.querySelector('.media-grid-item.selected');
+            const color = selectedItem.querySelector('div').style.background;
+            
+            // Set the avatar to the selected gallery image
+            const avatarElement = document.getElementById('profile-avatar');
+            avatarElement.style.background = color;
+            avatarElement.textContent = currentUser.charAt(0).toUpperCase();
+            
+            // Save to settings
+            userSettings.avatar = 'gallery-custom';
+            saveUserSettings();
+            
+            // Close the modal
+            closeAvatarGallery();
+        } else {
+            alert('Please select an image from your gallery');
+        }
+    }
+
+    // YouTube download functions
+    function fetchYouTubeInfo() {
+        const url = document.getElementById('youtube-url').value.trim();
+        
+        if (!url) {
+            showYouTubeError('Please enter a YouTube URL');
+            return;
+        }
+        
+        if (!isValidYouTubeUrl(url)) {
+            showYouTubeError('Please enter a valid YouTube URL');
+            return;
+        }
+        
+        currentYouTubeUrl = url;
+        
+        // Show loading state
+        document.getElementById('youtube-results').style.display = 'none';
+        document.getElementById('youtube-downloading').style.display = 'flex';
+        document.getElementById('youtube-download-status').textContent = 'Fetching video info...';
+        document.getElementById('youtube-error').style.display = 'none';
+        
+        // In a real app, you would fetch video info from your backend
+        // For this demo, we'll simulate the response
+        simulateYouTubeInfoFetch(url);
+    }
+
+    function isValidYouTubeUrl(url) {
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+        return youtubeRegex.test(url);
+    }
+
+    function simulateYouTubeInfoFetch(url) {
+        // Simulate API request delay
+        setTimeout(() => {
+            // For demo purposes, we'll use a fake response
+            // In a real app, you would use the API response
+            const videoId = extractVideoId(url);
+            const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+            
+            document.getElementById('youtube-thumbnail').src = thumbnailUrl;
+            document.getElementById('youtube-title').textContent = 'Sample YouTube Video';
+            
+            // Create download options
+            const optionsContainer = document.getElementById('youtube-options');
+            optionsContainer.innerHTML = '';
+            
+            // Audio options
+            const audioOptions = [
+                { quality: '128kbps', format: 'MP3', size: '3.2 MB' },
+                { quality: '256kbps', format: 'MP3', size: '6.5 MB' },
+                { quality: '320kbps', format: 'MP3', size: '8.1 MB' }
+            ];
+            
+            audioOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'youtube-option';
+                optionElement.innerHTML = `
+                    <div class="youtube-option-quality">${option.quality}</div>
+                    <div class="youtube-option-size">${option.format} • ${option.size}</div>
+                `;
+                optionElement.onclick = () => downloadYouTubeAudio(option.quality);
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Video options
+            const videoOptions = [
+                { quality: '720p', format: 'MP4', size: '15.7 MB' },
+                { quality: '1080p', format: 'MP4', size: '28.3 MB' },
+                { quality: '4K', format: 'MP4', size: '112.5 MB' }
+            ];
+            
+            videoOptions.forEach(option => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'youtube-option';
+                optionElement.innerHTML = `
+                    <div class="youtube-option-quality">${option.quality}</div>
+                    <div class="youtube-option-size">${option.format} • ${option.size}</div>
+                `;
+                optionElement.onclick = () => downloadYouTubeVideo(option.quality);
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Show results
+            document.getElementById('youtube-results').style.display = 'block';
+            document.getElementById('youtube-downloading').style.display = 'none';
+            
+        }, 1500);
+    }
+
+    function extractVideoId(url) {
+        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[7].length === 11) ? match[7] : false;
+    }
+
+    function downloadYouTubeAudio(quality) {
+        if (youtubeDownloadInProgress) return;
+        
+        youtubeDownloadInProgress = true;
+        
+        // Show downloading state
+        document.getElementById('youtube-results').style.display = 'none';
+        document.getElementById('youtube-downloading').style.display = 'flex';
+        document.getElementById('youtube-download-status').textContent = `Downloading audio (${quality})...`;
+        
+        // Build API URL based on quality
+        let apiUrl;
+        if (quality === '128kbps') {
+            apiUrl = `https://api.giftedtech.co.ke/api/download/yta?apikey=gifted&url=${encodeURIComponent(currentYouTubeUrl)}`;
+        } else {
+            // For other qualities, we'd need to adjust the API parameters
+            apiUrl = `https://api.giftedtech.co.ke/api/download/ytmusic?apikey=gifted&quality=${quality}&url=${encodeURIComponent(currentYouTubeUrl)}`;
+        }
+        
+        // Simulate download progress
+        simulateDownloadProgress(apiUrl, 'audio', quality);
+    }
+
+    function downloadYouTubeVideo(quality) {
+        if (youtubeDownloadInProgress) return;
+        
+        youtubeDownloadInProgress = true;
+        
+        // Show downloading state
+        document.getElementById('youtube-results').style.display = 'none';
+        document.getElementById('youtube-downloading').style.display = 'flex';
+        document.getElementById('youtube-download-status').textContent = `Downloading video (${quality})...`;
+        
+        // Build API URL
+        const apiUrl = `https://api.giftedtech.co.ke/api/download/ytvid?apikey=gifted&quality=${quality}&url=${encodeURIComponent(currentYouTubeUrl)}`;
+        
+        // Simulate download progress
+        simulateDownloadProgress(apiUrl, 'video', quality);
+    }
+
+    function simulateDownloadProgress(apiUrl, type, quality) {
+        let progress = 0;
+        const progressBar = document.getElementById('youtube-download-bar');
+        
+        const progressInterval = setInterval(() => {
+            progress += 5;
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                youtubeDownloadInProgress = false;
+                
+                // Download complete
+                document.getElementById('youtube-download-status').textContent = 'Download complete!';
+                
+                // In a real app, you would actually download the file from the API
+                // For this demo, we'll simulate a successful download
+                setTimeout(() => {
+                    // Send the downloaded media as a message
+                    sendYouTubeDownloadMessage(type, quality);
+                    
+                    // Close the panel after a short delay
+                    setTimeout(() => {
+                        document.getElementById('youtube-panel').style.display = 'none';
+                    }, 1000);
+                }, 1000);
+            }
+        }, 200);
+    }
+
+    function sendYouTubeDownloadMessage(type, quality) {
+        if (!currentUser || !currentTargetUser) return;
+        
+        const messageData = {
+            sender: currentUser,
+            receiver: currentTargetUser,
+            type: 'youtube',
+            youtubeUrl: currentYouTubeUrl,
+            mediaType: type,
+            quality: quality,
+            timestamp: new Date()
+        };
+        
+        // Add to chat
+        addYouTubeMessageToChat(messageData);
+        
+        // Send via socket
+        if (socket) {
+            socket.emit('send-youtube-message', messageData);
+        }
+    }
+
+    function addYouTubeMessageToChat(message) {
+        const container = document.getElementById('private-messages-container');
+        
+        // Remove "no messages" system message if it exists
+        const systemMessage = container.querySelector('.system-message');
+        if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+            systemMessage.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        
+        const isMyMessage = message.sender === currentUser;
+        messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+        
+        const videoId = extractVideoId(message.youtubeUrl);
+        const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+        
+        const time = new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', minute: '2-digit' 
+        });
+        
+        let statusHtml = '';
+        if (isMyMessage) {
+            statusHtml = '<i class="fas fa-check"></i>';
+        }
+        
+        messageDiv.innerHTML = `
+            ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+            <div class="youtube-message">
+                <div class="youtube-message-header">
+                    <i class="fab fa-youtube youtube-message-icon"></i>
+                    <div class="youtube-message-title">YouTube ${message.mediaType === 'audio' ? 'Audio' : 'Video'} Download</div>
+                </div>
+                <div class="youtube-message-url">${message.youtubeUrl}</div>
+                <div class="youtube-message-actions">
+                    <button class="youtube-message-button" onclick="openYouTubeUrl('${message.youtubeUrl}')">
+                        <i class="fas fa-external-link-alt"></i> Open
+                    </button>
+                    <button class="youtube-message-button" onclick="redownloadYouTube('${message.youtubeUrl}', '${message.mediaType}', '${message.quality}')">
+                        <i class="fas fa-download"></i> Download Again
+                    </button>
+                </div>
+            </div>
+            <div class="message-time">${time} ${statusHtml}</div>
+        `;
+        
+        container.appendChild(messageDiv);
+        
+        // Make sure typing indicator stays at the bottom
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            container.appendChild(typingIndicator);
+        }
+        
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function openYouTubeUrl(url) {
+        window.open(url, '_blank');
+    }
+
+    function redownloadYouTube(url, mediaType, quality) {
+        // Open YouTube panel with the URL
+        document.getElementById('youtube-panel').style.display = 'flex';
+        document.getElementById('youtube-url').value = url;
+        currentYouTubeUrl = url;
+        
+        // Fetch info
+        fetchYouTubeInfo();
+        
+        // After a delay, automatically select the previous quality
+        setTimeout(() => {
+            if (mediaType === 'audio') {
+                downloadYouTubeAudio(quality);
+            } else {
+                downloadYouTubeVideo(quality);
+            }
+        }, 2000);
+    }
+
+    function showYouTubeError(message) {
+        const errorElement = document.getElementById('youtube-error');
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+    }
+
+    // Initialize media features
+    function initializeMediaFeatures() {
+        setupFileInputListeners();
+        
+        // Close media panel when clicking outside
+        document.addEventListener('click', (e) => {
+            const mediaPanel = document.getElementById('media-attachment-panel');
+            const youtubePanel = document.getElementById('youtube-panel');
+            
+            if (mediaPanel.style.display === 'flex' && 
+                !e.target.closest('.media-attachment-panel') && 
+                !e.target.closest('.input-button')) {
+                mediaPanel.style.display = 'none';
+            }
+            
+            if (youtubePanel.style.display === 'flex' && 
+                !e.target.closest('.media-attachment-panel') && 
+                !e.target.closest('.youtube-button')) {
+                youtubePanel.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize the app when page loads
+    window.onload = function() {
+        // Check if user was previously logged in
+        const savedUser = localStorage.getItem('gramx_current_user');
+        if (savedUser) {
+            document.getElementById('login-username').value = savedUser;
+            currentUser = savedUser;
+            initializeSocket();
+            showScreen('chat-list-screen');
+        }
+        
+        // Set up tab click handlers
+        document.querySelectorAll('.tab').forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                if (index === 0) showTab('conversations');
+                else if (index === 1) showTab('online');
+                else if (index === 2) loadAllUsers();
+            });
+        });
+
+        // Set up bottom navigation
+        document.querySelectorAll('.nav-item').forEach((item, index) => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                if (index === 0) {
+                    showScreen('chat-list-screen');
+                    showTab('conversations');
+                } else if (index === 1) {
+                    showScreen('chat-list-screen');
+                    showTab('online');
+                } else if (index === 2) {
+                    showSettings();
+                }
+            });
+        });
+
+        // Check for system theme preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        if (prefersDark.matches) {
+            document.body.classList.add('dark-theme');
+        }
+        
+        // Listen for system theme changes
+        prefersDark.addEventListener('change', e => {
+            const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                if (settings.theme === 'auto') {
+                    applyTheme('auto');
+                }
+            }
+        });
+        
+        // Initialize media features
+        initializeMediaFeatures();
+    };
+</script>
+</body>
+</html>
