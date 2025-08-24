@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>gramX - Real Messaging</title>
+    <title>gramX - Complete Messaging</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -12,6 +12,11 @@
             background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
             height: 100vh;
             overscroll-behavior: none;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #0a1a2a 0%, #05121f 100%);
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
@@ -29,6 +34,12 @@
             border-radius: 20px 20px 0 0;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
         }
+
+        .dark-theme .auth-container {
+            background: #1e2c3a;
+            color: white;
+        }
+
         .auth-box { width: 100%; max-width: 340px; }
         .auth-title { 
             text-align: center; 
@@ -38,6 +49,11 @@
             margin-bottom: 30px;
             letter-spacing: -0.5px;
         }
+
+        .dark-theme .auth-title {
+            color: #4eb6e9;
+        }
+
         .auth-input { 
             width: 100%; 
             padding: 16px; 
@@ -48,12 +64,26 @@
             background: #f8f9fa; 
             transition: all 0.2s ease;
         }
+
+        .dark-theme .auth-input {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
         .auth-input:focus {
             border-color: #0088cc;
             background: white;
             box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
             outline: none;
         }
+
+        .dark-theme .auth-input:focus {
+            border-color: #4eb6e9;
+            background: #2a3b4d;
+            box-shadow: 0 0 0 3px rgba(78, 182, 233, 0.2);
+        }
+
         .auth-button { 
             width: 100%; 
             padding: 16px; 
@@ -67,12 +97,24 @@
             margin-bottom: 20px; 
             transition: all 0.2s ease;
         }
+
+        .dark-theme .auth-button {
+            background: #4eb6e9;
+        }
+
         .auth-button:active {
             transform: scale(0.98);
             background: #0066aa;
         }
+
+        .dark-theme .auth-button:active {
+            background: #3a95c7;
+        }
+
         .auth-switch { text-align: center; color: #666; }
+        .dark-theme .auth-switch { color: #aaa; }
         .auth-switch a { color: #0088cc; text-decoration: none; font-weight: 500; }
+        .dark-theme .auth-switch a { color: #4eb6e9; }
         .error-message {
             color: #ff3b30;
             text-align: center;
@@ -91,6 +133,10 @@
             font-size: 20px;
             position: relative;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .chat-list-header {
+            background: #1e2c3a;
         }
 
         .header-buttons {
@@ -128,6 +174,11 @@
             border-bottom: 1px solid #e0e0e0;
         }
 
+        .dark-theme .search-container {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
         .search-box {
             display: flex;
             align-items: center;
@@ -137,9 +188,17 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
+        .dark-theme .search-box {
+            background: #2a3b4d;
+        }
+
         .search-box i {
             color: #999;
             margin-right: 8px;
+        }
+
+        .dark-theme .search-box i {
+            color: #7a8a9c;
         }
 
         .search-input {
@@ -150,10 +209,19 @@
             background: transparent;
         }
 
+        .dark-theme .search-input {
+            color: white;
+        }
+
         .tabs {
             display: flex;
             background: #f8f9fa;
             border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dark-theme .tabs {
+            background: #1e2c3a;
+            border-color: #2d3e50;
         }
 
         .tab {
@@ -167,15 +235,28 @@
             transition: all 0.2s ease;
         }
 
+        .dark-theme .tab {
+            color: #aaa;
+        }
+
         .tab.active {
             color: #0088cc;
             border-bottom-color: #0088cc;
+        }
+
+        .dark-theme .tab.active {
+            color: #4eb6e9;
+            border-bottom-color: #4eb6e9;
         }
 
         .conversations-list {
             flex: 1;
             overflow-y: auto;
             background: white;
+        }
+
+        .dark-theme .conversations-list {
+            background: #15202b;
         }
 
         .conversation-item {
@@ -189,8 +270,16 @@
             transition: all 0.2s ease;
         }
 
+        .dark-theme .conversation-item {
+            border-color: #253341;
+        }
+
         .conversation-item:active {
             background: #f8f9fa;
+        }
+
+        .dark-theme .conversation-item:active {
+            background: #1e2c3a;
         }
 
         .conversation-avatar {
@@ -206,6 +295,8 @@
             font-size: 18px;
             flex-shrink: 0;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-size: cover;
+            background-position: center;
         }
 
         .conversation-info {
@@ -225,9 +316,17 @@
             gap: 5px;
         }
 
+        .dark-theme .conversation-name {
+            color: white;
+        }
+
         .verified-badge {
             color: #0088cc;
             font-size: 14px;
+        }
+
+        .dark-theme .verified-badge {
+            color: #4eb6e9;
         }
 
         .conversation-preview {
@@ -239,6 +338,10 @@
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+
+        .dark-theme .conversation-preview {
+            color: #8899a6;
         }
 
         .conversation-meta {
@@ -254,6 +357,10 @@
             font-size: 12px;
             color: #666;
             margin-bottom: 4px;
+        }
+
+        .dark-theme .conversation-time {
+            color: #8899a6;
         }
 
         .unread-badge {
@@ -274,10 +381,18 @@
             font-size: 14px;
         }
 
+        .dark-theme .muted-icon {
+            color: #7a8a9c;
+        }
+
         .pinned-icon {
             color: #999;
             font-size: 14px;
             transform: rotate(45deg);
+        }
+
+        .dark-theme .pinned-icon {
+            color: #7a8a9c;
         }
 
         .empty-state {
@@ -289,6 +404,10 @@
             align-items: center;
             justify-content: center;
             height: 100%;
+        }
+
+        .dark-theme .empty-state {
+            color: #8899a6;
         }
         
         .empty-icon {
@@ -305,7 +424,15 @@
             color: #666; 
             border-bottom: 1px solid #e0e0e0; 
         }
+
+        .dark-theme .online-users-header {
+            background: #1e2c3a;
+            color: #aaa;
+            border-color: #2d3e50;
+        }
+
         .users-list { flex: 1; overflow-y: auto; background: white; }
+        .dark-theme .users-list { background: #15202b; }
         .user-item { 
             padding: 16px; 
             border-bottom: 1px solid #f0f0f0; 
@@ -315,7 +442,13 @@
             cursor: pointer; 
             transition: all 0.2s ease;
         }
+
+        .dark-theme .user-item {
+            border-color: #253341;
+        }
+
         .user-item:active { background: #f8f9fa; }
+        .dark-theme .user-item:active { background: #1e2c3a; }
         .user-avatar { 
             width: 48px; 
             height: 48px; 
@@ -328,10 +461,14 @@
             font-weight: bold; 
             font-size: 18px; 
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-size: cover;
+            background-position: center;
         }
         .user-info { flex: 1; }
         .user-name { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 5px; }
+        .dark-theme .user-name { color: white; }
         .user-status { font-size: 13px; color: #666; display: flex; align-items: center; }
+        .dark-theme .user-status { color: #8899a6; }
         .online-dot { 
             width: 10px; 
             height: 10px; 
@@ -360,6 +497,11 @@
             gap: 12px; 
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
+        .dark-theme .chat-header {
+            background: #1e2c3a;
+        }
+
         .back-button { 
             background: none; 
             border: none; 
@@ -395,6 +537,11 @@
             flex-direction: column; 
             gap: 8px; 
         }
+
+        .dark-theme .messages-container {
+            background: #0d151f;
+        }
+
         .message { 
             max-width: 80%; 
             padding: 12px 16px; 
@@ -412,17 +559,34 @@
             align-self: flex-end; 
             border-bottom-right-radius: 4px; 
         }
+
+        .dark-theme .my-message {
+            background: #005c4b;
+            color: white;
+        }
+
         .their-message { 
             background: white; 
             align-self: flex-start; 
             border-bottom-left-radius: 4px; 
         }
+
+        .dark-theme .their-message {
+            background: #2a3b4d;
+            color: white;
+        }
+
         .message-sender { 
             font-weight: 600; 
             font-size: 14px; 
             color: #0088cc; 
             margin-bottom: 4px; 
         }
+
+        .dark-theme .message-sender {
+            color: #4eb6e9;
+        }
+
         .message-text { font-size: 16px; line-height: 1.4; }
         .message-time { 
             font-size: 11px; 
@@ -434,6 +598,11 @@
             justify-content: flex-end;
             gap: 4px;
         }
+
+        .dark-theme .message-time {
+            color: #8899a6;
+        }
+
         .message-status {
             font-size: 11px;
         }
@@ -460,6 +629,12 @@
             font-size: 12px;
             color: #666;
         }
+
+        .dark-theme .message-action {
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+        }
+
         .system-message { 
             text-align: center; 
             color: #7d7d7d; 
@@ -467,6 +642,11 @@
             margin: 8px 0; 
             font-style: italic; 
         }
+
+        .dark-theme .system-message {
+            color: #8899a6;
+        }
+
         .message-input-container { 
             padding: 12px 16px; 
             background: #f0f2f5; 
@@ -475,6 +655,12 @@
             gap: 8px; 
             align-items: center; 
         }
+
+        .dark-theme .message-input-container {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+
         .message-input { 
             flex: 1; 
             padding: 12px 16px; 
@@ -485,6 +671,12 @@
             outline: none; 
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
+        .dark-theme .message-input {
+            background: #2a3b4d;
+            color: white;
+        }
+
         .input-button { 
             background: transparent; 
             color: #0088cc; 
@@ -499,9 +691,19 @@
             font-size: 18px; 
             transition: all 0.2s ease;
         }
+
+        .dark-theme .input-button {
+            color: #4eb6e9;
+        }
+
         .input-button:active {
             background: rgba(0, 136, 204, 0.1);
         }
+
+        .dark-theme .input-button:active {
+            background: rgba(78, 182, 233, 0.1);
+        }
+
         .send-button { 
             background: #0088cc; 
             color: white; 
@@ -517,9 +719,18 @@
             transition: all 0.2s ease;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
+        .dark-theme .send-button {
+            background: #4eb6e9;
+        }
+
         .send-button:active {
             transform: scale(0.95);
             background: #0066aa;
+        }
+
+        .dark-theme .send-button:active {
+            background: #3a95c7;
         }
 
         /* Floating action button */
@@ -541,6 +752,10 @@
             z-index: 100;
             transition: all 0.3s ease;
         }
+
+        .dark-theme .floating-button {
+            background: #4eb6e9;
+        }
         
         .floating-button:active {
             transform: scale(0.95);
@@ -559,6 +774,11 @@
             border-top: 1px solid #e0e0e0;
             z-index: 100;
         }
+
+        .dark-theme .bottom-nav {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
         
         .nav-item {
             flex: 1;
@@ -570,9 +790,17 @@
             font-size: 12px;
             cursor: pointer;
         }
+
+        .dark-theme .nav-item {
+            color: #7a8a9c;
+        }
         
         .nav-item.active {
             color: #0088cc;
+        }
+
+        .dark-theme .nav-item.active {
+            color: #4eb6e9;
         }
         
         .nav-icon {
@@ -602,10 +830,8 @@
             font-style: italic;
         }
 
-        /* Responsive */
-        @media (max-width: 340px) {
-            .message { max-width: 75%; }
-            .auth-box { max-width: 280px; }
+        .dark-theme .last-seen {
+            color: #8899a6;
         }
 
         /* Typing indicator */
@@ -619,6 +845,11 @@
             font-style: italic;
             color: #666;
             font-size: 14px;
+        }
+
+        .dark-theme .typing-indicator {
+            background: #2a3b4d;
+            color: #8899a6;
         }
         
         .typing-dots {
@@ -634,6 +865,10 @@
             margin: 0 1px;
             animation: typingAnimation 1.4s infinite ease-in-out;
         }
+
+        .dark-theme .typing-dot {
+            background: #8899a6;
+        }
         
         .typing-dot:nth-child(1) { animation-delay: 0s; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -642,6 +877,354 @@
         @keyframes typingAnimation {
             0%, 60%, 100% { transform: translateY(0); }
             30% { transform: translateY(-5px); }
+        }
+
+        /* SETTINGS SCREEN */
+        .settings-screen {
+            background: white;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .dark-theme .settings-screen {
+            background: #15202b;
+        }
+
+        .settings-header {
+            background: #0088cc;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 20px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-theme .settings-header {
+            background: #1e2c3a;
+        }
+
+        .settings-back-button {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .settings-content {
+            padding: 20px;
+        }
+
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 36px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .profile-avatar-edit {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #0088cc;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-theme .profile-avatar-edit {
+            background: #4eb6e9;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .dark-theme .profile-name {
+            color: white;
+        }
+
+        .profile-username {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .dark-theme .profile-username {
+            color: #8899a6;
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+        }
+
+        .settings-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .dark-theme .settings-section-title {
+            color: white;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dark-theme .settings-item {
+            border-color: #253341;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item-info {
+            flex: 1;
+        }
+
+        .settings-item-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .dark-theme .settings-item-title {
+            color: white;
+        }
+
+        .settings-item-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .dark-theme .settings-item-desc {
+            color: #8899a6;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #0088cc;
+        }
+
+        .dark-theme input:checked + .toggle-slider {
+            background-color: #4eb6e9;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .select-dropdown {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .dark-theme .select-dropdown {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
+        .logout-button {
+            width: 100%;
+            padding: 15px;
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Avatar upload modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark-theme .modal-content {
+            background: #1e2c3a;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #333;
+        }
+
+        .dark-theme .modal-title {
+            color: white;
+        }
+
+        .avatar-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .avatar-option.selected {
+            outline: 3px solid #0088cc;
+            outline-offset: 2px;
+        }
+
+        .dark-theme .avatar-option.selected {
+            outline-color: #4eb6e9;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .modal-button.primary {
+            background: #0088cc;
+            color: white;
+        }
+
+        .dark-theme .modal-button.primary {
+            background: #4eb6e9;
+        }
+
+        .modal-button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .dark-theme .modal-button.secondary {
+            background: #2a3b4d;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 340px) {
+            .message { max-width: 75%; }
+            .auth-box { max-width: 280px; }
         }
     </style>
 </head>
@@ -686,8 +1269,8 @@
                 <button class="header-button" onclick="toggleSearch()">
                     <i class="fas fa-search"></i>
                 </button>
-                <button class="header-button" onclick="showMoreOptions()">
-                    <i class="fas fa-ellipsis-v"></i>
+                <button class="header-button" onclick="showSettings()">
+                    <i class="fas fa-cog"></i>
                 </button>
             </div>
         </div>
@@ -802,6 +1385,130 @@
         </div>
     </div>
 
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="settings-header">
+            <button class="settings-back-button" onclick="backToChatList()">←</button>
+            Settings
+        </div>
+        
+        <div class="settings-content">
+            <div class="profile-section">
+                <div class="profile-avatar" id="profile-avatar" onclick="openAvatarModal()">
+                    <div class="profile-avatar-edit">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                </div>
+                <div class="profile-name" id="profile-name">User Name</div>
+                <div class="profile-username" id="profile-username">@username</div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Appearance</div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Theme</div>
+                        <div class="settings-item-desc">Change the appearance of the app</div>
+                    </div>
+                    <select class="select-dropdown" id="theme-selector" onchange="changeTheme()">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto (System)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Notifications</div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Message Notifications</div>
+                        <div class="settings-item-desc">Receive notifications for new messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifications-toggle" checked onchange="toggleNotifications()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Sound</div>
+                        <div class="settings-item-desc">Play sounds for new messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sound-toggle" checked onchange="toggleSound()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">Privacy</div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Last Seen</div>
+                        <div class="settings-item-desc">Who can see your last seen time</div>
+                    </div>
+                    <select class="select-dropdown" id="last-seen-selector" onchange="changeLastSeenPrivacy()">
+                        <option value="everyone">Everyone</option>
+                        <option value="contacts">My Contacts</option>
+                        <option value="nobody">Nobody</option>
+                    </select>
+                </div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Profile Photo</div>
+                        <div class="settings-item-desc">Who can see your profile photo</div>
+                    </div>
+                    <select class="select-dropdown" id="profile-photo-selector" onchange="changeProfilePhotoPrivacy()">
+                        <option value="everyone">Everyone</option>
+                        <option value="contacts">My Contacts</option>
+                        <option value="nobody">Nobody</option>
+                    </select>
+                </div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Read Receipts</div>
+                        <div class="settings-item-desc">Send read receipts for your messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="read-receipts-toggle" checked onchange="toggleReadReceipts()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <button class="logout-button" onclick="logout()">Log Out</button>
+        </div>
+    </div>
+
+    <!-- Avatar Selection Modal -->
+    <div class="modal-overlay" id="avatar-modal">
+        <div class="modal-content">
+            <div class="modal-title">Choose Profile Picture</div>
+            
+            <div class="avatar-options">
+                <div class="avatar-option" style="background-color: #0088cc;" onclick="selectAvatar('default1')">U</div>
+                <div class="avatar-option" style="background-color: #4CAF50;" onclick="selectAvatar('default2')">U</div>
+                <div class="avatar-option" style="background-color: #FF9800;" onclick="selectAvatar('default3')">U</div>
+                <div class="avatar-option" style="background-color: #9C27B0;" onclick="selectAvatar('default4')">U</div>
+                <div class="avatar-option" style="background-color: #F44336;" onclick="selectAvatar('default5')">U</div>
+                <div class="avatar-option" style="background-color: #00BCD4;" onclick="selectAvatar('default6')">U</div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-button secondary" onclick="closeAvatarModal()">Cancel</button>
+                <button class="modal-button primary" onclick="saveAvatar()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // App state
@@ -814,6 +1521,21 @@
         let pendingMessages = {};
         let typingTimeout = null;
         let currentConversationId = null;
+        let userSettings = {};
+        let selectedAvatar = null;
+
+        // Initialize user settings with defaults
+        const defaultSettings = {
+            theme: 'light',
+            notifications: true,
+            sound: true,
+            privacy: {
+                lastSeen: 'everyone',
+                profilePhoto: 'everyone',
+                readReceipts: true
+            },
+            avatar: 'default1'
+        };
 
         // UI Functions
         function showScreen(screenId) {
@@ -858,8 +1580,9 @@
             }
         }
 
-        function showMoreOptions() {
-            alert('More options menu would open here');
+        function showSettings() {
+            loadUserSettings();
+            showScreen('settings-screen');
         }
 
         function showChatOptions() {
@@ -868,6 +1591,172 @@
 
         function showAllUsers() {
             showTab('all');
+        }
+
+        // Settings functions
+        function loadUserSettings() {
+            // Load settings from localStorage or use defaults
+            const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
+            userSettings = savedSettings ? JSON.parse(savedSettings) : {...defaultSettings};
+            
+            // Apply settings to UI
+            document.getElementById('theme-selector').value = userSettings.theme;
+            document.getElementById('notifications-toggle').checked = userSettings.notifications;
+            document.getElementById('sound-toggle').checked = userSettings.sound;
+            document.getElementById('last-seen-selector').value = userSettings.privacy.lastSeen;
+            document.getElementById('profile-photo-selector').value = userSettings.privacy.profilePhoto;
+            document.getElementById('read-receipts-toggle').checked = userSettings.privacy.readReceipts;
+            
+            // Apply theme
+            applyTheme(userSettings.theme);
+            
+            // Update profile info
+            document.getElementById('profile-name').textContent = currentUser;
+            document.getElementById('profile-username').textContent = `@${currentUser}`;
+            
+            // Set avatar
+            setAvatar(userSettings.avatar);
+        }
+
+        function saveUserSettings() {
+            localStorage.setItem(`gramx_settings_${currentUser}`, JSON.stringify(userSettings));
+            
+            // Send to server if connected
+            if (socket) {
+                socket.emit('update-user-settings', userSettings);
+            }
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+            }
+        }
+
+        function changeTheme() {
+            userSettings.theme = document.getElementById('theme-selector').value;
+            applyTheme(userSettings.theme);
+            saveUserSettings();
+        }
+
+        function toggleNotifications() {
+            userSettings.notifications = document.getElementById('notifications-toggle').checked;
+            saveUserSettings();
+        }
+
+        function toggleSound() {
+            userSettings.sound = document.getElementById('sound-toggle').checked;
+            saveUserSettings();
+        }
+
+        function changeLastSeenPrivacy() {
+            userSettings.privacy.lastSeen = document.getElementById('last-seen-selector').value;
+            saveUserSettings();
+        }
+
+        function changeProfilePhotoPrivacy() {
+            userSettings.privacy.profilePhoto = document.getElementById('profile-photo-selector').value;
+            saveUserSettings();
+        }
+
+        function toggleReadReceipts() {
+            userSettings.privacy.readReceipts = document.getElementById('read-receipts-toggle').checked;
+            saveUserSettings();
+        }
+
+        function openAvatarModal() {
+            selectedAvatar = userSettings.avatar;
+            document.getElementById('avatar-modal').style.display = 'flex';
+            
+            // Highlight current selection
+            document.querySelectorAll('.avatar-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            const currentOption = document.querySelector(`.avatar-option[onclick="selectAvatar('${userSettings.avatar}')"]`);
+            if (currentOption) {
+                currentOption.classList.add('selected');
+            }
+        }
+
+        function closeAvatarModal() {
+            document.getElementById('avatar-modal').style.display = 'none';
+        }
+
+        function selectAvatar(avatarId) {
+            selectedAvatar = avatarId;
+            
+            // Update selection UI
+            document.querySelectorAll('.avatar-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            const selectedOption = document.querySelector(`.avatar-option[onclick="selectAvatar('${avatarId}')"]`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+            }
+        }
+
+        function saveAvatar() {
+            userSettings.avatar = selectedAvatar;
+            setAvatar(selectedAvatar);
+            saveUserSettings();
+            closeAvatarModal();
+        }
+
+        function setAvatar(avatarId) {
+            const avatarElement = document.getElementById('profile-avatar');
+            const color = getAvatarColor(avatarId);
+            const letter = currentUser ? currentUser.charAt(0).toUpperCase() : 'U';
+            
+            avatarElement.style.background = color;
+            avatarElement.textContent = letter;
+            
+            // Also update avatar in chat list if needed
+            updateUserAvatarInUI(currentUser, avatarId);
+        }
+
+        function getAvatarColor(avatarId) {
+            const colors = {
+                'default1': 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)',
+                'default2': 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
+                'default3': 'linear-gradient(135deg, #FF9800 0%, #EF6C00 100%)',
+                'default4': 'linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%)',
+                'default5': 'linear-gradient(135deg, #F44336 0%, #C62828 100%)',
+                'default6': 'linear-gradient(135deg, #00BCD4 0%, #00838F 100%)'
+            };
+            
+            return colors[avatarId] || colors['default1'];
+        }
+
+        function updateUserAvatarInUI(username, avatarId) {
+            // Update in conversations list
+            const conversationItems = document.querySelectorAll('.conversation-item');
+            conversationItems.forEach(item => {
+                const nameElement = item.querySelector('.conversation-name');
+                if (nameElement && nameElement.textContent.includes(username)) {
+                    const avatarElement = item.querySelector('.conversation-avatar');
+                    if (avatarElement) {
+                        avatarElement.style.background = getAvatarColor(avatarId);
+                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                    }
+                }
+            });
+            
+            // Update in users list
+            const userItems = document.querySelectorAll('.user-item');
+            userItems.forEach(item => {
+                const nameElement = item.querySelector('.user-name');
+                if (nameElement && nameElement.textContent.includes(username)) {
+                    const avatarElement = item.querySelector('.user-avatar');
+                    if (avatarElement) {
+                        avatarElement.style.background = getAvatarColor(avatarId);
+                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                    }
+                }
+            });
         }
 
         // Authentication functions
@@ -934,6 +1823,7 @@
                 
                 if (result.success) {
                     currentUser = username;
+                    localStorage.setItem('gramx_current_user', username);
                     initializeSocket();
                     showScreen('chat-list-screen');
                 } else {
@@ -952,6 +1842,7 @@
                 socket.disconnect();
             }
             currentUser = null;
+            localStorage.removeItem('gramx_current_user');
             showScreen('login-screen');
         }
 
@@ -962,6 +1853,9 @@
             socket.on('connect', () => {
                 console.log('Connected to server');
                 socket.emit('user-login', currentUser);
+                
+                // Load user settings
+                loadUserSettings();
             });
             
             socket.on('disconnect', () => {
@@ -1103,6 +1997,12 @@
                 console.error('Socket error:', error);
                 alert('Connection error: ' + error.message);
             });
+
+            // Listen for settings updates from server
+            socket.on('user-settings-updated', (settings) => {
+                userSettings = settings;
+                loadUserSettings();
+            });
         }
 
         // Update UI functions
@@ -1134,8 +2034,20 @@
                 
                 const isOnline = onlineUsers.includes(conv.partner);
                 
+                // Get avatar color from settings if available
+                let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+                const partnerSettings = localStorage.getItem(`gramx_settings_${conv.partner}`);
+                if (partnerSettings) {
+                    try {
+                        const settings = JSON.parse(partnerSettings);
+                        avatarColor = getAvatarColor(settings.avatar);
+                    } catch (e) {
+                        console.error('Error parsing partner settings:', e);
+                    }
+                }
+                
                 convElement.innerHTML = `
-                    <div class="conversation-avatar">${conv.partner.charAt(0).toUpperCase()}</div>
+                    <div class="conversation-avatar" style="background: ${avatarColor}">${conv.partner.charAt(0).toUpperCase()}</div>
                     <div class="conversation-info">
                         <div class="conversation-name">
                             ${conv.partner}
@@ -1173,8 +2085,20 @@
                 userElement.className = 'user-item';
                 userElement.onclick = () => startPrivateChat(user);
                 
+                // Get avatar color from settings if available
+                let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+                const userSettings = localStorage.getItem(`gramx_settings_${user}`);
+                if (userSettings) {
+                    try {
+                        const settings = JSON.parse(userSettings);
+                        avatarColor = getAvatarColor(settings.avatar);
+                    } catch (e) {
+                        console.error('Error parsing user settings:', e);
+                    }
+                }
+                
                 userElement.innerHTML = `
-                    <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
+                    <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
                     <div class="user-info">
                         <div class="user-name">${user}</div>
                         <div class="user-status"><span class="online-dot"></span>Online</div>
@@ -1214,8 +2138,20 @@
                     
                     const isOnline = onlineUsers.includes(user);
                     
+                    // Get avatar color from settings if available
+                    let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
+                    const userSettings = localStorage.getItem(`gramx_settings_${user}`);
+                    if (userSettings) {
+                        try {
+                            const settings = JSON.parse(userSettings);
+                            avatarColor = getAvatarColor(settings.avatar);
+                        } catch (e) {
+                            console.error('Error parsing user settings:', e);
+                        }
+                    }
+                    
                     userElement.innerHTML = `
-                        <div class="user-avatar">${user.charAt(0).toUpperCase()}</div>
+                        <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
                         <div class="user-info">
                             <div class="user-name">${user}</div>
                             <div class="user-status">
@@ -1395,6 +2331,9 @@
             const savedUser = localStorage.getItem('gramx_current_user');
             if (savedUser) {
                 document.getElementById('login-username').value = savedUser;
+                currentUser = savedUser;
+                initializeSocket();
+                showScreen('chat-list-screen');
             }
             
             // Set up tab click handlers
@@ -1404,6 +2343,41 @@
                     else if (index === 1) showTab('online');
                     else if (index === 2) loadAllUsers();
                 });
+            });
+
+            // Set up bottom navigation
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    if (index === 0) {
+                        showScreen('chat-list-screen');
+                        showTab('conversations');
+                    } else if (index === 1) {
+                        showScreen('chat-list-screen');
+                        showTab('online');
+                    } else if (index === 2) {
+                        showSettings();
+                    }
+                });
+            });
+
+            // Check for system theme preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            if (prefersDark.matches) {
+                document.body.classList.add('dark-theme');
+            }
+            
+            // Listen for system theme changes
+            prefersDark.addEventListener('change', e => {
+                const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    if (settings.theme === 'auto') {
+                        applyTheme('auto');
+                    }
+                }
             });
         };
     </script>
