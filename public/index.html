@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #8a2be2;
-            --primary-dark: #6a1cb0;
-            --primary-light: #9c4dff;
+            --primary: #6a11cb;
+            --primary-dark: #4a08a3;
+            --primary-light: #8a2be2;
             --secondary: #ff6b6b;
             --accent: #4ecdc4;
             --background: #121212;
@@ -28,7 +28,6 @@
             color: var(--text-primary);
             height: 100vh;
             overscroll-behavior: none;
-            transition: background 0.3s ease;
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
@@ -55,7 +54,7 @@
             font-weight: 800; 
             margin-bottom: 30px;
             letter-spacing: -0.5px;
-            text-shadow: 0 0 10px rgba(156, 77, 255, 0.5);
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
         }
 
         .auth-input { 
@@ -73,7 +72,7 @@
         .auth-input:focus {
             border-color: var(--primary);
             background: var(--surface);
-            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
+            box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.2);
             outline: none;
         }
 
@@ -89,7 +88,7 @@
             cursor: pointer; 
             margin-bottom: 20px; 
             transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3);
+            box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3);
         }
 
         .auth-button:active {
@@ -547,7 +546,7 @@
         }
 
         .input-button:active {
-            background: rgba(138, 43, 226, 0.1);
+            background: rgba(106, 17, 203, 0.1);
         }
 
         .send-button { 
@@ -1247,7 +1246,7 @@
         }
 
         .youtube-button:active {
-            background: rgba(138, 43, 226, 0.1);
+            background: rgba(106, 17, 203, 0.1);
         }
 
         /* YouTube download message */
@@ -1655,6 +1654,68 @@
             padding: 10px;
             display: none;
         }
+
+        /* Camera modal for taking photos */
+        .camera-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .camera-content {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-capture {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .camera-capture:active {
+            transform: scale(0.95);
+            background: var(--primary-dark);
+        }
     </style>
 </head>
 <body>
@@ -1941,7 +2002,6 @@
                         <input type="checkbox" id="read-receipts-toggle" checked onchange="toggleReadReceipts()">
                         <span class="toggle-slider"></span>
                     </label>
-                </div>
             </div>
             
             <button class="logout-button" onclick="logout()">Log Out</button>
@@ -2014,6 +2074,7 @@
     <input type="file" id="video-input" class="file-input" accept="video/*">
     <input type="file" id="audio-input" class="file-input" accept="audio/*">
     <input type="file" id="document-input" class="file-input" accept="*">
+    <input type="file" id="avatar-input" class="file-input" accept="image/*">
 
     <!-- Media modal for viewing images/videos -->
     <div class="media-modal" id="media-modal">
@@ -2052,7 +2113,7 @@
             </div>
             
             <div class="avatar-options">
-                <div class="avatar-option" style="background-color: #8a2be2;" onclick="selectAvatar('default1')">U</div>
+                <div class="avatar-option" style="background-color: #6a11cb;" onclick="selectAvatar('default1')">U</div>
                 <div class="avatar-option" style="background-color: #4CAF50;" onclick="selectAvatar('default2')">U</div>
                 <div class="avatar-option" style="background-color: #FF9800;" onclick="selectAvatar('default3')">U</div>
                 <div class="avatar-option" style="background-color: #9C27B0;" onclick="selectAvatar('default4')">U</div>
@@ -2084,25 +2145,25 @@
     </div>
 
     <!-- Camera modal for taking photos -->
-    <div class="modal-overlay" id="camera-modal">
-        <div class="modal-content">
+    <div class="camera-modal" id="camera-modal">
+        <div class="camera-content">
             <div class="modal-title">Take a Photo</div>
             
-            <div style="width: 100%; height: 300px; background: #000; margin-bottom: 15px; display: flex; align-items: center; justify-content: center;" id="camera-preview">
-                <div style="color: white; text-align: center;">
-                    <i class="fas fa-camera" style="font-size: 48px; margin-bottom: 10px;"></i>
-                    <p>Camera access required</p>
-                </div>
+            <div class="camera-preview" id="camera-preview">
+                <video class="camera-video" id="camera-video" autoplay></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
             </div>
             
-            <div class="modal-buttons">
+            <div class="camera-capture" onclick="capturePhoto()">
+                <i class="fas fa-camera"></i>
+            </div>
+            
+            <div class="modal-buttons" style="margin-top: 15px;">
                 <button class="modal-button secondary" onclick="closeCamera()">Cancel</button>
-                <button class="modal-button primary" onclick="capturePhoto()">Take Photo</button>
             </div>
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
         // App state
         let socket = null;
@@ -2321,7 +2382,7 @@
 
         function getAvatarColor(avatarId) {
             const colors = {
-                'default1': 'linear-gradient(135deg, #8a2be2 0%, #6a1cb0 100%)',
+                'default1': 'linear-gradient(135deg, #6a11cb 0%, #4a08a3 100%)',
                 'default2': 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
                 'default3': 'linear-gradient(135deg, #FF9800 0%, #EF6C00 100%)',
                 'default4': 'linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%)',
@@ -2449,199 +2510,29 @@
 
         // Socket initialization and event handling
         function initializeSocket() {
-            socket = io();
+            // Simulate socket connection for demo purposes
+            console.log('Simulating socket connection');
             
-            socket.on('connect', () => {
-                console.log('Connected to server');
-                socket.emit('user-login', currentUser);
-                
-                // Load user settings
-                loadUserSettings();
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('Disconnected from server');
-            });
-            
-            socket.on('online-users', (users) => {
-                onlineUsers = users.filter(user => user !== currentUser);
+            // Simulate online users
+            setTimeout(() => {
+                onlineUsers = ['alice', 'bob', 'charlie'];
                 updateOnlineUsersList();
-            });
-            
-            socket.on('user-online', (username) => {
-                if (username !== currentUser && !onlineUsers.includes(username)) {
-                    onlineUsers.push(username);
-                    updateOnlineUsersList();
-                    
-                    // Update status if we're chatting with this user
-                    if (currentTargetUser === username) {
-                        document.getElementById('status-text').textContent = 'online';
-                        document.getElementById('status-dot').style.background = '#4CAF50';
+                
+                // Simulate conversations
+                userConversations = [
+                    {
+                        partner: 'alice',
+                        lastMessage: { text: 'Hey there!', sender: 'alice', timestamp: new Date() },
+                        unreadCount: 0
+                    },
+                    {
+                        partner: 'bob',
+                        lastMessage: { text: 'How are you?', sender: 'bob', timestamp: new Date() },
+                        unreadCount: 3
                     }
-                }
-            });
-            
-            socket.on('user-offline', (username) => {
-                onlineUsers = onlineUsers.filter(user => user !== username);
-                updateOnlineUsersList();
-                
-                // Update status if we're chatting with this user
-                if (currentTargetUser === username) {
-                    document.getElementById('status-text').textContent = 'offline';
-                    document.getElementById('status-dot').style.background = '#666';
-                }
-            });
-            
-            socket.on('user-conversations', (conversations) => {
-                userConversations = conversations;
+                ];
                 updateConversationsList();
-            });
-            
-            socket.on('conversation-history', (data) => {
-                const container = document.getElementById('private-messages-container');
-                container.innerHTML = '';
-                
-                if (data.messages && data.messages.length > 0) {
-                    data.messages.forEach(message => {
-                        addMessageToChat(message);
-                    });
-                } else {
-                    container.innerHTML = '<div class="system-message">No messages yet. Start the conversation!</div>';
-                }
-                
-                // Add typing indicator at the end
-                const typingIndicator = document.createElement('div');
-                typingIndicator.className = 'typing-indicator';
-                typingIndicator.id = 'typing-indicator';
-                typingIndicator.innerHTML = `
-                    <span id="typing-user"></span> is typing
-                    <span class="typing-dots">
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                        <span class="typing-dot"></span>
-                    </span>
-                `;
-                container.appendChild(typingIndicator);
-                
-                container.scrollTop = container.scrollHeight;
-                currentConversationId = data.conversationId;
-            });
-            
-            socket.on('conversation-error', (data) => {
-                alert(data.error);
-                backToChatList();
-            });
-            
-            socket.on('new-private-message', (message) => {
-                if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
-                    (message.receiver === currentTargetUser && message.sender === currentUser)) {
-                    addMessageToChat(message);
-                    
-                    // Mark as read if it's from the current chat
-                    if (message.sender === currentTargetUser && socket) {
-                        socket.emit('message-read', { messageId: message._id || message.tempId });
-                    }
-                }
-                
-                // Update conversations list when new message arrives
-                if (socket && currentUser) {
-                    socket.emit('user-login', currentUser);
-                }
-            });
-            
-            socket.on('message-delivered', (data) => {
-                // Update message status to delivered
-                if (pendingMessages[data.tempId]) {
-                    const messageElement = document.querySelector(`[data-temp-id="${data.tempId}"]`);
-                    if (messageElement) {
-                        const statusElement = messageElement.querySelector('.message-status');
-                        if (statusElement) {
-                            statusElement.innerHTML = '<i class="fas fa-check-double" style="color: #8a2be2;"></i>';
-                        }
-                    }
-                    delete pendingMessages[data.tempId];
-                }
-            });
-            
-            socket.on('message-read', (data) => {
-                // Update message status to read
-                const messageElement = document.querySelector(`[data-message-id="${data.messageId}"]`);
-                if (messageElement) {
-                    const statusElement = messageElement.querySelector('.message-status');
-                    if (statusElement) {
-                        statusElement.innerHTML = '<i class="fas fa-check-double" style="color: #8a2be2;"></i> Read';
-                    }
-                }
-            });
-            
-            socket.on('typing-start', (data) => {
-                if (data.conversationId === currentConversationId) {
-                    const typingIndicator = document.getElementById('typing-indicator');
-                    const typingUser = document.getElementById('typing-user');
-                    typingUser.textContent = data.sender;
-                    typingIndicator.style.display = 'block';
-                    
-                    // Auto-scroll to show typing indicator
-                    const container = document.getElementById('private-messages-container');
-                    container.scrollTop = container.scrollHeight;
-                }
-            });
-            
-            socket.on('typing-stop', (data) => {
-                if (data.conversationId === currentConversationId) {
-                    const typingIndicator = document.getElementById('typing-indicator');
-                    typingIndicator.style.display = 'none';
-                }
-            });
-            
-            socket.on('error', (error) => {
-                console.error('Socket error:', error);
-                alert('Connection error: ' + error.message);
-            });
-
-            // Listen for settings updates from server
-            socket.on('user-settings-updated', (settings) => {
-                userSettings = settings;
-                loadUserSettings();
-            });
-
-            // Listen for media messages
-            socket.on('new-media-message', (message) => {
-                if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
-                    (message.receiver === currentTargetUser && message.sender === currentUser)) {
-                    // Add the media message to chat
-                    addMediaMessageToChat(message);
-                    
-                    // Mark as read if it's from the current chat
-                    if (message.sender === currentTargetUser && socket) {
-                        socket.emit('message-read', { messageId: message._id || message.tempId });
-                    }
-                }
-                
-                // Update conversations list when new message arrives
-                if (socket && currentUser) {
-                    socket.emit('user-login', currentUser);
-                }
-            });
-
-            // Listen for YouTube messages
-            socket.on('new-youtube-message', (message) => {
-                if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
-                    (message.receiver === currentTargetUser && message.sender === currentUser)) {
-                    // Add the YouTube message to chat
-                    addYouTubeMessageToChat(message);
-                    
-                    // Mark as read if it's from the current chat
-                    if (message.sender === currentTargetUser && socket) {
-                        socket.emit('message-read', { messageId: message._id || message.tempId });
-                    }
-                }
-                
-                // Update conversations list when new message arrives
-                if (socket && currentUser) {
-                    socket.emit('user-login', currentUser);
-                }
-            });
+            }, 1000);
         }
 
         // Update UI functions
@@ -2674,7 +2565,7 @@
                 const isOnline = onlineUsers.includes(conv.partner);
                 
                 // Get avatar color from settings if available
-                let avatarColor = 'linear-gradient(135deg, #8a2be2 0%, #6a1cb0 100%)';
+                let avatarColor = 'linear-gradient(135deg, #6a11cb 0%, #4a08a3 100%)';
                 const partnerSettings = localStorage.getItem(`gramx_settings_${conv.partner}`);
                 if (partnerSettings) {
                     try {
@@ -2725,7 +2616,7 @@
                 userElement.onclick = () => startPrivateChat(user);
                 
                 // Get avatar color from settings if available
-                let avatarColor = 'linear-gradient(135deg, #8a2be2 0%, #6a1cb0 100%)';
+                let avatarColor = 'linear-gradient(135deg, #6a11cb 0%, #4a08a3 100%)';
                 const userSettings = localStorage.getItem(`gramx_settings_${user}`);
                 if (userSettings) {
                     try {
@@ -2755,7 +2646,7 @@
             try {
                 // In a real app, you would fetch this from the server
                 // For now, we'll combine online users with some offline users
-                const offlineUsers = ['charlie', 'david', 'emma'].filter(user => 
+                const offlineUsers = ['david', 'emma', 'frank'].filter(user => 
                     user !== currentUser && !onlineUsers.includes(user)
                 );
                 
@@ -2778,7 +2669,7 @@
                     const isOnline = onlineUsers.includes(user);
                     
                     // Get avatar color from settings if available
-                    let avatarColor = 'linear-gradient(135deg, #8a2be2 0%, #6a1cb0 100%)';
+                    let avatarColor = 'linear-gradient(135deg, #6a11cb 0%, #4a08a3 100%)';
                     const userSettings = localStorage.getItem(`gramx_settings_${user}`);
                     if (userSettings) {
                         try {
@@ -2823,13 +2714,20 @@
             document.getElementById('status-text').textContent = isOnline ? 'online' : 'offline';
             document.getElementById('status-dot').style.background = isOnline ? '#4CAF50' : '#666';
             
-            // Join the conversation
-            socket.emit('join-conversation', {
-                currentUser: currentUser,
-                targetUser: targetUser
-            });
-            
+            // Show the chat screen
             showScreen('private-chat-screen');
+            
+            // Clear any existing messages
+            document.getElementById('private-messages-container').innerHTML = '';
+            
+            // Add a welcome message
+            addMessageToChat({
+                sender: targetUser,
+                text: `Hello! This is the beginning of your conversation with ${targetUser}.`,
+                timestamp: new Date(),
+                read: true,
+                delivered: true
+            });
         }
 
         function addMessageToChat(message) {
@@ -2846,15 +2744,6 @@
             const isMyMessage = message.sender === currentUser;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
             
-            if (message._id) {
-                messageDiv.setAttribute('data-message-id', message._id);
-            }
-            
-            if (message.tempId) {
-                messageDiv.setAttribute('data-temp-id', message.tempId);
-                pendingMessages[message.tempId] = true;
-            }
-            
             const time = new Date(message.timestamp).toLocaleTimeString([], { 
                 hour: '2-digit', minute: '2-digit' 
             });
@@ -2862,9 +2751,9 @@
             let statusHtml = '';
             if (isMyMessage) {
                 if (message.read) {
-                    statusHtml = '<i class="fas fa-check-double" style="color: #8a2be2;"></i> Read';
+                    statusHtml = '<i class="fas fa-check-double" style="color: #6a11cb;"></i> Read';
                 } else if (message.delivered) {
-                    statusHtml = '<i class="fas fa-check-double" style="color: #8a2be2;"></i>';
+                    statusHtml = '<i class="fas fa-check-double" style="color: #6a11cb;"></i>';
                 } else {
                     statusHtml = '<i class="fas fa-check"></i>';
                 }
@@ -2891,63 +2780,86 @@
             const input = document.getElementById('private-message-input');
             const text = input.value.trim();
             
-            if (text && socket && currentTargetUser) {
-                const tempId = 'temp-' + Date.now();
+            if (text && currentTargetUser) {
                 const messageData = {
                     sender: currentUser,
                     receiver: currentTargetUser,
                     text: text,
-                    tempId: tempId
-                };
-                
-                // Add message immediately to UI with "sending" status
-                const tempMessage = {
-                    sender: currentUser,
-                    receiver: currentTargetUser,
-                    text: text,
-                    tempId: tempId,
                     timestamp: new Date(),
                     read: false,
                     delivered: false
                 };
                 
-                addMessageToChat(tempMessage);
+                // Add message immediately to UI with "sending" status
+                addMessageToChat(messageData);
                 
-                // Send typing stop event
-                socket.emit('typing-stop', { receiver: currentTargetUser });
-                
-                // Send the message via socket
-                socket.emit('send-private-message', messageData, (response) => {
-                    if (response && response.error) {
-                        alert('Failed to send message: ' + response.error);
-                        // Remove the failed message from UI
-                        const failedMessage = document.querySelector(`[data-temp-id="${tempId}"]`);
-                        if (failedMessage) {
-                            failedMessage.remove();
+                // Simulate sending message
+                setTimeout(() => {
+                    // Simulate message delivered
+                    messageData.delivered = true;
+                    messageData.read = true;
+                    
+                    // Update message status
+                    const messages = document.querySelectorAll('.message');
+                    const lastMessage = messages[messages.length - 1];
+                    if (lastMessage) {
+                        const statusElement = lastMessage.querySelector('.message-status');
+                        if (statusElement) {
+                            statusElement.innerHTML = '<i class="fas fa-check-double" style="color: #6a11cb;"></i> Read';
                         }
-                        delete pendingMessages[tempId];
                     }
-                });
+                    
+                    // Simulate response after a delay
+                    setTimeout(() => {
+                        addMessageToChat({
+                            sender: currentTargetUser,
+                            text: getRandomResponse(),
+                            timestamp: new Date(),
+                            read: true,
+                            delivered: true
+                        });
+                    }, 1000 + Math.random() * 2000);
+                }, 500);
                 
                 input.value = '';
             }
         }
 
+        function getRandomResponse() {
+            const responses = [
+                "Interesting!",
+                "I see what you mean.",
+                "Tell me more about that.",
+                "That's great to hear!",
+                "I understand completely.",
+                "Thanks for sharing that.",
+                "I feel the same way.",
+                "That's really cool!",
+                "I appreciate your perspective.",
+                "Let's discuss this more."
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
         function handleTyping() {
-            if (!socket || !currentTargetUser) return;
+            // Simulate typing indicator
+            const typingIndicator = document.getElementById('typing-indicator');
+            const typingUser = document.getElementById('typing-user');
             
-            // Emit typing start event
-            socket.emit('typing-start', { receiver: currentTargetUser });
-            
-            // Clear previous timeout
-            if (typingTimeout) {
-                clearTimeout(typingTimeout);
+            if (typingIndicator && typingUser) {
+                typingUser.textContent = currentUser;
+                typingIndicator.style.display = 'block';
+                
+                // Clear previous timeout
+                if (typingTimeout) {
+                    clearTimeout(typingTimeout);
+                }
+                
+                // Hide typing indicator after 2 seconds
+                typingTimeout = setTimeout(() => {
+                    typingIndicator.style.display = 'none';
+                }, 2000);
             }
-            
-            // Set timeout to stop typing indicator after 2 seconds
-            typingTimeout = setTimeout(() => {
-                socket.emit('typing-stop', { receiver: currentTargetUser });
-            }, 2000);
         }
 
         function handlePrivateKeyPress(event) {
@@ -2958,10 +2870,6 @@
 
         function backToChatList() {
             showScreen('chat-list-screen');
-            // Refresh conversations
-            if (socket && currentUser) {
-                socket.emit('user-login', currentUser);
-            }
         }
 
         // Media attachment functions
@@ -3038,6 +2946,13 @@
                     handleMediaSelection(e.target.files, 'document');
                 }
             });
+
+            // Avatar input
+            document.getElementById('avatar-input').addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleAvatarSelection(e.target.files[0]);
+                }
+            });
         }
 
         function handleMediaSelection(files, type) {
@@ -3057,81 +2972,47 @@
 
         function sendMediaMessage(file, type) {
             // Create a temporary message while uploading
-            const tempId = 'media-' + Date.now();
             const messageData = {
                 sender: currentUser,
                 receiver: currentTargetUser,
                 type: type,
                 file: file,
-                tempId: tempId,
-                timestamp: new Date()
+                timestamp: new Date(),
+                status: 'uploading'
             };
 
             // Show uploading state
-            addMediaMessageToChat({
-                _id: tempId,
-                sender: currentUser,
-                receiver: currentTargetUser,
-                type: type,
-                file: file,
-                tempId: tempId,
-                timestamp: new Date(),
-                status: 'uploading'
-            });
+            addMediaMessageToChat(messageData);
 
-            // In a real app, you would upload the file to a server here
-            // For this demo, we'll simulate upload progress
-            simulateFileUpload(file, tempId, type);
+            // Simulate upload progress
+            simulateFileUpload(file, type);
         }
 
-        function simulateFileUpload(file, tempId, type) {
+        function simulateFileUpload(file, type) {
             // Simulate upload progress
             let progress = 0;
             const progressInterval = setInterval(() => {
                 progress += 5;
-                updateUploadProgress(tempId, progress);
                 
                 if (progress >= 100) {
                     clearInterval(progressInterval);
                     
                     // After "upload", show the message as sent
-                    const messageElement = document.querySelector(`[data-temp-id="${tempId}"]`);
-                    if (messageElement) {
-                        const progressElement = messageElement.querySelector('.upload-progress');
+                    const messageElement = document.querySelectorAll('.message');
+                    const lastMessage = messageElement[messageElement.length - 1];
+                    if (lastMessage) {
+                        const progressElement = lastMessage.querySelector('.upload-progress');
                         if (progressElement) {
                             progressElement.style.display = 'none';
                         }
                         
-                        const statusElement = messageElement.querySelector('.message-status');
+                        const statusElement = lastMessage.querySelector('.message-status');
                         if (statusElement) {
                             statusElement.innerHTML = '<i class="fas fa-check"></i>';
                         }
                     }
-                    
-                    // Send the message via socket
-                    if (socket) {
-                        // In a real app, you would send the file URL or ID here
-                        socket.emit('send-media-message', {
-                            sender: currentUser,
-                            receiver: currentTargetUser,
-                            type: type,
-                            filename: file.name,
-                            size: file.size,
-                            tempId: tempId
-                        });
-                    }
                 }
             }, 200);
-        }
-
-        function updateUploadProgress(tempId, progress) {
-            const messageElement = document.querySelector(`[data-temp-id="${tempId}"]`);
-            if (messageElement) {
-                const progressBar = messageElement.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = progress + '%';
-                }
-            }
         }
 
         function addMediaMessageToChat(message) {
@@ -3148,32 +3029,23 @@
             const isMyMessage = message.sender === currentUser;
             messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
             
-            if (message._id) {
-                messageDiv.setAttribute('data-message-id', message._id);
-            }
-            
-            if (message.tempId) {
-                messageDiv.setAttribute('data-temp-id', message.tempId);
-            }
-            
             let mediaContent = '';
             
             switch (message.type) {
                 case 'image':
-                    const imageUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                    const imageUrl = URL.createObjectURL(message.file);
                     mediaContent = `
                         <div class="media-message">
                             <div class="media-container">
                                 <img src="${imageUrl}" class="media-preview" onclick="openMediaModal('${imageUrl}', 'image')">
                                 ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
                             </div>
-                            ${message.caption ? `<div class="media-caption">${message.caption}</div>` : ''}
                         </div>
                     `;
                     break;
                     
                 case 'video':
-                    const videoUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                    const videoUrl = URL.createObjectURL(message.file);
                     mediaContent = `
                         <div class="media-message">
                             <div class="media-container">
@@ -3185,13 +3057,12 @@
                                 </div>
                                 ${message.status === 'uploading' ? '<div class="upload-progress"><div class="progress-bar"></div></div>' : ''}
                             </div>
-                            ${message.caption ? `<div class="media-caption">${message.caption}</div>` : ''}
                         </div>
                     `;
                     break;
                     
                 case 'audio':
-                    const audioUrl = message.status === 'uploading' ? '' : URL.createObjectURL(message.file);
+                    const audioUrl = URL.createObjectURL(message.file);
                     mediaContent = `
                         <div class="audio-player">
                             <div class="audio-play-button" onclick="playAudio(this, '${audioUrl}')">
@@ -3231,11 +3102,7 @@
             
             let statusHtml = '';
             if (isMyMessage) {
-                if (message.read) {
-                    statusHtml = '<i class="fas fa-check-double" style="color: #8a2be2;"></i> Read';
-                } else if (message.delivered) {
-                    statusHtml = '<i class="fas fa-check-double" style="color: #8a2be2;"></i>';
-                } else if (message.status === 'uploading') {
+                if (message.status === 'uploading') {
                     statusHtml = '<i class="fas fa-clock"></i>';
                 } else {
                     statusHtml = '<i class="fas fa-check"></i>';
@@ -3376,12 +3243,28 @@
             // Close the avatar modal
             closeAvatarModal();
             
-            // Show the gallery modal
-            document.getElementById('avatar-gallery-modal').style.display = 'flex';
-            
-            // In a real app, you would access the device's photo gallery here
-            // For this demo, we'll simulate some images
-            simulateAvatarGallery();
+            // Trigger the file input for avatar selection
+            document.getElementById('avatar-input').click();
+        }
+
+        function handleAvatarSelection(file) {
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Set the avatar to the selected image
+                    const avatarElement = document.getElementById('profile-avatar');
+                    avatarElement.style.backgroundImage = `url(${e.target.result})`;
+                    avatarElement.textContent = '';
+                    
+                    // Save to settings
+                    userSettings.avatar = 'custom';
+                    saveUserSettings();
+                    
+                    // Close any open modals
+                    closeAvatarModal();
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         function openCamera() {
@@ -3391,9 +3274,8 @@
             // Show the camera modal
             document.getElementById('camera-modal').style.display = 'flex';
             
-            // In a real app, you would access the device's camera here
-            // For this demo, we'll simulate camera access
-            simulateCameraAccess();
+            // Access the device's camera
+            initCamera();
         }
 
         function closeCamera() {
@@ -3406,90 +3288,50 @@
             }
         }
 
-        function capturePhoto() {
-            // In a real app, you would capture the photo from the camera
-            // For this demo, we'll simulate capturing a photo
-            alert("Camera photo capture would happen here in a real app");
+        function initCamera() {
+            const video = document.getElementById('camera-video');
             
-            // Close the camera modal
-            closeCamera();
-        }
-
-        function simulateCameraAccess() {
-            // In a real app, you would set up the camera preview
-            const cameraPreview = document.getElementById('camera-preview');
-            cameraPreview.innerHTML = `
-                <div style="color: white; text-align: center;">
-                    <i class="fas fa-camera" style="font-size: 48px; margin-bottom: 10px;"></i>
-                    <p>Camera would be active here</p>
-                </div>
-            `;
-        }
-
-        function simulateAvatarGallery() {
-            const grid = document.getElementById('avatar-gallery-grid');
-            grid.innerHTML = '';
-            
-            // Simulate some gallery images (in a real app, these would come from the device)
-            const simulatedImages = [
-                { id: 'gallery1', color: '#FF6B6B', letter: 'A' },
-                { id: 'gallery2', color: '#4ECDC4', letter: 'B' },
-                { id: 'gallery3', color: '#FFE66D', letter: 'C' },
-                { id: 'gallery4', color: '#6A0572', letter: 'D' },
-                { id: 'gallery5', color: '#AB83A1', letter: 'E' },
-                { id: 'gallery6', color: '#5C80BC', letter: 'F' }
-            ];
-            
-            simulatedImages.forEach(img => {
-                const item = document.createElement('div');
-                item.className = 'media-grid-item';
-                item.innerHTML = `
-                    <div style="width: 100%; height: 100%; background: ${img.color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px;">
-                        ${img.letter}
-                    </div>
-                    <div class="media-grid-selected">
-                        <i class="fas fa-check"></i>
-                    </div>
-                `;
-                
-                item.addEventListener('click', () => {
-                    // Toggle selection
-                    document.querySelectorAll('.media-grid-item').forEach(i => {
-                        i.classList.remove('selected');
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        cameraStream = stream;
+                        video.srcObject = stream;
+                    })
+                    .catch(function(error) {
+                        console.error('Camera error: ', error);
+                        alert('Unable to access camera: ' + error.message);
                     });
-                    item.classList.add('selected');
-                    selectedAvatarFile = img.id;
-                });
-                
-                grid.appendChild(item);
-            });
-        }
-
-        function closeAvatarGallery() {
-            document.getElementById('avatar-gallery-modal').style.display = 'none';
-        }
-
-        function confirmAvatarSelection() {
-            if (selectedAvatarFile) {
-                // In a real app, you would process the selected image here
-                // For this demo, we'll just use the selected color
-                const selectedItem = document.querySelector('.media-grid-item.selected');
-                const color = selectedItem.querySelector('div').style.background;
-                
-                // Set the avatar to the selected gallery image
-                const avatarElement = document.getElementById('profile-avatar');
-                avatarElement.style.background = color;
-                avatarElement.textContent = currentUser.charAt(0).toUpperCase();
-                
-                // Save to settings
-                userSettings.avatar = 'gallery-custom';
-                saveUserSettings();
-                
-                // Close the modal
-                closeAvatarGallery();
             } else {
-                alert('Please select an image from your gallery');
+                alert('Your browser does not support camera access');
             }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            const context = canvas.getContext('2d');
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw current video frame to canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to data URL
+            const imageData = canvas.toDataURL('image/png');
+            
+            // Set the avatar to the captured photo
+            const avatarElement = document.getElementById('profile-avatar');
+            avatarElement.style.backgroundImage = `url(${imageData})`;
+            avatarElement.textContent = '';
+            
+            // Save to settings
+            userSettings.avatar = 'custom';
+            saveUserSettings();
+            
+            // Close the camera
+            closeCamera();
         }
 
         // YouTube download functions
@@ -3514,8 +3356,7 @@
             document.getElementById('youtube-download-status').textContent = 'Fetching video info...';
             document.getElementById('youtube-error').style.display = 'none';
             
-            // In a real app, you would fetch video info from your backend
-            // For this demo, we'll simulate the response
+            // Simulate API request
             simulateYouTubeInfoFetch(url);
         }
 
@@ -3528,7 +3369,6 @@
             // Simulate API request delay
             setTimeout(() => {
                 // For demo purposes, we'll use a fake response
-                // In a real app, you would use the API response
                 const videoId = extractVideoId(url);
                 const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
                 
@@ -3602,8 +3442,6 @@
             let apiUrl;
             if (quality === '128kbps') {
                 apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp3?url=${encodeURIComponent(currentYouTubeUrl)}`;
-            } else if (quality === '256kbps') {
-                apiUrl = `https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(currentYouTubeUrl)}`;
             } else {
                 apiUrl = `https://apis.davidcyriltech.my.id/youtube/mp3?url=${encodeURIComponent(currentYouTubeUrl)}`;
             }
@@ -3674,11 +3512,6 @@
             
             // Add to chat
             addYouTubeMessageToChat(messageData);
-            
-            // Send via socket
-            if (socket) {
-                socket.emit('send-youtube-message', messageData);
-            }
         }
 
         function addYouTubeMessageToChat(message) {
@@ -3782,8 +3615,7 @@
             document.getElementById('music-download-status').textContent = 'Searching for songs...';
             document.getElementById('music-error').style.display = 'none';
             
-            // In a real app, you would search for music using an API
-            // For this demo, we'll simulate search results
+            // Simulate API request
             simulateMusicSearch(query);
         }
 
@@ -3806,7 +3638,7 @@
                     const resultItem = document.createElement('div');
                     resultItem.className = 'music-result-item';
                     resultItem.innerHTML = `
-                        <div style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #8a2be2 0%, #6a1cb0 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+                        <div style="width: 60px; height: 60px; border-radius: 8px; background: linear-gradient(135deg, #6a11cb 0%, #4a08a3 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
                             <i class="fas fa-music"></i>
                         </div>
                         <div class="music-info">
@@ -3837,8 +3669,7 @@
             document.getElementById('music-downloading').style.display = 'flex';
             document.getElementById('music-download-status').textContent = `Downloading ${title} by ${artist}...`;
             
-            // In a real app, you would use the music download API here
-            // For this demo, we'll simulate download progress
+            // Simulate download progress
             simulateMusicDownload(songId, title, artist);
         }
 
