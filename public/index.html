@@ -1937,6 +1937,926 @@
         cursor: pointer;
     }
 
+
+        /* Your existing CSS remains intact */
+        /* I'll add new styles for the additional features */
+        
+        /* Group chat styles */
+        .group-avatar {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .group-avatar-mini {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .group-avatar-mini:nth-child(1) {
+            top: 0;
+            left: 0;
+        }
+        
+        .group-avatar-mini:nth-child(2) {
+            bottom: 0;
+            right: 0;
+        }
+        
+        /* Voice message styles */
+        .voice-message {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: rgba(0, 136, 204, 0.1);
+            border-radius: 20px;
+            margin: 5px 0;
+        }
+        
+        .dark-theme .voice-message {
+            background: rgba(78, 182, 233, 0.15);
+        }
+        
+        .voice-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+        
+        .dark-theme .voice-play-btn {
+            background: #4eb6e9;
+        }
+        
+        .voice-waveform {
+            flex: 1;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .dark-theme .voice-waveform {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .voice-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #0088cc;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .dark-theme .voice-progress {
+            background: #4eb6e9;
+        }
+        
+        .voice-duration {
+            margin-left: 12px;
+            font-size: 14px;
+            color: #666;
+            min-width: 40px;
+        }
+        
+        .dark-theme .voice-duration {
+            color: #aaa;
+        }
+        
+        /* Recording indicator */
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: #ff3b30;
+            color: white;
+            border-radius: 20px;
+            margin: 5px 0;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Secret chat styles */
+        .secret-chat-notice {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 136, 204, 0.1);
+            border-radius: 10px;
+            margin: 15px;
+            font-size: 14px;
+        }
+        
+        .dark-theme .secret-chat-notice {
+            background: rgba(78, 182, 233, 0.15);
+        }
+        
+        .secret-chat-timer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            color: #666;
+        }
+        
+        .dark-theme .secret-chat-timer {
+            color: #aaa;
+        }
+        
+        /* Channel styles */
+        .channel-badge {
+            background: #0088cc;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+        
+        .dark-theme .channel-badge {
+            background: #4eb6e9;
+        }
+        
+        /* Enhanced profile styles */
+        .profile-bio {
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+            font-size: 15px;
+        }
+        
+        .dark-theme .profile-bio {
+            color: #aaa;
+        }
+        
+        .profile-phone {
+            text-align: center;
+            margin: 5px 0;
+            color: #666;
+            font-size: 15px;
+        }
+        
+        .dark-theme .profile-phone {
+            color: #aaa;
+        }
+        
+        .profile-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .profile-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            min-width: 80px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dark-theme .profile-action-btn {
+            background: #2a3b4d;
+        }
+        
+        .profile-action-btn:active {
+            background: #e9ecef;
+        }
+        
+        .dark-theme .profile-action-btn:active {
+            background: #3a4b5d;
+        }
+        
+        .profile-action-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        
+        .dark-theme .profile-action-icon {
+            background: #4eb6e9;
+        }
+        
+        .profile-action-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .dark-theme .profile-action-label {
+            color: #aaa;
+        }
+        
+        /* Online status indicator */
+        .online-status {
+            display: inline-flex;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .dark-theme .online-status {
+            color: #aaa;
+        }
+        
+        /* Message reactions */
+        .message-reactions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .reaction {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dark-theme .reaction {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .reaction:hover {
+            background: rgba(0, 136, 204, 0.2);
+        }
+        
+        .reaction-count {
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .dark-theme .reaction-count {
+            color: #aaa;
+        }
+        
+        /* Reply to message */
+        .message-reply {
+            background: rgba(0, 0, 0, 0.05);
+            border-left: 3px solid #0088cc;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .dark-theme .message-reply {
+            background: rgba(255, 255, 255, 0.05);
+            border-left-color: #4eb6e9;
+        }
+        
+        .reply-sender {
+            font-weight: 600;
+            color: #0088cc;
+            margin-bottom: 4px;
+        }
+        
+        .dark-theme .reply-sender {
+            color: #4eb6e9;
+        }
+        
+        /* Forwarded message */
+        .forwarded-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .dark-theme .forwarded-label {
+            color: #aaa;
+        }
+        
+        /* Message menu */
+        .message-menu {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .dark-theme .message-menu {
+            background: #2a3b4d;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .menu-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .menu-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .dark-theme .menu-item:hover {
+            background: #3a4b5d;
+        }
+        
+        .menu-item-icon {
+            width: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .dark-theme .menu-item-icon {
+            color: #aaa;
+        }
+        
+        .menu-item-label {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .dark-theme .menu-item-label {
+            color: white;
+        }
+        
+        /* Bot commands */
+        .bot-command {
+            background: rgba(0, 136, 204, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 2px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        
+        .dark-theme .bot-command {
+            background: rgba(78, 182, 233, 0.15);
+        }
+        
+        /* Poll message */
+        .poll-message {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme .poll-message {
+            background: #2a3b4d;
+        }
+        
+        .poll-question {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .dark-theme .poll-question {
+            color: white;
+        }
+        
+        .poll-option {
+            padding: 8px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .dark-theme .poll-option {
+            background: #1e2c3a;
+        }
+        
+        .poll-option:hover {
+            background: #e9ecef;
+        }
+        
+        .dark-theme .poll-option:hover {
+            background: #2d3e50;
+        }
+        
+        .poll-percentage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(0, 136, 204, 0.2);
+            border-radius: 8px;
+            width: 0%;
+            transition: width 0.5s ease;
+            z-index: 0;
+        }
+        
+        .poll-option-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .poll-vote-count {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .dark-theme .poll-vote-count {
+            color: #aaa;
+        }
+        
+        .poll-total {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+        }
+        
+        .dark-theme .poll-total {
+            color: #aaa;
+        }
+        
+        /* Location sharing */
+        .location-message {
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .location-map {
+            width: 100%;
+            height: 200px;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+        
+        .dark-theme .location-map {
+            background: #2d3e50;
+            color: #aaa;
+        }
+        
+        .location-info {
+            padding: 12px;
+            background: white;
+        }
+        
+        .dark-theme .location-info {
+            background: #2a3b4d;
+        }
+        
+        .location-address {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .dark-theme .location-address {
+            color: white;
+        }
+        
+        .location-coordinates {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .dark-theme .location-coordinates {
+            color: #aaa;
+        }
+        
+        .location-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .location-action {
+            flex: 1;
+            padding: 8px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .dark-theme .location-action {
+            background: #4eb6e9;
+        }
+        
+        /* Contact sharing */
+        .contact-message {
+            background: white;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme .contact-message {
+            background: #2a3b4d;
+        }
+        
+        .contact-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 12px;
+        }
+        
+        .contact-info {
+            flex: 1;
+        }
+        
+        .contact-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .dark-theme .contact-name {
+            color: white;
+        }
+        
+        .contact-phone {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .dark-theme .contact-phone {
+            color: #aaa;
+        }
+        
+        .contact-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .contact-action {
+            flex: 1;
+            padding: 8px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .dark-theme .contact-action {
+            background: #4eb6e9;
+        }
+        
+        /* Bot keyboard */
+        .bot-keyboard {
+            position: fixed;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 10px;
+            display: none;
+            flex-wrap: wrap;
+            gap: 5px;
+            z-index: 200;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme .bot-keyboard {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+        
+        .keyboard-button {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dark-theme .keyboard-button {
+            background: #2a3b4d;
+            color: white;
+        }
+        
+        .keyboard-button:active {
+            background: #e9ecef;
+        }
+        
+        .dark-theme .keyboard-button:active {
+            background: #3a4b5d;
+        }
+        
+        /* Message translation */
+        .message-translation {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 6px;
+            font-size: 14px;
+            border-left: 2px solid #0088cc;
+        }
+        
+        .dark-theme .message-translation {
+            background: rgba(255, 255, 255, 0.05);
+            border-left-color: #4eb6e9;
+        }
+        
+        .translation-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .dark-theme .translation-label {
+            color: #aaa;
+        }
+        
+        /* Inline bot results */
+        .inline-results {
+            position: fixed;
+            bottom: 70px;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 200;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .dark-theme .inline-results {
+            background: #1e2c3a;
+            border-color: #2d3e50;
+        }
+        
+        .inline-result {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dark-theme .inline-result {
+            background: #2a3b4d;
+        }
+        
+        .inline-result:active {
+            background: #e9ecef;
+        }
+        
+        .dark-theme .inline-result:active {
+            background: #3a4b5d;
+        }
+        
+        .inline-result-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+        
+        .dark-theme .inline-result-title {
+            color: white;
+        }
+        
+        .inline-result-desc {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .dark-theme .inline-result-desc {
+            color: #aaa;
+        }
+        
+        /* Message selection mode */
+        .selection-mode-header {
+            background: #0088cc;
+            color: white;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-theme .selection-mode-header {
+            background: #1e2c3a;
+        }
+        
+        .selection-count {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .selection-action {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .selection-action:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .message.selected {
+            outline: 2px solid #0088cc;
+        }
+        
+        .dark-theme .message.selected {
+            outline-color: #4eb6e9;
+        }
+        
+        .message-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #0088cc;
+            background: white;
+            display: none;
+            z-index: 10;
+        }
+        
+        .dark-theme .message-checkbox {
+            border-color: #4eb6e9;
+            background: #2a3b4d;
+        }
+        
+        .selection-mode .message-checkbox {
+            display: block;
+        }
+        
+        .message.selected .message-checkbox {
+            background: #0088cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .dark-theme .message.selected .message-checkbox {
+            background: #4eb6e9;
+        }
+        
+        /* Animations */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        .slide-in {
+            animation: slideInRight 0.3s forwards;
+        }
+        
+        .slide-out {
+            animation: slideOutRight 0.3s forwards;
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 480px) {
+            .auth-box {
+                max-width: 100%;
+                padding: 0 10px;
+            }
+            
+            .conversation-item {
+                padding: 10px 12px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .profile-actions {
+                flex-wrap: wrap;
+            }
+            
+            .profile-action-btn {
+                min-width: 70px;
+            }
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .auth-input, .message-input, .search-input {
+                border-width: 2px;
+            }
+            
+            .tab.active {
+                border-bottom-width: 3px;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    
     .dark-theme .youtube-message-button {
         background: #4eb6e9;
     }
@@ -2288,7 +3208,83 @@
         <video class="media-modal-video" id="media-modal-video" controls></video>
     </div>
 </div>
+<!-- Your existing HTML structure remains intact -->
+    <!-- I'll add new UI elements for the additional features -->
 
+    <!-- Voice message recording panel -->
+    <div class="media-attachment-panel" id="voice-record-panel">
+        <div class="recording-indicator" id="recording-indicator" style="display: none;">
+            <div class="recording-dot"></div>
+            <div>Recording... <span id="recording-timer">0:00</span></div>
+            <button class="header-button" onclick="stopRecording()" style="margin-left: auto;">
+                <i class="fas fa-check"></i>
+            </button>
+        </div>
+        <div class="attachment-options">
+            <div class="attachment-option" onclick="startVoiceRecording()">
+                <div class="attachment-icon">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <div class="attachment-label">Voice Message</div>
+            </div>
+            <div class="attachment-option" onclick="openGallery('image')">
+                <div class="attachment-icon">
+                    <i class="fas fa-image"></i>
+                </div>
+                <div class="attachment-label">Photos</div>
+            </div>
+            <div class="attachment-option" onclick="openGallery('video')">
+                <div class="attachment-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="attachment-label">Videos</div>
+            </div>
+            <div class="attachment-option" onclick="openFilePicker('document')">
+                <div class="attachment-icon">
+                    <i class="fas fa-file"></i>
+                </div>
+                <div class="attachment-label">Document</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message context menu -->
+    <div class="message-menu" id="message-menu">
+        <div class="menu-item" onclick="replyToMessage()">
+            <div class="menu-item-icon"><i class="fas fa-reply"></i></div>
+            <div class="menu-item-label">Reply</div>
+        </div>
+        <div class="menu-item" onclick="forwardMessage()">
+            <div class="menu-item-icon"><i class="fas fa-share"></i></div>
+            <div class="menu-item-label">Forward</div>
+        </div>
+        <div class="menu-item" onclick="copyMessage()">
+            <div class="menu-item-icon"><i class="fas fa-copy"></i></div>
+            <div class="menu-item-label">Copy</div>
+        </div>
+        <div class="menu-item" onclick="selectMessage()">
+            <div class="menu-item-icon"><i class="fas fa-check-square"></i></div>
+            <div class="menu-item-label">Select</div>
+        </div>
+        <div class="menu-item" onclick="translateMessage()">
+            <div class="menu-item-icon"><i class="fas fa-language"></i></div>
+            <div class="menu-item-label">Translate</div>
+        </div>
+        <div class="menu-item" onclick="deleteMessage()">
+            <div class="menu-item-icon"><i class="fas fa-trash"></i></div>
+            <div class="menu-item-label">Delete</div>
+        </div>
+    </div>
+
+    <!-- Bot keyboard -->
+    <div class="bot-keyboard" id="bot-keyboard">
+        <!-- Bot buttons will be populated here -->
+    </div>
+
+    <!-- Inline bot results -->
+    <div class="inline-results" id="inline-results">
+        <!-- Inline results will be populated here -->
+    </div>
 <!-- Avatar Selection Modal -->
 <div class="modal-overlay" id="avatar-modal">
     <div class="modal-content">
@@ -4037,6 +5033,1206 @@
         // Initialize media features
         initializeMediaFeatures();
     };
+        // Your existing JavaScript remains intact
+        // I'll add new functionality for the additional features
+        
+        // ===== ENHANCED FEATURES =====
+        
+        // Voice message recording
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordingTimer = null;
+        let recordingTime = 0;
+        
+        async function startVoiceRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+        
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+        
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    sendVoiceMessage(audioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+        
+                mediaRecorder.start();
+        
+                // Show recording UI
+                document.getElementById('recording-indicator').style.display = 'flex';
+                document.getElementById('media-attachment-panel').style.display = 'none';
+        
+                // Start timer
+                recordingTime = 0;
+                updateRecordingTimer();
+                recordingTimer = setInterval(updateRecordingTimer, 1000);
+        
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Microphone access denied. Please allow microphone access to record voice messages.');
+            }
+        }
+        
+        function updateRecordingTimer() {
+            recordingTime++;
+            const minutes = Math.floor(recordingTime / 60);
+            const seconds = recordingTime % 60;
+            document.getElementById('recording-timer').textContent = 
+                `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                clearInterval(recordingTimer);
+                document.getElementById('recording-indicator').style.display = 'none';
+            }
+        }
+        
+        function sendVoiceMessage(audioBlob) {
+            const tempId = 'voice-' + Date.now();
+            const messageData = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                type: 'voice',
+                audio: audioBlob,
+                duration: recordingTime,
+                tempId: tempId,
+                timestamp: new Date()
+            };
+        
+            // Add to chat
+            addVoiceMessageToChat(messageData);
+        
+            // Send via socket
+            if (socket) {
+                // In a real app, you would upload the audio file first
+                // For this demo, we'll just send the metadata
+                socket.emit('send-voice-message', {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    duration: recordingTime,
+                    tempId: tempId
+                });
+            }
+        }
+        
+        function addVoiceMessageToChat(message) {
+            const container = document.getElementById('private-messages-container');
+            
+            // Remove "no messages" system message if it exists
+            const systemMessage = container.querySelector('.system-message');
+            if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+                systemMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            
+            const isMyMessage = message.sender === currentUser;
+            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+            
+            if (message._id) {
+                messageDiv.setAttribute('data-message-id', message._id);
+            }
+            
+            if (message.tempId) {
+                messageDiv.setAttribute('data-temp-id', message.tempId);
+            }
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
+            let statusHtml = '';
+            if (isMyMessage) {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+            
+            messageDiv.innerHTML = `
+                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                <div class="voice-message">
+                    <div class="voice-play-btn" onclick="playVoiceMessage(this, '${URL.createObjectURL(message.audio)}')">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="voice-waveform">
+                        <div class="voice-progress"></div>
+                    </div>
+                    <div class="voice-duration">${formatTime(message.duration)}</div>
+                </div>
+                <div class="message-time">${time} ${statusHtml}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+            
+            // Make sure typing indicator stays at the bottom
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                container.appendChild(typingIndicator);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function playVoiceMessage(button, audioUrl) {
+            const icon = button.querySelector('i');
+            const voiceMessage = button.closest('.voice-message');
+            const progress = voiceMessage.querySelector('.voice-progress');
+            
+            if (icon.classList.contains('fa-play')) {
+                // Play audio
+                icon.classList.remove('fa-play');
+                icon.classList.add('fa-pause');
+                
+                // In a real app, you would use the Audio API here
+                // For demo, we'll just simulate playback
+                simulateVoicePlayback(progress, voiceMessage.querySelector('.voice-duration'));
+            } else {
+                // Pause audio
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+                
+                // Stop simulation
+                if (window.voiceInterval) {
+                    clearInterval(window.voiceInterval);
+                }
+            }
+        }
+        
+        function simulateVoicePlayback(progress, durationElement) {
+            let currentTime = 0;
+            const totalTime = parseInt(durationElement.textContent.split(':')[0]) * 60 + 
+                             parseInt(durationElement.textContent.split(':')[1]);
+            
+            if (window.voiceInterval) {
+                clearInterval(window.voiceInterval);
+            }
+            
+            window.voiceInterval = setInterval(() => {
+                currentTime += 1;
+                const percent = (currentTime / totalTime) * 100;
+                progress.style.width = percent + '%';
+                
+                if (currentTime >= totalTime) {
+                    clearInterval(window.voiceInterval);
+                    const button = progress.closest('.voice-message').querySelector('.voice-play-btn');
+                    const icon = button.querySelector('i');
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                    progress.style.width = '0%';
+                }
+            }, 1000);
+        }
+        
+        // Message context menu
+        let currentContextMessage = null;
+        
+        function showMessageMenu(messageElement, message, event) {
+            currentContextMessage = message;
+            
+            const menu = document.getElementById('message-menu');
+            menu.style.display = 'block';
+            menu.style.top = `${event.clientY}px`;
+            menu.style.left = `${event.clientX}px`;
+            
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', closeMessageMenu);
+            }, 100);
+        }
+        
+        function closeMessageMenu() {
+            const menu = document.getElementById('message-menu');
+            menu.style.display = 'none';
+            document.removeEventListener('click', closeMessageMenu);
+        }
+        
+        function replyToMessage() {
+            if (!currentContextMessage) return;
+            
+            // Add reply UI to message input
+            const inputContainer = document.querySelector('.message-input-container');
+            let replyBar = document.getElementById('reply-message-bar');
+            
+            if (!replyBar) {
+                replyBar = document.createElement('div');
+                replyBar.id = 'reply-message-bar';
+                replyBar.className = 'message-reply';
+                replyBar.innerHTML = `
+                    <div class="reply-sender">Replying to ${currentContextMessage.sender}</div>
+                    <div class="reply-text">${currentContextMessage.text}</div>
+                    <button class="header-button" onclick="cancelReply()" style="position: absolute; right: 5px; top: 5px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                inputContainer.parentNode.insertBefore(replyBar, inputContainer);
+            }
+            
+            // Store reply reference
+            window.replyToMessageId = currentContextMessage._id || currentContextMessage.tempId;
+            
+            closeMessageMenu();
+        }
+        
+        function cancelReply() {
+            const replyBar = document.getElementById('reply-message-bar');
+            if (replyBar) {
+                replyBar.remove();
+            }
+            window.replyToMessageId = null;
+        }
+        
+        function forwardMessage() {
+            if (!currentContextMessage) return;
+            
+            // Show user selection for forwarding
+            alert('Forwarding feature would open a user selection dialog');
+            closeMessageMenu();
+        }
+        
+        function copyMessage() {
+            if (!currentContextMessage) return;
+            
+            navigator.clipboard.writeText(currentContextMessage.text)
+                .then(() => {
+                    // Show copied notification
+                    alert('Message copied to clipboard');
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            
+            closeMessageMenu();
+        }
+        
+        function selectMessage() {
+            if (!currentContextMessage) return;
+            
+            // Enable selection mode
+            enableSelectionMode();
+            
+            // Select this message
+            const messageElement = document.querySelector(`[data-message-id="${currentContextMessage._id}"], 
+                [data-temp-id="${currentContextMessage.tempId}"]`);
+            if (messageElement) {
+                messageElement.classList.add('selected');
+                updateSelectionCount();
+            }
+            
+            closeMessageMenu();
+        }
+        
+        function translateMessage() {
+            if (!currentContextMessage) return;
+            
+            // Simulate translation
+            const messageElement = document.querySelector(`[data-message-id="${currentContextMessage._id}"], 
+                [data-temp-id="${currentContextMessage.tempId}"]`);
+            if (messageElement) {
+                const translation = document.createElement('div');
+                translation.className = 'message-translation';
+                translation.innerHTML = `
+                    <div class="translation-label">
+                        <i class="fas fa-language"></i> Translated to English
+                    </div>
+                    <div>${currentContextMessage.text.split('').reverse().join('')}</div>
+                `;
+                
+                messageElement.appendChild(translation);
+            }
+            
+            closeMessageMenu();
+        }
+        
+        function deleteMessage() {
+            if (!currentContextMessage) return;
+            
+            if (confirm('Delete this message?')) {
+                // Delete message from UI
+                const messageElement = document.querySelector(`[data-message-id="${currentContextMessage._id}"], 
+                    [data-temp-id="${currentContextMessage.tempId}"]`);
+                if (messageElement) {
+                    messageElement.remove();
+                }
+                
+                // Send delete request to server
+                if (socket) {
+                    socket.emit('delete-message', {
+                        messageId: currentContextMessage._id || currentContextMessage.tempId
+                    });
+                }
+            }
+            
+            closeMessageMenu();
+        }
+        
+        // Selection mode for multiple messages
+        function enableSelectionMode() {
+            document.body.classList.add('selection-mode');
+            
+            // Replace header with selection header
+            const originalHeader = document.querySelector('.chat-header');
+            const selectionHeader = document.createElement('div');
+            selectionHeader.className = 'selection-mode-header';
+            selectionHeader.innerHTML = `
+                <div class="selection-count" id="selection-count">0 selected</div>
+                <div class="selection-actions">
+                    <button class="selection-action" onclick="forwardSelectedMessages()">
+                        <i class="fas fa-share"></i>
+                    </button>
+                    <button class="selection-action" onclick="deleteSelectedMessages()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="selection-action" onclick="disableSelectionMode()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            originalHeader.parentNode.replaceChild(selectionHeader, originalHeader);
+        }
+        
+        function disableSelectionMode() {
+            document.body.classList.remove('selection-mode');
+            
+            // Restore original header
+            const selectionHeader = document.querySelector('.selection-mode-header');
+            const originalHeader = document.createElement('div');
+            originalHeader.className = 'chat-header';
+            originalHeader.innerHTML = `
+                <button class="back-button" onclick="backToChatList()">←</button>
+                <div class="chat-info">
+                    <div class="chat-name" id="chat-target-name">
+                        User
+                        <i class="fas fa-check-circle verified-badge"></i>
+                    </div>
+                    <div class="chat-status" id="chat-target-status">
+                        <span class="online-dot" id="status-dot"></span>
+                        <span id="status-text">online</span>
+                    </div>
+                </div>
+                <button class="header-button" onclick="showChatOptions()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            `;
+            
+            selectionHeader.parentNode.replaceChild(originalHeader, selectionHeader);
+            
+            // Deselect all messages
+            document.querySelectorAll('.message.selected').forEach(msg => {
+                msg.classList.remove('selected');
+            });
+        }
+        
+        function updateSelectionCount() {
+            const count = document.querySelectorAll('.message.selected').length;
+            document.getElementById('selection-count').textContent = `${count} selected`;
+        }
+        
+        function forwardSelectedMessages() {
+            const selectedMessages = document.querySelectorAll('.message.selected');
+            alert(`Would forward ${selectedMessages.length} messages`);
+        }
+        
+        function deleteSelectedMessages() {
+            const selectedMessages = document.querySelectorAll('.message.selected');
+            if (confirm(`Delete ${selectedMessages.length} messages?`)) {
+                selectedMessages.forEach(msg => {
+                    msg.remove();
+                });
+                disableSelectionMode();
+            }
+        }
+        
+        // Bot commands and inline mode
+        function handleBotCommand(command) {
+            if (command === '/start') {
+                // Show welcome message from bot
+                const botMessage = {
+                    sender: currentTargetUser,
+                    receiver: currentUser,
+                    text: 'Hello! I am a demo bot. I can help you with various tasks.\n\nAvailable commands:\n/help - Show help\n/time - Current time\n/joke - Tell a joke',
+                    timestamp: new Date()
+                };
+                addMessageToChat(botMessage);
+            } 
+            else if (command === '/help') {
+                const botMessage = {
+                    sender: currentTargetUser,
+                    receiver: currentUser,
+                    text: 'I can help you with:\n- Telling jokes (/joke)\n- Showing current time (/time)\n- Answering questions\n\nTry typing @boldi for inline suggestions!',
+                    timestamp: new Date()
+                };
+                addMessageToChat(botMessage);
+            }
+            else if (command === '/time') {
+                const now = new Date();
+                const botMessage = {
+                    sender: currentTargetUser,
+                    receiver: currentUser,
+                    text: `Current time is: ${now.toLocaleTimeString()}`,
+                    timestamp: new Date()
+                };
+                addMessageToChat(botMessage);
+            }
+            else if (command === '/joke') {
+                const jokes = [
+                    "Why don't scientists trust atoms? Because they make up everything!",
+                    "Why did the scarecrow win an award? Because he was outstanding in his field!",
+                    "What do you call a fake noodle? An impasta!",
+                    "How does a penguin build its house? Igloos it together!",
+                    "Why did the math book look so sad? Because it had too many problems!"
+                ];
+                const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+                
+                const botMessage = {
+                    sender: currentTargetUser,
+                    receiver: currentUser,
+                    text: randomJoke,
+                    timestamp: new Date()
+                };
+                addMessageToChat(botMessage);
+            }
+            else {
+                const botMessage = {
+                    sender: currentTargetUser,
+                    receiver: currentUser,
+                    text: `Sorry, I don't understand "${command}". Try /help for available commands.`,
+                    timestamp: new Date()
+                };
+                addMessageToChat(botMessage);
+            }
+        }
+        
+        function showBotKeyboard(buttons) {
+            const keyboard = document.getElementById('bot-keyboard');
+            keyboard.innerHTML = '';
+            
+            buttons.forEach(button => {
+                const btn = document.createElement('button');
+                btn.className = 'keyboard-button';
+                btn.textContent = button.text;
+                btn.onclick = () => handleBotButton(button);
+                keyboard.appendChild(btn);
+            });
+            
+            keyboard.style.display = 'flex';
+        }
+        
+        function hideBotKeyboard() {
+            document.getElementById('bot-keyboard').style.display = 'none';
+        }
+        
+        function handleBotButton(button) {
+            // Handle bot button press
+            if (button.command) {
+                document.getElementById('private-message-input').value = button.command;
+            }
+            
+            // Simulate sending a message based on button
+            const userMessage = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                text: button.text,
+                timestamp: new Date()
+            };
+            addMessageToChat(userMessage);
+            
+            // Simulate bot response
+            setTimeout(() => {
+                if (button.text === 'Show time') {
+                    const now = new Date();
+                    const botMessage = {
+                        sender: currentTargetUser,
+                        receiver: currentUser,
+                        text: `The current time is: ${now.toLocaleTimeString()}`,
+                        timestamp: new Date()
+                    };
+                    addMessageToChat(botMessage);
+                } else if (button.text === 'Tell a joke') {
+                    const jokes = [
+                        "Why don't scientists trust atoms? Because they make up everything!",
+                        "Why did the scarecrow win an award? Because he was outstanding in his field!"
+                    ];
+                    const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+                    
+                    const botMessage = {
+                        sender: currentTargetUser,
+                        receiver: currentUser,
+                        text: randomJoke,
+                        timestamp: new Date()
+                    };
+                    addMessageToChat(botMessage);
+                }
+            }, 1000);
+        }
+        
+        function handleInlineQuery(query) {
+            if (query.startsWith('@boldi')) {
+                const results = [
+                    {
+                        title: "Boldi Bot Help",
+                        description: "Get help with using Boldi Bot",
+                        command: "/help"
+                    },
+                    {
+                        title: "Current Time",
+                        description: "Get the current time",
+                        command: "/time"
+                    },
+                    {
+                        title: "Random Joke",
+                        description: "Get a random joke",
+                        command: "/joke"
+                    }
+                ];
+                
+                showInlineResults(results);
+            } else {
+                hideInlineResults();
+            }
+        }
+        
+        function showInlineResults(results) {
+            const resultsContainer = document.getElementById('inline-results');
+            resultsContainer.innerHTML = '';
+            
+            results.forEach(result => {
+                const resultElement = document.createElement('div');
+                resultElement.className = 'inline-result';
+                resultElement.innerHTML = `
+                    <div class="inline-result-title">${result.title}</div>
+                    <div class="inline-result-desc">${result.description}</div>
+                `;
+                resultElement.onclick = () => selectInlineResult(result);
+                resultsContainer.appendChild(resultElement);
+            });
+            
+            resultsContainer.style.display = 'flex';
+        }
+        
+        function hideInlineResults() {
+            document.getElementById('inline-results').style.display = 'none';
+        }
+        
+        function selectInlineResult(result) {
+            document.getElementById('private-message-input').value = result.command;
+            hideInlineResults();
+        }
+        
+        // Enhanced message input handling
+        const originalHandlePrivateKeyPress = handlePrivateKeyPress;
+        handlePrivateKeyPress = function(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('private-message-input');
+                const text = input.value.trim();
+                
+                // Check if it's a bot command
+                if (text.startsWith('/') && currentTargetUser.endsWith('bot')) {
+                    handleBotCommand(text);
+                    input.value = '';
+                    event.preventDefault();
+                    return;
+                }
+                
+                // Check if we're in reply mode
+                if (window.replyToMessageId) {
+                    // Send message with reply
+                    sendReplyMessage(text, window.replyToMessageId);
+                    cancelReply();
+                    input.value = '';
+                    event.preventDefault();
+                    return;
+                }
+                
+                // Default behavior
+                sendPrivateMessage();
+                event.preventDefault();
+            }
+            
+            // Handle inline bot queries
+            const input = document.getElementById('private-message-input');
+            const text = input.value;
+            
+            if (text.includes('@') && currentTargetUser.endsWith('bot')) {
+                handleInlineQuery(text);
+            } else {
+                hideInlineResults();
+            }
+            
+            // Call original function
+            originalHandlePrivateKeyPress(event);
+        };
+        
+        function sendReplyMessage(text, replyToMessageId) {
+            if (text && socket && currentTargetUser) {
+                const tempId = 'temp-' + Date.now();
+                const messageData = {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    text: text,
+                    replyTo: replyToMessageId,
+                    tempId: tempId
+                };
+                
+                // Add message immediately to UI with "sending" status
+                const tempMessage = {
+                    sender: currentUser,
+                    receiver: currentTargetUser,
+                    text: text,
+                    replyTo: replyToMessageId,
+                    tempId: tempId,
+                    timestamp: new Date(),
+                    read: false,
+                    delivered: false
+                };
+                
+                addMessageToChat(tempMessage);
+                
+                // Send the message via socket
+                socket.emit('send-private-message', messageData, (response) => {
+                    if (response && response.error) {
+                        alert('Failed to send message: ' + response.error);
+                        // Remove the failed message from UI
+                        const failedMessage = document.querySelector(`[data-temp-id="${tempId}"]`);
+                        if (failedMessage) {
+                            failedMessage.remove();
+                        }
+                        delete pendingMessages[tempId];
+                    }
+                });
+            }
+        }
+        
+        // Poll message handling
+        function createPoll(question, options) {
+            const tempId = 'poll-' + Date.now();
+            const messageData = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                type: 'poll',
+                question: question,
+                options: options,
+                tempId: tempId,
+                timestamp: new Date()
+            };
+            
+            // Add to chat
+            addPollToChat(messageData);
+            
+            // Send via socket
+            if (socket) {
+                socket.emit('send-poll-message', messageData);
+            }
+        }
+        
+        function addPollToChat(message) {
+            const container = document.getElementById('private-messages-container');
+            
+            // Remove "no messages" system message if it exists
+            const systemMessage = container.querySelector('.system-message');
+            if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+                systemMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            
+            const isMyMessage = message.sender === currentUser;
+            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+            
+            if (message._id) {
+                messageDiv.setAttribute('data-message-id', message._id);
+            }
+            
+            if (message.tempId) {
+                messageDiv.setAttribute('data-temp-id', message.tempId);
+            }
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
+            let statusHtml = '';
+            if (isMyMessage) {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+            
+            let optionsHtml = '';
+            message.options.forEach((option, index) => {
+                optionsHtml += `
+                    <div class="poll-option" onclick="voteInPoll(this, '${message._id || message.tempId}', ${index})">
+                        <div class="poll-percentage"></div>
+                        <div class="poll-option-content">
+                            <span>${option.text}</span>
+                            <span class="poll-vote-count">0 votes</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            messageDiv.innerHTML = `
+                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                <div class="poll-message">
+                    <div class="poll-question">${message.question}</div>
+                    ${optionsHtml}
+                    <div class="poll-total">0 votes total</div>
+                </div>
+                <div class="message-time">${time} ${statusHtml}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+            
+            // Make sure typing indicator stays at the bottom
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                container.appendChild(typingIndicator);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function voteInPoll(optionElement, pollId, optionIndex) {
+            // Update UI immediately
+            const pollMessage = optionElement.closest('.poll-message');
+            const options = pollMessage.querySelectorAll('.poll-option');
+            const voteCounts = pollMessage.querySelectorAll('.poll-vote-count');
+            const totalElement = pollMessage.querySelector('.poll-total');
+            
+            // Simulate voting
+            let totalVotes = 0;
+            const votes = [];
+            
+            options.forEach((opt, idx) => {
+                const votesForOption = idx === optionIndex ? 
+                    Math.floor(Math.random() * 10) + 5 : 
+                    Math.floor(Math.random() * 5);
+                votes.push(votesForOption);
+                totalVotes += votesForOption;
+            });
+            
+            // Update percentages
+            options.forEach((opt, idx) => {
+                const percentage = totalVotes > 0 ? (votes[idx] / totalVotes) * 100 : 0;
+                opt.querySelector('.poll-percentage').style.width = `${percentage}%`;
+                voteCounts[idx].textContent = `${votes[idx]} votes`;
+            });
+            
+            totalElement.textContent = `${totalVotes} votes total`;
+            
+            // Send vote to server
+            if (socket) {
+                socket.emit('vote-in-poll', {
+                    pollId: pollId,
+                    optionIndex: optionIndex
+                });
+            }
+        }
+        
+        // Location sharing
+        function shareLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        
+                        // Create location message
+                        const tempId = 'location-' + Date.now();
+                        const messageData = {
+                            sender: currentUser,
+                            receiver: currentTargetUser,
+                            type: 'location',
+                            latitude: latitude,
+                            longitude: longitude,
+                            tempId: tempId,
+                            timestamp: new Date()
+                        };
+                        
+                        // Add to chat
+                        addLocationToChat(messageData);
+                        
+                        // Send via socket
+                        if (socket) {
+                            socket.emit('send-location-message', messageData);
+                        }
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        alert('Unable to get your location. Please check your location settings.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser.');
+            }
+        }
+        
+        function addLocationToChat(message) {
+            const container = document.getElementById('private-messages-container');
+            
+            // Remove "no messages" system message if it exists
+            const systemMessage = container.querySelector('.system-message');
+            if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+                systemMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            
+            const isMyMessage = message.sender === currentUser;
+            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+            
+            if (message._id) {
+                messageDiv.setAttribute('data-message-id', message._id);
+            }
+            
+            if (message.tempId) {
+                messageDiv.setAttribute('data-temp-id', message.tempId);
+            }
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
+            let statusHtml = '';
+            if (isMyMessage) {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+            
+            // In a real app, you would use a maps API
+            // For demo, we'll just show coordinates
+            messageDiv.innerHTML = `
+                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                <div class="location-message">
+                    <div class="location-map">
+                        <i class="fas fa-map-marker-alt" style="font-size: 40px; color: #0088cc;"></i>
+                    </div>
+                    <div class="location-info">
+                        <div class="location-address">Your Location</div>
+                        <div class="location-coordinates">Lat: ${message.latitude.toFixed(6)}, Long: ${message.longitude.toFixed(6)}</div>
+                        <div class="location-actions">
+                            <div class="location-action" onclick="openInMaps(${message.latitude}, ${message.longitude})">
+                                <i class="fas fa-external-link-alt"></i> Open in Maps
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="message-time">${time} ${statusHtml}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+            
+            // Make sure typing indicator stays at the bottom
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                container.appendChild(typingIndicator);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function openInMaps(latitude, longitude) {
+            // Open in Google Maps
+            window.open(`https://www.google.com/maps?q=${latitude},${longitude}`, '_blank');
+        }
+        
+        // Contact sharing
+        function shareContact() {
+            // For demo, we'll use a fixed contact
+            const contact = {
+                name: 'John Doe',
+                phone: '+1234567890'
+            };
+            
+            const tempId = 'contact-' + Date.now();
+            const messageData = {
+                sender: currentUser,
+                receiver: currentTargetUser,
+                type: 'contact',
+                contact: contact,
+                tempId: tempId,
+                timestamp: new Date()
+            };
+            
+            // Add to chat
+            addContactToChat(messageData);
+            
+            // Send via socket
+            if (socket) {
+                socket.emit('send-contact-message', messageData);
+            }
+        }
+        
+        function addContactToChat(message) {
+            const container = document.getElementById('private-messages-container');
+            
+            // Remove "no messages" system message if it exists
+            const systemMessage = container.querySelector('.system-message');
+            if (systemMessage && systemMessage.textContent.includes('No messages yet')) {
+                systemMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            
+            const isMyMessage = message.sender === currentUser;
+            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'their-message'}`;
+            
+            if (message._id) {
+                messageDiv.setAttribute('data-message-id', message._id);
+            }
+            
+            if (message.tempId) {
+                messageDiv.setAttribute('data-temp-id', message.tempId);
+            }
+            
+            const time = new Date(message.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            
+            let statusHtml = '';
+            if (isMyMessage) {
+                statusHtml = '<i class="fas fa-check"></i>';
+            }
+            
+            messageDiv.innerHTML = `
+                ${!isMyMessage ? `<div class="message-sender">${message.sender}</div>` : ''}
+                <div class="contact-message">
+                    <div style="display: flex; align-items: center;">
+                        <div class="contact-avatar">${message.contact.name.charAt(0)}</div>
+                        <div class="contact-info">
+                            <div class="contact-name">${message.contact.name}</div>
+                            <div class="contact-phone">${message.contact.phone}</div>
+                        </div>
+                    </div>
+                    <div class="contact-actions">
+                        <div class="contact-action" onclick="addContact('${message.contact.name}', '${message.contact.phone}')">
+                            <i class="fas fa-user-plus"></i> Add to Contacts
+                        </div>
+                    </div>
+                </div>
+                <div class="message-time">${time} ${statusHtml}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+            
+            // Make sure typing indicator stays at the bottom
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                container.appendChild(typingIndicator);
+            }
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function addContact(name, phone) {
+            // In a real app, you would add to device contacts
+            alert(`Would add ${name} (${phone}) to contacts`);
+        }
+        
+        // Enhanced profile view
+        function showUserProfile(username) {
+            // Create profile view
+            const profileScreen = document.createElement('div');
+            profileScreen.className = 'screen';
+            profileScreen.id = 'profile-screen';
+            profileScreen.innerHTML = `
+                <div class="settings-header">
+                    <button class="settings-back-button" onclick="closeProfile()">←</button>
+                    Profile
+                </div>
+                <div class="settings-content">
+                    <div class="profile-section">
+                        <div class="profile-avatar" id="profile-view-avatar">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="profile-name">${username}</div>
+                        <div class="profile-username">@${username}</div>
+                        <div class="profile-bio" id="profile-view-bio">No bio yet</div>
+                        <div class="profile-phone" id="profile-view-phone">+1 234 567 8900</div>
+                        <div class="online-status">
+                            <span class="online-dot"></span> Online
+                        </div>
+                    </div>
+                    
+                    <div class="profile-actions">
+                        <div class="profile-action-btn" onclick="startPrivateChat('${username}')">
+                            <div class="profile-action-icon">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="profile-action-label">Message</div>
+                        </div>
+                        <div class="profile-action-btn" onclick="shareContact()">
+                            <div class="profile-action-icon">
+                                <i class="fas fa-share"></i>
+                            </div>
+                            <div class="profile-action-label">Share</div>
+                        </div>
+                        <div class="profile-action-btn" onclick="toggleMute('${username}')">
+                            <div class="profile-action-icon">
+                                <i class="fas fa-bell-slash"></i>
+                            </div>
+                            <div class="profile-action-label">Mute</div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <div class="settings-section-title">Media</div>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-title">Media</div>
+                                <div class="settings-item-desc">Photos, videos and files</div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: #999;"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(profileScreen);
+            showScreen('profile-screen');
+            
+            // Load user info
+            loadUserProfileInfo(username);
+        }
+        
+        function loadUserProfileInfo(username) {
+            // In a real app, you would fetch this from the server
+            // For demo, we'll use mock data
+            const avatarElement = document.getElementById('profile-view-avatar');
+            const bioElement = document.getElementById('profile-view-bio');
+            const phoneElement = document.getElementById('profile-view-phone');
+            const statusElement = document.querySelector('#profile-screen .online-status');
+            
+            // Set avatar color based on username
+            const colors = [
+                'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)',
+                'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
+                'linear-gradient(135deg, #FF9800 0%, #EF6C00 100%)',
+                'linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%)'
+            ];
+            const colorIndex = username.length % colors.length;
+            avatarElement.style.background = colors[colorIndex];
+            
+            // Set mock bio and phone
+            bioElement.textContent = "Hello! I'm using gramX";
+            phoneElement.textContent = "+1 234 567 8900";
+            
+            // Set online status
+            const isOnline = onlineUsers.includes(username);
+            statusElement.innerHTML = isOnline ? 
+                '<span class="online-dot"></span> Online' : 
+                '<span class="offline-dot"></span> Offline';
+        }
+        
+        function closeProfile() {
+            const profileScreen = document.getElementById('profile-screen');
+            if (profileScreen) {
+                profileScreen.remove();
+            }
+            showScreen('chat-list-screen');
+        }
+        
+        function toggleMute(username) {
+            alert(`Would mute/unmute ${username}`);
+        }
+        
+        // Initialize enhanced features
+        function initializeEnhancedFeatures() {
+            // Add right-click/long-press support for message context menu
+            const messagesContainer = document.getElementById('private-messages-container');
+            if (messagesContainer) {
+                messagesContainer.addEventListener('contextmenu', (e) => {
+                    const messageElement = e.target.closest('.message');
+                    if (messageElement) {
+                        e.preventDefault();
+                        
+                        // Find message data
+                        const messageId = messageElement.getAttribute('data-message-id') || 
+                                         messageElement.getAttribute('data-temp-id');
+                        const message = findMessageById(messageId);
+                        
+                        if (message) {
+                            showMessageMenu(messageElement, message, e);
+                        }
+                    }
+                });
+                
+                // Add long press on touch devices
+                let longPressTimer;
+                messagesContainer.addEventListener('touchstart', (e) => {
+                    const messageElement = e.target.closest('.message');
+                    if (messageElement) {
+                        longPressTimer = setTimeout(() => {
+                            // Find message data
+                            const messageId = messageElement.getAttribute('data-message-id') || 
+                                             messageElement.getAttribute('data-temp-id');
+                            const message = findMessageById(messageId);
+                            
+                            if (message) {
+                                showMessageMenu(messageElement, message, {
+                                    clientX: e.touches[0].clientX,
+                                    clientY: e.touches[0].clientY
+                                });
+                            }
+                        }, 500);
+                    }
+                });
+                
+                messagesContainer.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                });
+            }
+            
+            // Add click handler for user names to view profiles
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('conversation-name') || 
+                    e.target.classList.contains('user-name')) {
+                    const username = e.target.textContent.trim();
+                    showUserProfile(username);
+                }
+            });
+            
+            // Add bot keyboard for bot chats
+            const messageInput = document.getElementById('private-message-input');
+            if (messageInput) {
+                messageInput.addEventListener('input', (e) => {
+                    const text = e.target.value;
+                    
+                    // Show bot keyboard for bot chats
+                    if (currentTargetUser && currentTargetUser.endsWith('bot')) {
+                        if (text === '/start') {
+                            showBotKeyboard([
+                                { text: 'Show time', command: '/time' },
+                                { text: 'Tell a joke', command: '/joke' },
+                                { text: 'Get help', command: '/help' }
+                            ]);
+                        } else {
+                            hideBotKeyboard();
+                        }
+                    }
+                });
+            }
+        }
+        
+        function findMessageById(messageId) {
+            // This is a simplified version - in a real app, you would search your messages array
+            // For demo, we'll return a mock message
+            return {
+                _id: messageId,
+                sender: currentUser === 'current' ? currentTargetUser : currentUser,
+                text: 'Sample message text',
+                timestamp: new Date()
+            };
+        }
+        
+        // Initialize enhanced features when page loads
+        window.addEventListener('load', function() {
+            // Your existing initialization code
+            // Then initialize enhanced features
+            setTimeout(initializeEnhancedFeatures, 1000);
+        });
+ 
 </script>
 </body>
-</html>
+    </html>
