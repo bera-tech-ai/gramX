@@ -3,310 +3,796 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeraStream - Your Home of Movies, Music & Vibes</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <title>GramX - Next-Gen Messaging</title>
+    <meta name="description" content="Experience next-generation messaging with GramX">
+    <meta name="theme-color" content="#0088cc">
+    <link rel="icon" href="https://files.catbox.moe/0bg31o.jpg">
+    <link rel="apple-touch-icon" href="https://files.catbox.moe/0bg31o.jpg">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background-color: #0088cc;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            color: white;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-button {
+            background-color: white;
+            color: #0088cc;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-card h3 {
+            color: #0088cc;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .auth-forms {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .form-container {
+            background-color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-container h3 {
+            margin-bottom: 1.5rem;
+            color: #0088cc;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .form-button {
+            background-color: #0088cc;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .form-button:hover {
+            background-color: #0066aa;
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-forms {
+                grid-template-columns: 1fr;
+            }
+            
+            nav ul {
+                gap: 0.8rem;
+            }
+            
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+            
+            .hero h2 {
+                font-size: 2rem;
+            }
+        }
+        
+        #chat-ui {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+        
+        #contacts-list {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .contact {
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .contact:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #0088cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        #chat-container {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        #chat-header {
+            padding: 1rem;
+            background: #0088cc;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #messages-container {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 0.8rem;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .message.sent {
+            align-self: flex-end;
+            background: #0088cc;
+            color: white;
+        }
+        
+        .message.received {
+            align-self: flex-start;
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        #message-input-container {
+            padding: 1rem;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+        }
+        
+        #send-button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
-    <!-- Header Navigation -->
     <header>
         <div class="logo">
-            <div class="logo-icon">B</div>
-            <div class="logo-text">BeraStream</div>
+            <img src="https://files.catbox.moe/0bg31o.jpg" alt="GramX Logo">
+            <h1>GramX</h1>
         </div>
-        
-        <nav class="nav-links">
-            <a href="#" class="active">Home</a>
-            <a href="#">Movies</a>
-            <a href="#">Music</a>
-            <a href="#">Shows</a>
-            <a href="#">Live TV</a>
+        <nav>
+            <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
         </nav>
-        
-        <div class="search-bar">
-            <input type="text" placeholder="Search for movies, music, videos..." id="search-input">
-            <i class="fas fa-search"></i>
-        </div>
-        
-        <div class="header-actions">
-            <div class="notification-btn">
-                <i class="fas fa-bell"></i>
-            </div>
-            <div class="profile-btn">
-                <i class="fas fa-user"></i>
-            </div>
-            <button class="vip-button">
-                <i class="fas fa-crown"></i>
-                VIP
-            </button>
-        </div>
     </header>
     
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Your Home of African Movies, Music & Vibes</h1>
-            <p>Stream the latest African and international content all in one place. Premium entertainment experience.</p>
-            <div class="hero-actions">
-                <button class="watch-now">
-                    <i class="fas fa-play"></i>
-                    Watch Now
-                </button>
-                <button class="more-info">
-                    <i class="fas fa-info-circle"></i>
-                    More Info
-                </button>
+    <main>
+        <section class="hero">
+            <h2>Next-Generation Messaging</h2>
+            <p>Experience the future of communication with GramX - combining the best features of modern messaging apps with unique innovations.</p>
+            <button class="cta-button" id="get-started">Get Started</button>
+        </section>
+        
+        <section id="features" class="features">
+            <div class="feature-card">
+                <h3>Real-time Messaging</h3>
+                <p>Chat instantly with friends and family using our secure, real-time messaging platform.</p>
             </div>
-        </div>
-    </section>
-    
-    <!-- Movies Section -->
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="fas fa-film"></i>
-                Trending Movies
-            </h2>
-            <a href="#" class="see-all">
-                See All
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-        
-        <div class="category-tabs">
-            <button class="category-tab active" data-category="action">Action</button>
-            <button class="category-tab" data-category="drama">Drama</button>
-            <button class="category-tab" data-category="comedy">Comedy</button>
-            <button class="category-tab" data-category="romance">Romance</button>
-            <button class="category-tab" data-category="african">African</button>
-        </div>
-        
-        <div class="content-grid" id="movies-grid">
-            <div class="loading">
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
+            <div class="feature-card">
+                <h3>Media Sharing</h3>
+                <p>Share photos, videos, documents and more with ease and security.</p>
             </div>
-        </div>
-    </section>
-    
-    <!-- Music Section -->
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="fas fa-music"></i>
-                Popular Music
-            </h2>
-            <a href="#" class="see-all">
-                See All
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-        
-        <div class="category-tabs">
-            <button class="category-tab active" data-genre="afrobeat">Afrobeats</button>
-            <button class="category-tab" data-genre="amapiano">Amapiano</button>
-            <button class="category-tab" data-genre="hiphop">Hip Hop</button>
-            <button class="category-tab" data-genre="gospel">Gospel</button>
-            <button class="category-tab" data-genre="traditional">Traditional</button>
-        </div>
-        
-        <div class="content-grid" id="music-grid">
-            <div class="loading">
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
+            <div class="feature-card">
+                <h3>Disappearing Messages</h3>
+                <p>Send messages that automatically disappear after being read for added privacy.</p>
             </div>
-        </div>
-    </section>
-    
-    <!-- YouTube Videos Section -->
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="fab fa-youtube"></i>
-                YouTube Videos
-            </h2>
-            <a href="#" class="see-all">
-                See All
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-        
-        <div class="content-grid" id="youtube-grid">
-            <div class="loading">
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
+            <div class="feature-card">
+                <h3>Message Reactions</h3>
+                <p>Express yourself with emoji reactions to messages.</p>
             </div>
-        </div>
-    </section>
-    
-    <!-- VIP Section -->
-    <section class="vip-section">
-        <div class="vip-content">
-            <h2>Go Ad-Free + Unlock Exclusive Movies & Music</h2>
-            <p>Upgrade to BeraStream VIP for uninterrupted streaming, exclusive content, and premium features.</p>
-            
-            <div class="vip-features">
-                <div class="vip-feature">
-                    <i class="fas fa-ad"></i>
-                    <h3>Ad-Free Experience</h3>
-                    <p>Enjoy content without interruptions</p>
-                </div>
-                <div class="vip-feature">
-                    <i class="fas fa-crown"></i>
-                    <h3>Exclusive Content</h3>
-                    <p>Access VIP-only movies and music</p>
-                </div>
-                <div class="vip-feature">
-                    <i class="fas fa-download"></i>
-                    <h3>Offline Downloads</h3>
-                    <p>Download and watch anywhere</p>
-                </div>
-                <div class="vip-feature">
-                    <i class="fas fa-trophy"></i>
-                    <h3>Premium Quality</h3>
-                    <p>4K Ultra HD streaming</p>
-                </div>
+            <div class="feature-card">
+                <h3>Customizable Themes</h3>
+                <p>Personalize your chat experience with customizable themes and colors.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Status Stories</h3>
+                <p>Share your day with 24-hour status stories that disappear automatically.</p>
+            </div>
+        </section>
+        
+        <section class="auth-forms" id="auth-section">
+            <div class="form-container">
+                <h3>Create Account</h3>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-username">Username</label>
+                        <input type="text" id="reg-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-phone">Phone (optional)</label>
+                        <input type="tel" id="reg-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" required>
+                    </div>
+                    <button type="submit" class="form-button">Register</button>
+                </form>
             </div>
             
-            <button class="upgrade-button">
-                <i class="fas fa-crown"></i>
-                UPGRADE TO VIP
-            </button>
-        </div>
-    </section>
-    
-    <!-- TikTok Videos Section -->
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title">
-                <i class="fab fa-tiktok"></i>
-                TikTok Videos
-            </h2>
-            <a href="#" class="see-all">
-                See All
-                <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
+            <div class="form-container">
+                <h3>Sign In</h3>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email or Phone</label>
+                        <input type="text" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="form-button">Login</button>
+                </form>
+            </div>
+        </section>
         
-        <div class="content-grid" id="tiktok-grid">
-            <div class="loading">
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
-                <div class="loading-dot"></div>
+        <div id="chat-ui">
+            <h2>Your Conversations</h2>
+            <div id="contacts-list">
+                <!-- Contacts will be loaded here -->
+            </div>
+            
+            <div id="chat-container">
+                <div id="chat-header">
+                    <div id="current-chat-name">Select a conversation</div>
+                    <button id="back-to-contacts">Back</button>
+                </div>
+                <div id="messages-container">
+                    <!-- Messages will be displayed here -->
+                </div>
+                <div id="message-input-container">
+                    <input type="text" id="message-input" placeholder="Type a message...">
+                    <button id="send-button">➤</button>
+                </div>
             </div>
         </div>
-    </section>
+    </main>
     
-    <!-- Footer -->
     <footer>
-        <div class="footer-content">
-            <div class="footer-column">
-                <h3>Navigation</h3>
-                <ul>
-                    <li><a href="#"><i class="fas fa-home"></i> Home</a></li>
-                    <li><a href="#"><i class="fas fa-film"></i> Movies</a></li>
-                    <li><a href="#"><i class="fas fa-music"></i> Music</a></li>
-                    <li><a href="#"><i class="fab fa-youtube"></i> YouTube</a></li>
-                    <li><a href="#"><i class="fab fa-tiktok"></i> TikTok</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-column">
-                <h3>Account</h3>
-                <ul>
-                    <li><a href="#"><i class="fas fa-user"></i> My Profile</a></li>
-                    <li><a href="#"><i class="fas fa-download"></i> Downloads</a></li>
-                    <li><a href="#"><i class="fas fa-history"></i> Watch History</a></li>
-                    <li><a href="#"><i class="fas fa-heart"></i> Favorites</a></li>
-                    <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-column">
-                <h3>Company</h3>
-                <ul>
-                    <li><a href="#"><i class="fas fa-info-circle"></i> About Us</a></li>
-                    <li><a href="#"><i class="fas fa-envelope"></i> Contact</a></li>
-                    <li><a href="#"><i class="fas fa-file-alt"></i> Privacy Policy</a></li>
-                    <li><a href="#"><i class="fas fa-check-circle"></i> Terms of Service</a></li>
-                    <li><a href="#"><i class="fas fa-question-circle"></i> FAQ</a></li>
-                </ul>
-            </div>
-            
-            <div class="footer-column">
-                <h3>Connect With Us</h3>
-                <p>Follow us on social media for updates and exclusive content.</p>
-                <div class="social-links">
-                    <a href="#"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
-                    <a href="#"><i class="fab fa-youtube"></i></a>
-                    <a href="#"><i class="fab fa-tiktok"></i></a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="copyright">
-            © 2025 BeraStream. All rights reserved. Made with <i class="fas fa-heart"></i> for Africa and the world.
-        </div>
+        <p>&copy; 2023 GramX. Developed by Bruce Bera. All rights reserved.</p>
+        <p>Contact: beratech00@gmail.com | +254743982206</p>
     </footer>
-    
-    <!-- AI Assistant -->
-    <div class="ai-assistant" id="ai-assistant">
-        <i class="fas fa-robot ai-icon"></i>
-    </div>
-    
-    <!-- Chat Popup -->
-    <div class="chat-popup" id="chat-popup">
-        <div class="chat-header">
-            <h3>BeraStream AI Assistant</h3>
-            <button class="close-chat" id="close-chat">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <div class="message bot">
-                <div class="message-content">
-                    Hi there! I'm your BeraStream assistant. How can I help you today?
-                </div>
-            </div>
-        </div>
-        <div class="chat-input">
-            <input type="text" placeholder="Ask about movies, music or anything..." id="chat-input">
-            <button class="send-button" id="send-message">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-    
-    <!-- Mobile Navigation -->
-    <nav class="mobile-nav">
-        <a href="#" class="nav-item active">
-            <i class="fas fa-home nav-icon"></i>
-            <span>Home</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-search nav-icon"></i>
-            <span>Search</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-music nav-icon"></i>
-            <span>Music</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-film nav-icon"></i>
-            <span>Shorts</span>
-        </a>
-        <a href="#" class="nav-item">
-            <i class="fas fa-user nav-icon"></i>
-            <span>Profile</span>
-        </a>
-    </nav>
 
-    <script src="script.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // DOM elements
+        const authSection = document.getElementById('auth-section');
+        const chatUI = document.getElementById('chat-ui');
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+        const getStartedBtn = document.getElementById('get-started');
+        const contactsList = document.getElementById('contacts-list');
+        const chatContainer = document.getElementById('chat-container');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const backToContactsBtn = document.getElementById('back-to-contacts');
+        const currentChatName = document.getElementById('current-chat-name');
+        
+        let socket = null;
+        let currentUser = null;
+        let token = null;
+        let currentChat = null;
+        
+        // Initialize app
+        function init() {
+            // Check if user is already logged in
+            const savedToken = localStorage.getItem('gramx_token');
+            const savedUser = localStorage.getItem('gramx_user');
+            
+            if (savedToken && savedUser) {
+                token = savedToken;
+                currentUser = JSON.parse(savedUser);
+                showChatUI();
+                connectSocket();
+            }
+            
+            // Event listeners
+            getStartedBtn.addEventListener('click', () => {
+                authSection.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            registerForm.addEventListener('submit', handleRegister);
+            loginForm.addEventListener('submit', handleLogin);
+            sendButton.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+            
+            backToContactsBtn.addEventListener('click', () => {
+                chatContainer.style.display = 'none';
+                contactsList.style.display = 'block';
+                currentChat = null;
+            });
+        }
+        
+        // Handle registration
+        async function handleRegister(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
+            const password = document.getElementById('reg-password').value;
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, phone, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Registration successful! Please login.');
+                    registerForm.reset();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed. Please try again.');
+            }
+        }
+        
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const emailOrPhone = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            // Determine if input is email or phone
+            const isEmail = emailOrPhone.includes('@');
+            const loginData = isEmail 
+                ? { email: emailOrPhone, password } 
+                : { phone: emailOrPhone, password };
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.token;
+                    currentUser = data.user;
+                    
+                    // Save to localStorage
+                    localStorage.setItem('gramx_token', token);
+                    localStorage.setItem('gramx_user', JSON.stringify(currentUser));
+                    
+                    showChatUI();
+                    connectSocket();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
+        }
+        
+        // Show chat UI after login
+        function showChatUI() {
+            authSection.style.display = 'none';
+            chatUI.style.display = 'flex';
+            
+            // Load contacts (in a real app, this would fetch from the server)
+            loadSampleContacts();
+        }
+        
+        // Connect to Socket.IO
+        function connectSocket() {
+            socket = io();
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                socket.emit('join', currentUser.id);
+            });
+            
+            socket.on('newMessage', (message) => {
+                displayMessage(message);
+            });
+            
+            socket.on('messageStatusUpdate', (data) => {
+                updateMessageStatus(data.messageId, data.status);
+            });
+            
+            socket.on('messageReactionUpdate', (data) => {
+                updateMessageReactions(data.messageId, data.reactions);
+            });
+            
+            socket.on('typing', (data) => {
+                // Handle typing indicator
+                console.log('User is typing:', data);
+            });
+            
+            socket.on('error', (data) => {
+                alert('Error: ' + data.message);
+            });
+        }
+        
+        // Load sample contacts (in a real app, this would fetch from the server)
+        function loadSampleContacts() {
+            const contacts = [
+                { id: 'user2', name: 'Alice Johnson', avatar: 'AJ' },
+                { id: 'user3', name: 'Bob Smith', avatar: 'BS' },
+                { id: 'user4', name: 'Carol Williams', avatar: 'CW' },
+                { id: 'user5', name: 'David Brown', avatar: 'DB' }
+            ];
+            
+            contactsList.innerHTML = '';
+            
+            contacts.forEach(contact => {
+                const contactEl = document.createElement('div');
+                contactEl.className = 'contact';
+                contactEl.innerHTML = `
+                    <div class="contact-avatar">${contact.avatar}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${contact.name}</div>
+                        <div class="contact-status">Last seen recently</div>
+                    </div>
+                `;
+                
+                contactEl.addEventListener('click', () => {
+                    openChat(contact);
+                });
+                
+                contactsList.appendChild(contactEl);
+            });
+        }
+        
+        // Open chat with a contact
+        function openChat(contact) {
+            currentChat = contact;
+            contactsList.style.display = 'none';
+            chatContainer.style.display = 'flex';
+            currentChatName.textContent = contact.name;
+            
+            // Clear messages
+            messagesContainer.innerHTML = '<p class="text-center">Loading messages...</p>';
+            
+            // Load messages (in a real app, this would fetch from the server)
+            setTimeout(() => {
+                loadSampleMessages(contact);
+            }, 500);
+        }
+        
+        // Load sample messages (in a real app, this would fetch from the server)
+        function loadSampleMessages(contact) {
+            messagesContainer.innerHTML = '';
+            
+            const messages = [
+                {
+                    _id: 'msg1',
+                    senderId: { _id: contact.id, username: contact.name },
+                    message: 'Hey there! How are you doing?',
+                    timestamp: new Date(Date.now() - 3600000),
+                    status: 'read'
+                },
+                {
+                    _id: 'msg2',
+                    senderId: { _id: currentUser.id, username: currentUser.username },
+                    message: "I'm doing great! Just working on this new messaging app.",
+                    timestamp: new Date(Date.now() - 3500000),
+                    status: 'read'
+                },
+                {
+                    _id: 'msg3',
+                    senderId: { _id: contact.id, username: contact.name },
+                    message: "That sounds exciting! What's it called?",
+                    timestamp: new Date(Date.now() - 3400000),
+                    status: 'read'
+                },
+                {
+                    _id: 'msg4',
+                    senderId: { _id: currentUser.id, username: currentUser.username },
+                    message: "It's called GramX. I think you'll love it!",
+                    timestamp: new Date(Date.now() - 3300000),
+                    status: 'read'
+                }
+            ];
+            
+            messages.forEach(message => {
+                displayMessage(message);
+            });
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Display a message in the chat
+        function displayMessage(message) {
+            const isSent = message.senderId._id === currentUser.id;
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${isSent ? 'sent' : 'received'}`;
+            messageEl.dataset.id = message._id;
+            
+            messageEl.innerHTML = `
+                <div class="message-text">${message.message}</div>
+                <div class="message-time">${formatTime(message.timestamp)}</div>
+                ${isSent ? `<div class="message-status">${getStatusIcon(message.status)}</div>` : ''}
+            `;
+            
+            messagesContainer.appendChild(messageEl);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // Send a message
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !currentChat) return;
+            
+            // Create message object
+            const message = {
+                senderId: currentUser.id,
+                receiverId: currentChat.id,
+                message: text,
+                timestamp: new Date()
+            };
+            
+            // Display message immediately (optimistic UI)
+            displayMessage({
+                ...message,
+                _id: 'temp-' + Date.now(),
+                senderId: { _id: currentUser.id, username: currentUser.username },
+                status: 'sent'
+            });
+            
+            // Send via socket
+            socket.emit('sendMessage', message);
+            
+            // Clear input
+            messageInput.value = '';
+        }
+        
+        // Update message status
+        function updateMessageStatus(messageId, status) {
+            const messageEl = messagesContainer.querySelector(`[data-id="${messageId}"]`);
+            if (messageEl) {
+                const statusEl = messageEl.querySelector('.message-status');
+                if (statusEl) {
+                    statusEl.textContent = getStatusIcon(status);
+                }
+            }
+        }
+        
+        // Update message reactions
+        function updateMessageReactions(messageId, reactions) {
+            // Implementation for reactions UI
+            console.log('Reactions updated:', messageId, reactions);
+        }
+        
+        // Helper function to format time
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Helper function to get status icon
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'sent': return '✓';
+                case 'delivered': return '✓✓';
+                case 'read': return '✓✓';
+                default: return '';
+            }
+        }
+        
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
