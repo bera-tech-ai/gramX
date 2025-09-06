@@ -1,5 +1,3 @@
-// server.js - GramX Messaging Server
-require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -7,12 +5,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
-const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const path = require('path');
+require('dotenv').config();
 
-// Initialize Express app
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -23,10 +22,18 @@ const io = socketIo(server, {
 });
 
 // Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Cloudinary configuration
 cloudinary.config({
@@ -39,13 +46,11 @@ cloudinary.config({
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gramx', {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-});
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.log(err));
 
-// MongoDB Schemas
+// User Schema
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, unique: true, sparse: true },
@@ -54,82 +59,64 @@ const userSchema = new mongoose.Schema({
   profilePhotoUrl: { type: String, default: '' },
   about: { type: String, default: 'Hey there! I\'m using GramX' },
   settings: {
-    theme: { type: String, default: 'light' },
+    theme: { type: String, default: 'dark' },
     privacy: {
       lastSeen: { type: String, default: 'contacts' },
       profilePhoto: { type: String, default: 'everyone' },
       readReceipts: { type: Boolean, default: true }
     },
     notifications: {
-      muteChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
+      muteChats: { type: Array, default: [] },
       pushEnabled: { type: Boolean, default: true }
     }
   },
   lastSeen: { type: Date, default: Date.now },
-  online: { type: Boolean, default: false }
-}, { timestamps: true });
+  createdAt: { type: Date, default: Date.now }
+});
 
+// Message Schema
 const messageSchema = new mongoose.Schema({
-  chatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat', required: true },
+  chatId: { type: String, required: true },
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  type: { type: String, enum: ['text', 'image', 'video', 'audio', 'file'], default: 'text' },
+  receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, default: 'text' },
   message: { type: String, default: '' },
   mediaUrl: { type: String, default: '' },
-  status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
+  timestamp: { type: Date, default: Date.now },
+  status: { type: String, default: 'sent' },
   reactions: [{
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     emoji: { type: String }
   }],
-  expiresAt: { type: Date },
-  isDisappearing: { type: Boolean, default: false }
-}, { timestamps: true });
-
-const chatSchema = new mongoose.Schema({
-  type: { type: String, enum: ['private', 'group'], default: 'private' },
-  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
-  name: { type: String, default: '' },
-  photoUrl: { type: String, default: '' },
-  theme: { type: String, default: '' }
-}, { timestamps: true });
-
-const statusSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['image', 'video', 'text'], required: true },
-  mediaUrl: { type: String, default: '' },
-  caption: { type: String, default: '' },
-  expiresAt: { type: Date, required: true }
-}, { timestamps: true });
-
-// Models
-const User = mongoose.model('User', userSchema);
-const Message = mongoose.model('Message', messageSchema);
-const Chat = mongoose.model('Chat', chatSchema);
-const Status = mongoose.model('Status', statusSchema);
-
-// Cloudinary storage for media uploads
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'gramx',
-    format: async (req, file) => {
-      const ext = path.extname(file.originalname).toLowerCase();
-      if (['.png', '.jpg', '.jpeg', '.gif'].includes(ext)) return 'png';
-      if (['.mp4', '.mov', '.avi'].includes(ext)) return 'mp4';
-      if (['.mp3', '.wav', '.ogg'].includes(ext)) return 'mp3';
-      return 'raw';
-    },
-    public_id: (req, file) => {
-      return `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    }
+  disappearing: {
+    isActive: { type: Boolean, default: false },
+    duration: { type: Number, default: 0 } // in seconds
   }
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+// Status Schema (Stories)
+const statusSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, required: true },
+  mediaUrl: { type: String, required: true },
+  caption: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  expiresAt: { type: Date, required: true },
+  views: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
+
+// Chat Schema
+const chatSchema = new mongoose.Schema({
+  type: { type: String, default: 'private' },
+  participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  lastMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+const Message = mongoose.model('Message', messageSchema);
+const Status = mongoose.model('Status', statusSchema);
+const Chat = mongoose.model('Chat', chatSchema);
 
 // Authentication middleware
 const authenticateToken = async (req, res, next) => {
@@ -154,19 +141,21 @@ const authenticateToken = async (req, res, next) => {
 };
 
 // Routes
-
-// User registration
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
+    
+    if (!username || !password || (!email && !phone)) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-    // Check if user already exists
+    // Check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { phone }]
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User with this email or phone already exists' });
+      return res.status(409).json({ error: 'User already exists' });
     }
 
     // Hash password
@@ -174,18 +163,18 @@ app.post('/api/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Create user
-    const user = new User({
+    const newUser = new User({
       username,
-      email,
-      phone,
+      email: email || null,
+      phone: phone || null,
       passwordHash
     });
 
-    await user.save();
+    await newUser.save();
 
-    // Generate JWT token
+    // Generate JWT
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: newUser._id },
       process.env.JWT_SECRET || 'gramx_secret',
       { expiresIn: '7d' }
     );
@@ -194,12 +183,12 @@ app.post('/api/register', async (req, res) => {
       message: 'User created successfully',
       token,
       user: {
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        phone: user.phone,
-        profilePhotoUrl: user.profilePhotoUrl,
-        about: user.about
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        phone: newUser.phone,
+        profilePhotoUrl: newUser.profilePhotoUrl,
+        about: newUser.about
       }
     });
   } catch (error) {
@@ -208,50 +197,51 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// User login
 app.post('/api/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
+    
+    if (!password || (!email && !phone)) {
+      return res.status(400).json({ error: 'Missing credentials' });
+    }
 
-    // Find user by email or phone
+    // Find user
     const user = await User.findOne({
       $or: [{ email }, { phone }]
     });
 
     if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last seen and online status
-    user.lastSeen = new Date();
-    user.online = true;
-    await user.save();
-
-    // Generate JWT token
+    // Generate JWT
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || 'gramx_secret',
       { expiresIn: '7d' }
     );
 
+    // Update last seen
+    user.lastSeen = new Date();
+    await user.save();
+
     res.json({
       message: 'Login successful',
       token,
       user: {
-        _id: user._id,
+        id: user._id,
         username: user.username,
         email: user.email,
         phone: user.phone,
         profilePhotoUrl: user.profilePhotoUrl,
         about: user.about,
-        online: user.online,
-        lastSeen: user.lastSeen
+        settings: user.settings
       }
     });
   } catch (error) {
@@ -260,450 +250,226 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Get user profile
-app.get('/api/profile', authenticateToken, async (req, res) => {
+app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
-    res.json({
-      user: {
-        _id: req.user._id,
-        username: req.user.username,
-        email: req.user.email,
-        phone: req.user.phone,
-        profilePhotoUrl: req.user.profilePhotoUrl,
-        about: req.user.about,
-        settings: req.user.settings,
-        online: req.user.online,
-        lastSeen: req.user.lastSeen
-      }
-    });
+    const user = await User.findById(req.params.id).select('-passwordHash');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
   } catch (error) {
-    console.error('Profile fetch error:', error);
+    console.error('Get user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Update user profile
-app.put('/api/profile', authenticateToken, upload.single('profilePhoto'), async (req, res) => {
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
   try {
-    const { username, about } = req.body;
+    const { username, about, profilePhotoUrl } = req.body;
+    const user = await User.findById(req.user._id);
     
-    if (username) req.user.username = username;
-    if (about) req.user.about = about;
+    if (username) user.username = username;
+    if (about) user.about = about;
+    if (profilePhotoUrl) user.profilePhotoUrl = profilePhotoUrl;
     
-    if (req.file) {
-      req.user.profilePhotoUrl = req.file.path;
-    }
-    
-    await req.user.save();
+    await user.save();
     
     res.json({
       message: 'Profile updated successfully',
       user: {
-        _id: req.user._id,
-        username: req.user.username,
-        email: req.user.email,
-        phone: req.user.phone,
-        profilePhotoUrl: req.user.profilePhotoUrl,
-        about: req.user.about
+        id: user._id,
+        username: user.username,
+        profilePhotoUrl: user.profilePhotoUrl,
+        about: user.about
       }
     });
   } catch (error) {
-    console.error('Profile update error:', error);
+    console.error('Update profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Get or create chat
-app.post('/api/chats', authenticateToken, async (req, res) => {
+app.get('/api/messages/:userId', authenticateToken, async (req, res) => {
   try {
-    const { participantId } = req.body;
+    const { userId } = req.params;
+    const currentUserId = req.user._id;
     
-    // Check if chat already exists
-    let chat = await Chat.findOne({
-      type: 'private',
-      participants: { $all: [req.user._id, participantId] }
-    }).populate('participants', 'username profilePhotoUrl online lastSeen');
-    
-    if (!chat) {
-      // Create new chat
-      chat = new Chat({
-        type: 'private',
-        participants: [req.user._id, participantId]
-      });
-      
-      await chat.save();
-      chat = await Chat.findById(chat._id).populate('participants', 'username profilePhotoUrl online lastSeen');
-    }
-    
-    res.json({ chat });
-  } catch (error) {
-    console.error('Chat creation error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get user chats
-app.get('/api/chats', authenticateToken, async (req, res) => {
-  try {
-    const chats = await Chat.find({
-      participants: req.user._id
+    const messages = await Message.find({
+      $or: [
+        { senderId: currentUserId, receiverId: userId },
+        { senderId: userId, receiverId: currentUserId }
+      ]
     })
-    .populate('participants', 'username profilePhotoUrl online lastSeen')
-    .populate('lastMessage')
-    .sort({ updatedAt: -1 });
+    .sort({ timestamp: 1 })
+    .populate('senderId', 'username profilePhotoUrl')
+    .populate('receiverId', 'username profilePhotoUrl');
     
-    res.json({ chats });
+    res.json(messages);
   } catch (error) {
-    console.error('Chats fetch error:', error);
+    console.error('Get messages error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Get chat messages
-app.get('/api/chats/:chatId/messages', authenticateToken, async (req, res) => {
+app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
-    const { chatId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    
-    // Check if user is part of the chat
-    const chat = await Chat.findOne({
-      _id: chatId,
-      participants: req.user._id
-    });
-    
-    if (!chat) {
-      return res.status(404).json({ error: 'Chat not found' });
+    if (!req.body.file) {
+      return res.status(400).json({ error: 'No file provided' });
     }
     
-    const messages = await Message.find({ chatId })
-      .populate('senderId', 'username profilePhotoUrl')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-    
-    // Mark messages as read
-    await Message.updateMany(
-      { 
-        chatId, 
-        senderId: { $ne: req.user._id },
-        status: { $in: ['sent', 'delivered'] }
-      },
-      { status: 'read' }
-    );
-    
-    res.json({ 
-      messages: messages.reverse(),
-      hasMore: messages.length === limit
+    // Upload to Cloudinary (in a real app, you'd handle file uploads properly)
+    const uploadResponse = await cloudinary.uploader.upload(req.body.file, {
+      folder: 'gramx',
+      resource_type: 'auto'
     });
-  } catch (error) {
-    console.error('Messages fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Upload media
-app.post('/api/upload', authenticateToken, upload.single('media'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
     
-    res.json({
-      message: 'File uploaded successfully',
-      mediaUrl: req.file.path,
-      publicId: req.file.filename
-    });
+    res.json({ url: uploadResponse.secure_url });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'File upload failed' });
   }
 });
 
-// Get contacts
-app.get('/api/contacts', authenticateToken, async (req, res) => {
-  try {
-    // In a real app, you might have a contacts system
-    // For now, return all users except the current one
-    const users = await User.find({
-      _id: { $ne: req.user._id }
-    }).select('username profilePhotoUrl about online lastSeen');
-    
-    res.json({ contacts: users });
-  } catch (error) {
-    console.error('Contacts fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Post a status
-app.post('/api/status', authenticateToken, upload.single('media'), async (req, res) => {
-  try {
-    const { type, caption } = req.body;
-    
-    if (!type) {
-      return res.status(400).json({ error: 'Type is required' });
-    }
-    
-    if (type !== 'text' && !req.file) {
-      return res.status(400).json({ error: 'Media is required for non-text status' });
-    }
-    
-    // Calculate expiration time (24 hours from now)
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-    
-    const status = new Status({
-      userId: req.user._id,
-      type,
-      mediaUrl: req.file ? req.file.path : '',
-      caption: caption || '',
-      expiresAt
-    });
-    
-    await status.save();
-    
-    // Populate user info
-    await status.populate('userId', 'username profilePhotoUrl');
-    
-    res.json({
-      message: 'Status posted successfully',
-      status
-    });
-  } catch (error) {
-    console.error('Status post error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Get statuses
-app.get('/api/statuses', authenticateToken, async (req, res) => {
-  try {
-    // Get statuses from contacts that haven't expired
-    const statuses = await Status.find({
-      expiresAt: { $gt: new Date() }
-    })
-    .populate('userId', 'username profilePhotoUrl')
-    .sort({ createdAt: -1 });
-    
-    res.json({ statuses });
-  } catch (error) {
-    console.error('Statuses fetch error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Socket.io for real-time messaging
-io.use(async (socket, next) => {
-  try {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error'));
-    }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gramx_secret');
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return next(new Error('Authentication error'));
-    }
-    
-    socket.userId = user._id;
-    next();
-  } catch (error) {
-    next(new Error('Authentication error'));
-  }
-});
-
+// Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.userId);
+  console.log('User connected:', socket.id);
   
-  // Update user online status
-  User.findByIdAndUpdate(socket.userId, { online: true, lastSeen: new Date() }).exec();
-  
-  // Join user to their own room for targeted messages
-  socket.join(socket.userId.toString());
+  // Join user's room
+  socket.on('join', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined room`);
+  });
   
   // Handle sending messages
-  socket.on('send_message', async (data) => {
+  socket.on('sendMessage', async (data) => {
     try {
-      const { chatId, receiverId, type, message, mediaUrl, isDisappearing, disappearAfter } = data;
-      
-      let expiresAt;
-      if (isDisappearing && disappearAfter) {
-        expiresAt = new Date();
-        expiresAt.setSeconds(expiresAt.getSeconds() + disappearAfter);
-      }
+      const { senderId, receiverId, message, type, mediaUrl, disappearing } = data;
       
       // Create new message
       const newMessage = new Message({
-        chatId,
-        senderId: socket.userId,
+        chatId: `${senderId}-${receiverId}`,
+        senderId,
         receiverId,
-        type,
+        type: type || 'text',
         message,
-        mediaUrl,
-        isDisappearing: !!isDisappearing,
-        expiresAt
+        mediaUrl: mediaUrl || '',
+        status: 'sent',
+        disappearing: disappearing || { isActive: false, duration: 0 }
       });
       
       await newMessage.save();
       
-      // Update chat's last message
-      await Chat.findByIdAndUpdate(chatId, {
-        lastMessage: newMessage._id,
-        updatedAt: new Date()
-      });
-      
       // Populate sender info
       await newMessage.populate('senderId', 'username profilePhotoUrl');
+      await newMessage.populate('receiverId', 'username profilePhotoUrl');
+      
+      // Emit to sender
+      socket.emit('messageSent', newMessage);
       
       // Emit to receiver
-      socket.to(receiverId.toString()).emit('new_message', newMessage);
+      socket.to(receiverId).emit('newMessage', newMessage);
       
-      // Emit back to sender for confirmation
-      socket.emit('message_sent', newMessage);
+      // Update chat last message
+      const chat = await Chat.findOne({
+        participants: { $all: [senderId, receiverId] }
+      });
+      
+      if (chat) {
+        chat.lastMessageId = newMessage._id;
+        chat.updatedAt = new Date();
+        await chat.save();
+      } else {
+        const newChat = new Chat({
+          type: 'private',
+          participants: [senderId, receiverId],
+          lastMessageId: newMessage._id
+        });
+        await newChat.save();
+      }
     } catch (error) {
-      console.error('Message send error:', error);
+      console.error('Send message error:', error);
       socket.emit('error', { message: 'Failed to send message' });
     }
   });
   
-  // Handle message reactions
-  socket.on('react_to_message', async (data) => {
+  // Handle message status updates
+  socket.on('messageStatus', async (data) => {
     try {
-      const { messageId, emoji } = data;
+      const { messageId, status } = data;
+      
+      const message = await Message.findByIdAndUpdate(
+        messageId,
+        { status },
+        { new: true }
+      ).populate('senderId', 'username profilePhotoUrl');
+      
+      if (message) {
+        // Notify sender about status update
+        socket.to(message.senderId._id.toString()).emit('messageStatusUpdate', {
+          messageId,
+          status
+        });
+      }
+    } catch (error) {
+      console.error('Message status error:', error);
+    }
+  });
+  
+  // Handle message reactions
+  socket.on('messageReaction', async (data) => {
+    try {
+      const { messageId, userId, emoji } = data;
       
       const message = await Message.findById(messageId);
-      if (!message) {
-        return socket.emit('error', { message: 'Message not found' });
-      }
+      if (!message) return;
       
       // Remove existing reaction from this user
       message.reactions = message.reactions.filter(
-        reaction => reaction.userId.toString() !== socket.userId.toString()
+        reaction => reaction.userId.toString() !== userId
       );
       
-      // Add new reaction
+      // Add new reaction if emoji is provided
       if (emoji) {
-        message.reactions.push({
-          userId: socket.userId,
-          emoji
-        });
+        message.reactions.push({ userId, emoji });
       }
       
       await message.save();
       
-      // Emit to all participants in the chat
-      const chat = await Chat.findById(message.chatId);
-      if (chat) {
-        chat.participants.forEach(participantId => {
-          io.to(participantId.toString()).emit('message_reacted', {
-            messageId,
-            reactions: message.reactions
-          });
+      // Notify both users about the reaction
+      socket.emit('messageReactionUpdate', {
+        messageId,
+        reactions: message.reactions
+      });
+      
+      socket.to(message.senderId.toString()).emit('messageReactionUpdate', {
+        messageId,
+        reactions: message.reactions
+      });
+      
+      if (message.senderId.toString() !== message.receiverId.toString()) {
+        socket.to(message.receiverId.toString()).emit('messageReactionUpdate', {
+          messageId,
+          reactions: message.reactions
         });
       }
     } catch (error) {
-      console.error('Reaction error:', error);
-      socket.emit('error', { message: 'Failed to react to message' });
+      console.error('Message reaction error:', error);
     }
   });
   
   // Handle typing indicators
-  socket.on('typing_start', (data) => {
-    const { chatId, receiverId } = data;
-    socket.to(receiverId.toString()).emit('user_typing', {
-      chatId,
-      userId: socket.userId
-    });
-  });
-  
-  socket.on('typing_stop', (data) => {
-    const { chatId, receiverId } = data;
-    socket.to(receiverId.toString()).emit('user_stopped_typing', {
-      chatId,
-      userId: socket.userId
-    });
-  });
-  
-  // Handle message status updates
-  socket.on('message_delivered', async (data) => {
-    try {
-      const { messageId } = data;
-      
-      await Message.findByIdAndUpdate(messageId, { status: 'delivered' });
-      
-      const message = await Message.findById(messageId);
-      if (message) {
-        socket.to(message.senderId.toString()).emit('message_status', {
-          messageId,
-          status: 'delivered'
-        });
-      }
-    } catch (error) {
-      console.error('Message status update error:', error);
-    }
-  });
-  
-  socket.on('message_read', async (data) => {
-    try {
-      const { messageId } = data;
-      
-      await Message.findByIdAndUpdate(messageId, { status: 'read' });
-      
-      const message = await Message.findById(messageId);
-      if (message) {
-        socket.to(message.senderId.toString()).emit('message_status', {
-          messageId,
-          status: 'read'
-        });
-      }
-    } catch (error) {
-      console.error('Message status update error:', error);
-    }
+  socket.on('typing', (data) => {
+    const { userId, receiverId, isTyping } = data;
+    socket.to(receiverId).emit('typing', { userId, isTyping });
   });
   
   // Handle disconnect
-  socket.on('disconnect', async () => {
-    console.log('User disconnected:', socket.userId);
-    
-    // Update user offline status
-    await User.findByIdAndUpdate(socket.userId, {
-      online: false,
-      lastSeen: new Date()
-    }).exec();
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
   });
 });
 
-// Cleanup expired messages and statuses
-setInterval(async () => {
-  try {
-    // Delete expired messages
-    await Message.deleteMany({
-      expiresAt: { $lt: new Date() }
-    });
-    
-    // Delete expired statuses
-    await Status.deleteMany({
-      expiresAt: { $lt: new Date() }
-    });
-  } catch (error) {
-    console.error('Cleanup error:', error);
-  }
-}, 60 * 60 * 1000); // Run every hour
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error(error);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
-
-// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`GramX server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
