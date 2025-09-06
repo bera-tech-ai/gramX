@@ -9,7 +9,10 @@ const cloudinary = require('cloudinary').v2;
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
+const { body, validationResult } = require('express-validator');
 const path = require('path');
+const cron = require('node-cron');
 require('dotenv').config();
 
 const app = express();
@@ -22,7 +25,19 @@ const io = socketIo(server, {
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      mediaSrc: ["'self'", "data:", "https:", "blob:"]
+    }
+  }
+}));
+app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -30,8 +45,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100
 });
 app.use(limiter);
 
@@ -43,7 +58,8 @@ cloudinary.config({
 });
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gramx', {
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gramx';
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
@@ -52,8 +68,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gramx', {
 
 // User Schema
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  email: { type: String, unique: true, sparse: true },
+  username: { type: String, required: true, trim: true },
+  email: { type: String, unique: true, sparse: true, lowercase: true },
   phone: { type: String, unique: true, sparse: true },
   passwordHash: { type: String, required: true },
   profilePhotoUrl: { type: String, default: '' },
@@ -71,6 +87,9 @@ const userSchema = new mongoose.Schema({
     }
   },
   lastSeen: { type: Date, default: Date.now },
+  isOnline: { type: Boolean, default: false },
+  contacts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -90,8 +109,9 @@ const messageSchema = new mongoose.Schema({
   }],
   disappearing: {
     isActive: { type: Boolean, default: false },
-    duration: { type: Number, default: 0 } // in seconds
-  }
+    duration: { type: Number, default: 0 }
+  },
+  deleted: { type: Boolean, default: false }
 });
 
 // Status Schema (Stories)
@@ -110,7 +130,11 @@ const chatSchema = new mongoose.Schema({
   type: { type: String, default: 'private' },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   lastMessageId: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
+  isGroup: { type: Boolean, default: false },
+  groupName: { type: String, default: '' },
+  groupPhoto: { type: String, default: '' },
+  groupAdmins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
 
 const User = mongoose.model('User', userSchema);
@@ -128,7 +152,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gramx_secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select('-passwordHash');
     if (!user) {
       return res.status(403).json({ error: 'Invalid token' });
@@ -140,13 +164,36 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Routes
-app.post('/api/register', async (req, res) => {
+// Validation middleware
+const validateRegistration = [
+  body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+  body('email').optional().isEmail().withMessage('Please provide a valid email'),
+  body('phone').optional().isMobilePhone().withMessage('Please provide a valid phone number'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+];
+
+// Clean up expired statuses every hour
+cron.schedule('0 * * * *', async () => {
   try {
+    const result = await Status.deleteMany({ expiresAt: { $lt: new Date() } });
+    console.log(`Cleaned up ${result.deletedCount} expired statuses`);
+  } catch (error) {
+    console.error('Error cleaning up expired statuses:', error);
+  }
+});
+
+// Routes
+app.post('/api/register', validateRegistration, async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { username, email, phone, password } = req.body;
     
-    if (!username || !password || (!email && !phone)) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!email && !phone) {
+      return res.status(400).json({ error: 'Email or phone number is required' });
     }
 
     // Check if user exists
@@ -159,7 +206,7 @@ app.post('/api/register', async (req, res) => {
     }
 
     // Hash password
-    const saltRounds = 10;
+    const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // Create user
@@ -175,7 +222,7 @@ app.post('/api/register', async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: newUser._id },
-      process.env.JWT_SECRET || 'gramx_secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -223,12 +270,13 @@ app.post('/api/login', async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'gramx_secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Update last seen
+    // Update last seen and online status
     user.lastSeen = new Date();
+    user.isOnline = true;
     await user.save();
 
     res.json({
@@ -241,7 +289,8 @@ app.post('/api/login', async (req, res) => {
         phone: user.phone,
         profilePhotoUrl: user.profilePhotoUrl,
         about: user.about,
-        settings: user.settings
+        settings: user.settings,
+        isOnline: user.isOnline
       }
     });
   } catch (error) {
@@ -250,12 +299,38 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/logout', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.isOnline = false;
+    user.lastSeen = new Date();
+    await user.save();
+    
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-passwordHash');
+    const user = await User.findById(req.params.id)
+      .select('-passwordHash')
+      .populate('contacts', 'username profilePhotoUrl about isOnline lastSeen');
+    
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
+    // Check privacy settings
+    if (req.user._id.toString() !== user._id.toString()) {
+      if (user.settings.privacy.profilePhoto === 'contacts' && 
+          !user.contacts.includes(req.user._id)) {
+        user.profilePhotoUrl = '';
+      }
+    }
+    
     res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
@@ -263,14 +338,38 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/users/search', authenticateToken, async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.length < 3) {
+      return res.status(400).json({ error: 'Search query must be at least 3 characters' });
+    }
+    
+    const users = await User.find({
+      $or: [
+        { username: { $regex: query, $options: 'i' } },
+        { email: { $regex: query, $options: 'i' } },
+        { phone: { $regex: query, $options: 'i' } }
+      ],
+      _id: { $ne: req.user._id }
+    }).select('username profilePhotoUrl about isOnline lastSeen');
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.put('/api/user/profile', authenticateToken, async (req, res) => {
   try {
-    const { username, about, profilePhotoUrl } = req.body;
+    const { username, about, profilePhotoUrl, settings } = req.body;
     const user = await User.findById(req.user._id);
     
     if (username) user.username = username;
     if (about) user.about = about;
     if (profilePhotoUrl) user.profilePhotoUrl = profilePhotoUrl;
+    if (settings) user.settings = { ...user.settings, ...settings };
     
     await user.save();
     
@@ -280,11 +379,28 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
         id: user._id,
         username: user.username,
         profilePhotoUrl: user.profilePhotoUrl,
-        about: user.about
+        about: user.about,
+        settings: user.settings
       }
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/api/chats', authenticateToken, async (req, res) => {
+  try {
+    const chats = await Chat.find({
+      participants: req.user._id
+    })
+    .populate('participants', 'username profilePhotoUrl about isOnline lastSeen')
+    .populate('lastMessageId')
+    .sort({ updatedAt: -1 });
+    
+    res.json(chats);
+  } catch (error) {
+    console.error('Get chats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -294,11 +410,18 @@ app.get('/api/messages/:userId', authenticateToken, async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user._id;
     
+    // Check if user is blocked
+    const receiver = await User.findById(userId);
+    if (receiver.blockedUsers.includes(currentUserId)) {
+      return res.status(403).json({ error: 'You are blocked by this user' });
+    }
+    
     const messages = await Message.find({
       $or: [
         { senderId: currentUserId, receiverId: userId },
         { senderId: userId, receiverId: currentUserId }
-      ]
+      ],
+      deleted: false
     })
     .sort({ timestamp: 1 })
     .populate('senderId', 'username profilePhotoUrl')
@@ -311,13 +434,41 @@ app.get('/api/messages/:userId', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+    
+    // Only allow sender to delete message
+    if (message.senderId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'You can only delete your own messages' });
+    }
+    
+    message.deleted = true;
+    await message.save();
+    
+    // Notify the other user
+    const receiverId = message.receiverId.toString();
+    io.to(receiverId).emit('messageDeleted', { messageId });
+    
+    res.json({ message: 'Message deleted successfully' });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
     if (!req.body.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
     
-    // Upload to Cloudinary (in a real app, you'd handle file uploads properly)
+    // Upload to Cloudinary
     const uploadResponse = await cloudinary.uploader.upload(req.body.file, {
       folder: 'gramx',
       resource_type: 'auto'
@@ -330,13 +481,55 @@ app.post('/api/upload', authenticateToken, async (req, res) => {
   }
 });
 
+app.post('/api/contacts/add', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    const userToAdd = await User.findById(userId);
+    if (!userToAdd) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const currentUser = await User.findById(req.user._id);
+    
+    if (!currentUser.contacts.includes(userId)) {
+      currentUser.contacts.push(userId);
+      await currentUser.save();
+    }
+    
+    res.json({ message: 'Contact added successfully', contact: userToAdd });
+  } catch (error) {
+    console.error('Add contact error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
   
   // Join user's room
-  socket.on('join', (userId) => {
+  socket.on('join', async (userId) => {
     socket.join(userId);
+    
+    // Update user online status
+    await User.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
+    
+    // Notify contacts that user is online
+    const user = await User.findById(userId).populate('contacts');
+    user.contacts.forEach(contact => {
+      socket.to(contact._id.toString()).emit('userOnline', { userId });
+    });
+    
     console.log(`User ${userId} joined room`);
   });
   
@@ -344,6 +537,13 @@ io.on('connection', (socket) => {
   socket.on('sendMessage', async (data) => {
     try {
       const { senderId, receiverId, message, type, mediaUrl, disappearing } = data;
+      
+      // Check if sender is blocked by receiver
+      const receiver = await User.findById(receiverId);
+      if (receiver.blockedUsers.includes(senderId)) {
+        socket.emit('error', { message: 'You are blocked by this user' });
+        return;
+      }
       
       // Create new message
       const newMessage = new Message({
@@ -366,11 +566,17 @@ io.on('connection', (socket) => {
       // Emit to sender
       socket.emit('messageSent', newMessage);
       
-      // Emit to receiver
-      socket.to(receiverId).emit('newMessage', newMessage);
+      // Emit to receiver if online
+      const receiverSocket = io.sockets.adapter.rooms.get(receiverId);
+      if (receiverSocket && receiverSocket.size > 0) {
+        newMessage.status = 'delivered';
+        await newMessage.save();
+        
+        socket.to(receiverId).emit('newMessage', newMessage);
+      }
       
       // Update chat last message
-      const chat = await Chat.findOne({
+      let chat = await Chat.findOne({
         participants: { $all: [senderId, receiverId] }
       });
       
@@ -379,12 +585,19 @@ io.on('connection', (socket) => {
         chat.updatedAt = new Date();
         await chat.save();
       } else {
-        const newChat = new Chat({
+        chat = new Chat({
           type: 'private',
           participants: [senderId, receiverId],
           lastMessageId: newMessage._id
         });
-        await newChat.save();
+        await chat.save();
+        
+        // Populate and emit new chat to both users
+        await chat.populate('participants', 'username profilePhotoUrl about isOnline lastSeen');
+        await chat.populate('lastMessageId');
+        
+        socket.emit('newChat', chat);
+        socket.to(receiverId).emit('newChat', chat);
       }
     } catch (error) {
       console.error('Send message error:', error);
@@ -464,8 +677,26 @@ io.on('connection', (socket) => {
   });
   
   // Handle disconnect
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
+    
+    // Find which user was using this socket
+    const rooms = Array.from(socket.rooms);
+    const userRoom = rooms.find(room => room !== socket.id);
+    
+    if (userRoom) {
+      // Update user offline status
+      await User.findByIdAndUpdate(userRoom, { 
+        isOnline: false, 
+        lastSeen: new Date() 
+      });
+      
+      // Notify contacts that user is offline
+      const user = await User.findById(userRoom).populate('contacts');
+      user.contacts.forEach(contact => {
+        socket.to(contact._id.toString()).emit('userOffline', { userId: userRoom });
+      });
+    }
   });
 });
 
@@ -473,3 +704,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app; // For testing
