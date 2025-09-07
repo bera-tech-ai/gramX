@@ -17,6 +17,10 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Enable trust proxy for rate limiting behind proxies
+app.set('trust proxy', 1);
+
 const io = socketIo(server, {
   cors: {
     origin: "*",
@@ -43,10 +47,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rate limiting
+// Rate limiting with proxy support
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
@@ -469,7 +476,7 @@ app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
     const receiverId = message.receiverId.toString();
     io.to(receiverId).emit('messageDeleted', { messageId });
     
-    res.json({ message: 'Message deleted successfully' });
+    res.json({ message: 'Message deleted successfully' );
   } catch (error) {
     console.error('Delete message error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -674,7 +681,7 @@ io.on('connection', (socket) => {
       });
       
       if (message.senderId.toString() !== message.receiverId.toString()) {
-        socket.to(message.receiverId.toString()).emit('messageReactionUpdate', {
+        socket.to(message.receiverId.toString()).emit('messageReaction极狐 Update', {
           messageId,
           reactions: message.reactions
         });
@@ -686,7 +693,7 @@ io.on('connection', (socket) => {
   
   // Handle typing indicators
   socket.on('typing', (data) => {
-    const { userId, receiverId, isTyping } = data;
+    const { userId, receiver极狐 Id, isTyping } = data;
     socket.to(receiverId).emit('typing', { userId, isTyping });
   });
   
