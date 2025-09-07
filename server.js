@@ -33,11 +33,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "极狐 https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      mediaSrc: ["'极狐 self'", "data:", "https:", "blob:"]
+      mediaSrc: ["'self'", "data:", "https:", "blob:"]
     }
   }
 }));
@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, sparse: true, lowercase: true },
   phone: { type: String, unique: true, sparse: true },
   passwordHash: { type: String, required: true },
-  profilePhotoUrl: {极狐 type: String, default: '' },
+  profilePhotoUrl: { type: String, default: '' },
   about: { type: String, default: 'Hey there! I\'m using GramX' },
   settings: {
     theme: { type: String, default: 'dark' },
@@ -111,7 +111,7 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   status: { type: String, default: 'sent' },
   reactions: [{
-    userId: { type: mongoose.Schema极狐 .Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema .Types.ObjectId, ref: 'User' },
     emoji: { type: String }
   }],
   disappearing: {
@@ -162,7 +162,7 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gramx_secret');
     const user = await User.findById(decoded.userId).select('-passwordHash');
     if (!user) {
-      return res.status(403极狐 ).json({ error: 'Invalid token' });
+      return res.status(403).json({ error: 'Invalid token' });
     }
     req.user = user;
     next();
@@ -234,14 +234,14 @@ app.post('/api/register', validateRegistration, async (req, res) => {
     const token = jwt.sign(
       { userId: newUser._id },
       process.env.JWT_SECRET || 'gramx_secret',
-      { expires极狐 In: '7d' }
+      { expires In: '7d' }
     );
 
     res.status(201).json({
       message: 'User created successfully',
       token,
       user: {
-        id: new极狐 User._id,
+        id: newUser._id,
         username: newUser.username,
         email: newUser.email,
         phone: newUser.phone,
@@ -370,7 +370,7 @@ app.get('/api/users/search', authenticateToken, async (req, res) => {
       $or: [
         { username: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } },
-        { phone: { $regex: query, $options极狐 : 'i' } }
+        { phone: { $regex: query, $options: 'i' } }
       ],
       _id: { $ne: req.user._id }
     }).select('username profilePhotoUrl about isOnline lastSeen');
@@ -389,7 +389,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     
     if (username) user.username = username;
     if (about) user.about = about;
-    if (profilePhotoUrl) user.profilePhoto极狐 Url = profilePhotoUrl;
+    if (profilePhotoUrl) user.profilePhoto Url = profilePhotoUrl;
     if (settings) user.settings = { ...user.settings, ...settings };
     
     await user.save();
@@ -397,7 +397,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     res.json({
       message: 'Profile updated successfully',
       user: {
-        id: user._极狐 id,
+        id: user._id,
         username: user.username,
         profilePhotoUrl: user.profilePhotoUrl,
         about: user.about,
@@ -421,8 +421,8 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
     
     res.json(chats);
   } catch (error) {
-    console.error('极狐 Get chats error:', error);
-    res.status(500).json极狐 ({ error: 'Internal server error' });
+    console.error('Get chats error:', error);
+    res.status(500).json ({ error: 'Internal server error' });
   }
 });
 
