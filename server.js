@@ -152,7 +152,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gramx_secret');
     const user = await User.findById(decoded.userId).select('-passwordHash');
     if (!user) {
       return res.status(403).json({ error: 'Invalid token' });
@@ -196,6 +196,10 @@ app.post('/api/register', validateRegistration, async (req, res) => {
       return res.status(400).json({ error: 'Email or phone number is required' });
     }
 
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
     // Check if user exists
     const existingUser = await User.findOne({
       $or: [{ email }, { phone }]
@@ -222,7 +226,7 @@ app.post('/api/register', validateRegistration, async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: newUser._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'gramx_secret',
       { expiresIn: '7d' }
     );
 
@@ -248,8 +252,13 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
     
+    // Validate input
     if (!password || (!email && !phone)) {
       return res.status(400).json({ error: 'Missing credentials' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Password is required' });
     }
 
     // Find user
@@ -261,6 +270,11 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Check if passwordHash exists
+    if (!user.passwordHash) {
+      return res.status(500).json({ error: 'Account error. Please contact support.' });
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
@@ -270,7 +284,7 @@ app.post('/api/login', async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'gramx_secret',
       { expiresIn: '7d' }
     );
 
