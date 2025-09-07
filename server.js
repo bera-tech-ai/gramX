@@ -93,7 +93,7 @@ const userSchema = new mongoose.Schema({
       pushEnabled: { type: Boolean, default: true }
     }
   },
-  last极狐 Seen: { type: Date, default: Date.now },
+  lastSeen: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false },
   contacts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -111,7 +111,7 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   status: { type: String, default: 'sent' },
   reactions: [{
-    userId: { type: mongoose.Schema .Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     emoji: { type: String }
   }],
   disappearing: {
@@ -234,7 +234,7 @@ app.post('/api/register', validateRegistration, async (req, res) => {
     const token = jwt.sign(
       { userId: newUser._id },
       process.env.JWT_SECRET || 'gramx_secret',
-      { expires In: '7d' }
+      { expiresIn: '7d' }
     );
 
     res.status(201).json({
@@ -253,8 +253,7 @@ app.post('/api/register', validateRegistration, async (req, res) => {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
-
+}); 
 app.post('/api/login', async (req, res) => {
   try {
     const { email, phone, password } = req.body;
@@ -265,12 +264,12 @@ app.post('/api/login', async (req, res) => {
     }
 
     if (!password) {
-      return res.status(400).json({极狐 error: 'Password is required' });
+      return res.status(400).json({ error: 'Password is required' });
     }
 
     // Find user
     const user = await User.findOne({
-      $极狐 or: [{ email }, { phone }]
+      $or: [{ email }, { phone }]
     });
 
     if (!user) {
@@ -334,7 +333,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/user/:id', authenticateToken, async (req, res)极狐 {
+app.get('/api/user/:id', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .select('-passwordHash')
@@ -389,7 +388,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     
     if (username) user.username = username;
     if (about) user.about = about;
-    if (profilePhotoUrl) user.profilePhoto Url = profilePhotoUrl;
+    if (profilePhotoUrl) user.profilePhotoUrl = profilePhotoUrl;
     if (settings) user.settings = { ...user.settings, ...settings };
     
     await user.save();
@@ -409,7 +408,6 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 app.get('/api/chats', authenticateToken, async (req, res) => {
   try {
     const chats = await Chat.find({
@@ -422,7 +420,7 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
     res.json(chats);
   } catch (error) {
     console.error('Get chats error:', error);
-    res.status(500).json ({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -476,7 +474,7 @@ app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
     const receiverId = message.receiverId.toString();
     io.to(receiverId).emit('messageDeleted', { messageId });
     
-    res.json({ message: 'Message deleted successfully' }); // FIXED: Added missing closing brace
+    res.json({ message: 'Message deleted successfully' });
   } catch (error) {
     console.error('Delete message error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -485,7 +483,7 @@ app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
 
 app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
-    if (!req.body.file极狐 ) {
+    if (!req.body.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
     
@@ -598,7 +596,7 @@ io.on('connection', (socket) => {
       
       // Update chat last message
       let chat = await Chat.findOne({
-        participants: { $all: [sender极狐 Id, receiverId] }
+        participants: { $all: [senderId, receiverId] }
       });
       
       if (chat) {
