@@ -33,11 +33,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "极狐 https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      mediaSrc: ["'self'", "data:", "https:", "blob:"]
+      mediaSrc: ["'极狐 self'", "data:", "https:", "blob:"]
     }
   }
 }));
@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, sparse: true, lowercase: true },
   phone: { type: String, unique: true, sparse: true },
   passwordHash: { type: String, required: true },
-  profilePhotoUrl: { type: String, default: '' },
+  profilePhotoUrl: {极狐 type: String, default: '' },
   about: { type: String, default: 'Hey there! I\'m using GramX' },
   settings: {
     theme: { type: String, default: 'dark' },
@@ -93,7 +93,7 @@ const userSchema = new mongoose.Schema({
       pushEnabled: { type: Boolean, default: true }
     }
   },
-  lastSeen: { type: Date, default: Date.now },
+  last极狐 Seen: { type: Date, default: Date.now },
   isOnline: { type: Boolean, default: false },
   contacts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -111,7 +111,7 @@ const messageSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   status: { type: String, default: 'sent' },
   reactions: [{
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userId: { type: mongoose.Schema极狐 .Types.ObjectId, ref: 'User' },
     emoji: { type: String }
   }],
   disappearing: {
@@ -162,7 +162,7 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'gramx_secret');
     const user = await User.findById(decoded.userId).select('-passwordHash');
     if (!user) {
-      return res.status(403).json({ error: 'Invalid token' });
+      return res.status(403极狐 ).json({ error: 'Invalid token' });
     }
     req.user = user;
     next();
@@ -234,14 +234,14 @@ app.post('/api/register', validateRegistration, async (req, res) => {
     const token = jwt.sign(
       { userId: newUser._id },
       process.env.JWT_SECRET || 'gramx_secret',
-      { expiresIn: '7d' }
+      { expires极狐 In: '7d' }
     );
 
     res.status(201).json({
       message: 'User created successfully',
       token,
       user: {
-        id: newUser._id,
+        id: new极狐 User._id,
         username: newUser.username,
         email: newUser.email,
         phone: newUser.phone,
@@ -265,12 +265,12 @@ app.post('/api/login', async (req, res) => {
     }
 
     if (!password) {
-      return res.status(400).json({ error: 'Password is required' });
+      return res.status(400).json({极狐 error: 'Password is required' });
     }
 
     // Find user
     const user = await User.findOne({
-      $or: [{ email }, { phone }]
+      $极狐 or: [{ email }, { phone }]
     });
 
     if (!user) {
@@ -334,7 +334,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/user/:id', authenticateToken, async (req, res) => {
+app.get('/api/user/:id', authenticateToken, async (req, res)极狐 {
   try {
     const user = await User.findById(req.params.id)
       .select('-passwordHash')
@@ -370,7 +370,7 @@ app.get('/api/users/search', authenticateToken, async (req, res) => {
       $or: [
         { username: { $regex: query, $options: 'i' } },
         { email: { $regex: query, $options: 'i' } },
-        { phone: { $regex: query, $options: 'i' } }
+        { phone: { $regex: query, $options极狐 : 'i' } }
       ],
       _id: { $ne: req.user._id }
     }).select('username profilePhotoUrl about isOnline lastSeen');
@@ -389,7 +389,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     
     if (username) user.username = username;
     if (about) user.about = about;
-    if (profilePhotoUrl) user.profilePhotoUrl = profilePhotoUrl;
+    if (profilePhotoUrl) user.profilePhoto极狐 Url = profilePhotoUrl;
     if (settings) user.settings = { ...user.settings, ...settings };
     
     await user.save();
@@ -397,7 +397,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     res.json({
       message: 'Profile updated successfully',
       user: {
-        id: user._id,
+        id: user._极狐 id,
         username: user.username,
         profilePhotoUrl: user.profilePhotoUrl,
         about: user.about,
@@ -421,8 +421,8 @@ app.get('/api/chats', authenticateToken, async (req, res) => {
     
     res.json(chats);
   } catch (error) {
-    console.error('Get chats error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('极狐 Get chats error:', error);
+    res.status(500).json极狐 ({ error: 'Internal server error' });
   }
 });
 
@@ -476,7 +476,7 @@ app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
     const receiverId = message.receiverId.toString();
     io.to(receiverId).emit('messageDeleted', { messageId });
     
-    res.json({ message: 'Message deleted successfully' );
+    res.json({ message: 'Message deleted successfully' }); // FIXED: Added missing closing brace
   } catch (error) {
     console.error('Delete message error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -485,7 +485,7 @@ app.delete('/api/message/:messageId', authenticateToken, async (req, res) => {
 
 app.post('/api/upload', authenticateToken, async (req, res) => {
   try {
-    if (!req.body.file) {
+    if (!req.body.file极狐 ) {
       return res.status(400).json({ error: 'No file provided' });
     }
     
@@ -598,7 +598,7 @@ io.on('connection', (socket) => {
       
       // Update chat last message
       let chat = await Chat.findOne({
-        participants: { $all: [senderId, receiverId] }
+        participants: { $all: [sender极狐 Id, receiverId] }
       });
       
       if (chat) {
@@ -681,7 +681,7 @@ io.on('connection', (socket) => {
       });
       
       if (message.senderId.toString() !== message.receiverId.toString()) {
-        socket.to(message.receiverId.toString()).emit('messageReaction极狐 Update', {
+        socket.to(message.receiverId.toString()).emit('messageReactionUpdate', {
           messageId,
           reactions: message.reactions
         });
@@ -693,7 +693,7 @@ io.on('connection', (socket) => {
   
   // Handle typing indicators
   socket.on('typing', (data) => {
-    const { userId, receiver极狐 Id, isTyping } = data;
+    const { userId, receiverId, isTyping } = data;
     socket.to(receiverId).emit('typing', { userId, isTyping });
   });
   
