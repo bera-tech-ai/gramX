@@ -3,40 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gramX Messenger</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>gramX - Secure Messaging</title>
+    <meta name="description" content="Secure real-time messaging app">
+    <meta name="theme-color" content="#0084ff">
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon-192x192.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #25d366;
-            --secondary-color: #128c7e;
-            --dark-bg: #111b21;
-            --dark-secondary: #202c33;
-            --light-bg: #f0f2f5;
-            --light-secondary: #ffffff;
-            --text-dark: #3b4a54;
-            --text-light: #667781;
-            --outgoing-msg: #d9fdd3;
-            --incoming-msg: #ffffff;
-            --online-indicator: #53bdeb;
+            --primary-color: #0084ff;
+            --secondary-color: #f0f2f5;
+            --text-color: #050505;
+            --text-secondary: #65676b;
+            --bg-color: #ffffff;
+            --sidebar-bg: #f0f2f5;
+            --border-color: #e4e6eb;
+            --online-status: #31a24c;
+            --message-bg-sent: #0084ff;
+            --message-bg-received: #e4e6eb;
+            --message-text-sent: #ffffff;
+            --message-text-received: #050505;
+            --hover-color: #f2f2f2;
+            --error-color: #ff3b30;
+            --warning-color: #ff9500;
+            --success-color: #34c759;
         }
 
-        [data-theme="dark"] {
-            --bg-color: var(--dark-bg);
-            --secondary-bg: var(--dark-secondary);
-            --text-color: #e9edef;
-            --secondary-text: #8696a0;
-            --msg-out: #005c4b;
-            --msg-in: #202c33;
-        }
-
-        [data-theme="light"] {
-            --bg-color: var(--light-bg);
-            --secondary-bg: var(--light-secondary);
-            --text-color: var(--text-dark);
-            --secondary-text: var(--text-light);
-            --msg-out: var(--outgoing-msg);
-            --msg-in: var(--incoming-msg);
+        .dark-theme {
+            --primary-color: #0084ff;
+            --secondary-color: #242526;
+            --text-color: #e4e6eb;
+            --text-secondary: #b0b3b8;
+            --bg-color: #18191a;
+            --sidebar-bg: #242526;
+            --border-color: #3e4042;
+            --online-status: #31a24c;
+            --message-bg-sent: #0084ff;
+            --message-bg-received: #3e4042;
+            --message-text-sent: #ffffff;
+            --message-text-received: #e4e6eb;
+            --hover-color: #3a3b3c;
         }
 
         * {
@@ -50,101 +57,235 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             height: 100vh;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease;
         }
 
         .app-container {
             display: flex;
             height: 100vh;
-            max-width: 1600px;
-            margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        /* Auth Styles */
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0084ff 0%, #00c6ff 100%);
+        }
+
+        .auth-box {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            max-width: 90%;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .auth-header {
+            margin-bottom: 20px;
+        }
+
+        .auth-header h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .auth-tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0066cc;
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d70015;
+        }
+
+        .auth-footer {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Admin Access Button */
+        .admin-access-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
         }
 
         /* Sidebar Styles */
         .sidebar {
-            width: 30%;
-            min-width: 350px;
-            border-right: 1px solid rgba(134, 150, 160, 0.15);
+            width: 350px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            background-color: var(--secondary-bg);
+            height: 100%;
         }
 
         .sidebar-header {
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 16px;
-            background-color: var(--secondary-bg);
-            border-bottom: 1px solid rgba(134, 150, 160, 0.15);
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .user-profile {
+        .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
         }
 
         .avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .avatar-small {
-            width: 30px;
-            height: 30px;
-        }
-
-        .avatar-placeholder {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #dfe5e7;
+            background-color: var(--primary-color);
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--secondary-text);
             font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .username {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .status {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
         .header-actions {
             display: flex;
-            gap: 20px;
-            color: var(--secondary-text);
+            gap: 15px;
         }
 
-        .header-actions i {
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
             cursor: pointer;
-            font-size: 18px;
+            font-size: 16px;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary-color);
         }
 
         .search-container {
-            padding: 8px 15px;
-            background-color: var(--secondary-bg);
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .search-box {
             display: flex;
             align-items: center;
             background-color: var(--bg-color);
-            border-radius: 18px;
+            border-radius: 20px;
             padding: 8px 15px;
         }
 
         .search-box input {
             flex: 1;
             border: none;
+            background: none;
             outline: none;
-            background: transparent;
             color: var(--text-color);
-            padding: 0 10px;
-        }
-
-        .search-box i {
-            color: var(--secondary-text);
+            padding: 5px;
         }
 
         .conversations-list {
@@ -155,80 +296,83 @@
         .conversation-item {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
-            gap: 15px;
+            padding: 12px 15px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.1);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .conversation-item:hover {
-            background-color: rgba(134, 150, 160, 0.05);
+            background-color: var(--hover-color);
         }
 
         .conversation-item.active {
-            background-color: rgba(134, 150, 160, 0.08);
+            background-color: var(--primary-color);
+            color: white;
         }
 
-        .conversation-info {
+        .conversation-avatar {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .online-indicator {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 12px;
+            height: 12px;
+            background-color: var(--online-status);
+            border: 2px solid var(--sidebar-bg);
+            border-radius: 50%;
+        }
+
+        .conversation-details {
             flex: 1;
-            overflow: hidden;
         }
 
         .conversation-top {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 5px;
         }
 
         .conversation-name {
-            font-weight: 500;
-            color: var(--text-color);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         .conversation-time {
             font-size: 12px;
-            color: var(--secondary-text);
+            color: var(--text-secondary);
         }
 
         .conversation-bottom {
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
 
         .conversation-lastmsg {
-            font-size: 14px;
-            color: var(--secondary-text);
+            font-size: 13px;
+            color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 200px;
         }
 
+        .conversation-item.active .conversation-time,
+        .conversation-item.active .conversation-lastmsg {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
         .unread-count {
             background-color: var(--primary-color);
             color: white;
             font-size: 12px;
-            font-weight: 500;
-            min-width: 20px;
-            height: 20px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .ai-badge {
-            background-color: #6b73ff;
-            color: white;
-            font-size: 10px;
             padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 5px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
         }
 
         /* Chat Area Styles */
@@ -236,48 +380,39 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            background-color: var(--bg-color);
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%233a4b5a' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            height: 100%;
         }
 
         .chat-header {
+            padding: 15px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 10px 16px;
-            background-color: var(--secondary-bg);
-            border-bottom: 1px solid rgba(134, 150, 160, 0.15);
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .chat-user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
         }
 
-        .user-status {
+        .chat-user-details {
+            margin-left: 15px;
+        }
+
+        .chat-username {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chat-user-status {
             font-size: 13px;
-            color: var(--secondary-text);
-        }
-
-        .online-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: var(--online-indicator);
-            margin-right: 5px;
-            display: inline-block;
+            color: var(--text-secondary);
         }
 
         .chat-actions {
             display: flex;
-            gap: 20px;
-            color: var(--secondary-text);
-        }
-
-        .chat-actions i {
-            cursor: pointer;
-            font-size: 18px;
+            gap: 15px;
         }
 
         .messages-container {
@@ -286,590 +421,317 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            background-color: var(--bg-color);
         }
 
         .message {
-            max-width: 65%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            position: relative;
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
             margin-bottom: 5px;
-            display: flex;
-            flex-direction: column;
+            position: relative;
+            word-wrap: break-word;
         }
 
-        .message-out {
-            background-color: var(--msg-out);
+        .message-sent {
             align-self: flex-end;
-            border-top-right-radius: 0;
+            background-color: var(--message-bg-sent);
+            color: var(--message-text-sent);
+            border-bottom-right-radius: 5px;
         }
 
-        .message-in {
-            background-color: var(--msg-in);
+        .message-received {
             align-self: flex-start;
-            border-top-left-radius: 0;
-        }
-
-        .message-sender {
-            font-weight: 500;
-            font-size: 13px;
-            margin-bottom: 3px;
-            color: #6b73ff;
-        }
-
-        .message-text {
-            word-break: break-word;
+            background-color: var(--message-bg-received);
+            color: var(--message-text-received);
+            border-bottom-left-radius: 5px;
         }
 
         .message-time {
             font-size: 11px;
-            color: var(--secondary-text);
-            align-self: flex-end;
-            margin-top: 3px;
+            margin-top: 5px;
+            opacity: 0.8;
+            text-align: right;
         }
 
         .message-status {
-            margin-left: 5px;
+            font-size: 11px;
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
         }
 
-        .message-edited {
-            font-size: 11px;
-            color: var(--secondary-text);
+        .message-admin-deleted {
+            opacity: 0.7;
+            background-color: var(--warning-color);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
             font-style: italic;
-            margin-left: 5px;
+            margin: 10px 0;
         }
 
         .typing-indicator {
-            background-color: var(--msg-in);
             padding: 10px 15px;
-            border-radius: 8px;
+            background-color: var(--message-bg-received);
+            color: var(--text-secondary);
+            border-radius: 18px;
             align-self: flex-start;
-            margin-top: 5px;
+            margin-bottom: 10px;
             display: none;
         }
 
-        .typing-indicator span {
-            height: 8px;
-            width: 8px;
-            float: left;
-            margin: 0 1px;
-            background-color: var(--secondary-text);
+        .typing-indicator.active {
             display: block;
-            border-radius: 50%;
-            opacity: 0.4;
-        }
-
-        .typing-indicator span:nth-of-type(1) {
-            animation: typing 1s infinite;
-        }
-
-        .typing-indicator span:nth-of-type(2) {
-            animation: typing 1s 0.33s infinite;
-        }
-
-        .typing-indicator span:nth-of-type(3) {
-            animation: typing 1s 0.66s infinite;
-        }
-
-        @keyframes typing {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
         }
 
         .message-input-container {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            padding: 10px 16px;
-            background-color: var(--secondary-bg);
             gap: 10px;
         }
 
         .message-input {
             flex: 1;
-            border: none;
-            outline: none;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             background-color: var(--bg-color);
             color: var(--text-color);
-            padding: 12px 20px;
-            border-radius: 20px;
+            outline: none;
             resize: none;
-            max-height: 120px;
+            max-height: 100px;
             overflow-y: auto;
         }
 
         .input-actions {
             display: flex;
-            gap: 15px;
-            color: var(--secondary-text);
+            gap: 10px;
         }
 
-        .input-actions i {
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        .send-button {
-            background-color: var(--primary-color);
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
+        /* Admin Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
             justify-content: center;
-            cursor: pointer;
-        }
-
-        /* Auth Styles */
-        .auth-container {
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: var(--secondary-bg);
-            padding: 20px;
         }
 
-        .auth-box {
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
             background-color: var(--bg-color);
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .auth-tabs {
+            width: 90%;
+            max-width: 800px;
+            max-height: 90%;
+            overflow-y: auto;
             display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.2);
+            flex-direction: column;
         }
 
-        .auth-tab {
-            flex: 1;
-            text-align: center;
-            padding: 10px;
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
             cursor: pointer;
-            color: var(--secondary-text);
-            font-weight: 500;
+            color: var(--text-secondary);
         }
 
-        .auth-tab.active {
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .modal-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .modal-tab.active {
             color: var(--primary-color);
             border-bottom: 2px solid var(--primary-color);
         }
 
-        .auth-form {
-            display: none;
-        }
-
-        .auth-form.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: var(--text-color);
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(134, 150, 160, 0.2);
-            border-radius: 5px;
-            background-color: var(--secondary-bg);
-            color: var(--text-color);
-            outline: none;
-        }
-
-        .form-group input:focus {
-            border-color: var(--primary-color);
-        }
-
-        .auth-button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            margin-top: 10px;
-        }
-
-        .auth-button:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .auth-error {
-            color: #ff3b30;
-            font-size: 14px;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        /* Settings Panel */
-        .settings-panel {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background-color: var(--secondary-bg);
-            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s ease;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .settings-panel.open {
-            right: 0;
-        }
-
-        .settings-header {
-            display: flex;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.15);
-            background-color: var(--secondary-bg);
-        }
-
-        .settings-back {
-            margin-right: 15px;
-            cursor: pointer;
-            color: var(--secondary-text);
-        }
-
-        .settings-title {
-            font-size: 18px;
-            font-weight: 500;
-        }
-
-        .settings-content {
-            padding: 20px;
-        }
-
-        .settings-section {
-            margin-bottom: 30px;
-        }
-
-        .settings-section-title {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-
-        .settings-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.1);
-        }
-
-        .settings-item:last-child {
-            border-bottom: none;
-        }
-
-        .settings-item-info {
-            flex: 1;
-        }
-
-        .settings-item-title {
-            font-weight: 500;
-            margin-bottom: 3px;
-        }
-
-        .settings-item-desc {
-            font-size: 13px;
-            color: var(--secondary-text);
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 45px;
-            height: 24px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: var(--primary-color);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(21px);
-        }
-
-        .theme-selector {
-            display: flex;
-            gap: 15px;
-        }
-
-        .theme-option {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid transparent;
-        }
-
-        .theme-option.active {
-            border-color: var(--primary-color);
-        }
-
-        .theme-light {
-            background-color: #f0f2f5;
-            color: #3b4a54;
-        }
-
-        .theme-dark {
-            background-color: #111b21;
-            color: #e9edef;
-        }
-
-        .profile-picture-upload {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .profile-picture-preview {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .upload-button {
-            padding: 8px 15px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .personality-select {
-            width: 100%;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid rgba(134, 150, 160, 0.2);
-        }
-
-        .logout-button {
-            padding: 12px;
-            background-color: #ff3b30;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        /* Admin Panel */
-        .admin-panel {
-            position: fixed;
-            top: 0;
-            right: -600px;
-            width: 600px;
-            height: 100vh;
-            background-color: var(--secondary-bg);
-            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
-            transition: right 0.3s ease;
-            z-index: 1001;
-            overflow-y: auto;
-        }
-
-        .admin-panel.open {
-            right: 0;
-        }
-
-        .admin-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.15);
-            background-color: var(--secondary-bg);
-        }
-
-        .admin-tabs {
-            display: flex;
-            gap: 20px;
-            margin-top: 15px;
-        }
-
-        .admin-tab {
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: var(--bg-color);
-        }
-
-        .admin-tab.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .admin-content {
-            padding: 20px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background-color: var(--bg-color);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: var(--secondary-text);
-        }
-
         .admin-section {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .admin-section-title {
-            font-size: 18px;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 15px;
+            font-size: 16px;
+            color: var(--primary-color);
         }
 
-        .user-list {
-            background-color: var(--bg-color);
-            border-radius: 10px;
-            overflow: hidden;
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
 
-        .user-list-item {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid rgba(134, 150, 160, 0.1);
+        .admin-table th, .admin-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .user-list-item:last-child {
-            border-bottom: none;
+        .admin-table th {
+            background-color: var(--secondary-color);
+            font-weight: 600;
         }
 
-        .user-list-info {
-            flex: 1;
-            margin-left: 15px;
+        .admin-table tr:hover {
+            background-color: var(--hover-color);
         }
 
-        .user-list-name {
-            font-weight: 500;
-            margin-bottom: 3px;
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
-        .user-list-details {
-            font-size: 13px;
-            color: var(--secondary-text);
-        }
-
-        .ban-button {
-            padding: 6px 12px;
-            background-color: #ff3b30;
+        .badge-online {
+            background-color: var(--success-color);
             color: white;
+        }
+
+        .badge-offline {
+            background-color: var(--text-secondary);
+            color: white;
+        }
+
+        .badge-admin {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Install Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            max-width: 300px;
+        }
+
+        .install-prompt.active {
+            display: block;
+        }
+
+        .install-prompt p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .install-prompt-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .install-prompt-actions button {
+            flex: 1;
+            padding: 8px 12px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
 
-        /* Overlay */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
-            z-index: 999;
+        .install-prompt-accept {
+            background-color: var(--primary-color);
+            color: white;
         }
 
-        .overlay.active {
-            display: block;
+        .install-prompt-dismiss {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
         }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-            .sidebar {
-                width: 40%;
-                min-width: 300px;
-            }
-        }
-
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-            }
-            
             .sidebar {
                 width: 100%;
-                min-width: auto;
                 display: none;
             }
             
@@ -885,442 +747,760 @@
                 display: flex;
             }
             
-            .settings-panel {
-                width: 100%;
-                right: -100%;
+            .back-button {
+                display: block;
             }
-            
-            .admin-panel {
-                width: 100%;
-                right: -100%;
+
+            .modal-content {
+                width: 95%;
+                height: 90%;
             }
+        }
+
+        .back-button {
+            display: none;
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- Auth Container (shown when not logged in) -->
+    <!-- Authentication Screen -->
     <div id="auth-container" class="auth-container">
+        <button class="admin-access-btn" id="admin-access-btn">
+            <i class="fas fa-lock"></i> Admin Access
+        </button>
         <div class="auth-box">
-            <div class="auth-tabs">
-                <div class="auth-tab active" data-tab="login">Login</div>
-                <div class="auth-tab" data-tab="register">Register</div>
+            <div class="auth-header">
+                <h1>gramX</h1>
+                <p>Secure messaging for everyone</p>
             </div>
-            
-            <form id="login-form" class="auth-form active">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="login-tab">Login</div>
+                <div class="auth-tab" id="register-tab">Register</div>
+            </div>
+            <form id="login-form" class="auth-form">
                 <div class="form-group">
-                    <label for="login-username">Username or Email</label>
-                    <input type="text" id="login-username" required>
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" placeholder="Enter your username" required>
                 </div>
                 <div class="form-group">
                     <label for="login-password">Password</label>
-                    <input type="password" id="login-password" required>
+                    <input type="password" id="login-password" placeholder="Enter your password" required>
                 </div>
-                <button type="submit" class="auth-button">Login</button>
-                <div id="login-error" class="auth-error"></div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="login-error" class="error-message" style="color: red; margin-top: 10px; display: none;"></div>
             </form>
-            
-            <form id="register-form" class="auth-form">
+            <form id="register-form" class="auth-form" style="display: none;">
                 <div class="form-group">
                     <label for="register-username">Username</label>
-                    <input type="text" id="register-username" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-email">Email</label>
-                    <input type="email" id="register-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-displayname">Display Name</label>
-                    <input type="text" id="register-displayname" required>
+                    <input type="text" id="register-username" placeholder="Choose a username" required>
                 </div>
                 <div class="form-group">
                     <label for="register-password">Password</label>
-                    <input type="password" id="register-password" required>
+                    <input type="password" id="register-password" placeholder="Create a password" required>
                 </div>
                 <div class="form-group">
                     <label for="register-confirm-password">Confirm Password</label>
-                    <input type="password" id="register-confirm-password" required>
+                    <input type="password" id="register-confirm-password" placeholder="Confirm your password" required>
                 </div>
-                <button type="submit" class="auth-button">Register</button>
-                <div id="register-error" class="auth-error"></div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+                <div id="register-error" class="error-message" style="color: red; margin-top: 10px; display: none;"></div>
             </form>
+            <div class="auth-footer">
+                By continuing, you agree to our Terms of Service and Privacy Policy.
+            </div>
         </div>
     </div>
 
-    <!-- Main App Container (shown when logged in) -->
+    <!-- Main Chat Application -->
     <div id="app-container" class="app-container" style="display: none;">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="user-profile">
-                    <div id="user-avatar" class="avatar-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div>
-                        <div id="user-name">User</div>
-                        <div id="user-status" class="user-status">Online</div>
+                <div class="user-info">
+                    <div class="avatar" id="user-avatar">U</div>
+                    <div class="user-details">
+                        <div class="username" id="sidebar-username">Username</div>
+                        <div class="status" id="user-status">Online</div>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <i class="fas fa-status" title="Status"></i>
-                    <i class="fas fa-comment" title="New Chat"></i>
-                    <i class="fas fa-ellipsis-v" title="Menu" id="menu-toggle"></i>
+                    <button class="icon-btn" id="new-chat-btn"><i class="fas fa-edit"></i></button>
+                    <button class="icon-btn" id="settings-btn"><i class="fas fa-cog"></i></button>
+                    <button class="icon-btn" id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
-            
             <div class="search-container">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search or start new chat" id="search-input">
+                    <input type="text" placeholder="Search conversations" id="search-conversations">
                 </div>
             </div>
-            
             <div class="conversations-list" id="conversations-list">
-                <!-- Conversations will be populated by JavaScript -->
+                <!-- Conversations will be populated here -->
             </div>
         </div>
 
         <!-- Chat Area -->
         <div class="chat-area">
             <div class="chat-header">
+                <button class="back-button icon-btn" id="back-btn"><i class="fas fa-arrow-left"></i></button>
                 <div class="chat-user-info">
-                    <div id="chat-avatar" class="avatar-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div>
-                        <div id="chat-user-name">Select a chat</div>
-                        <div id="chat-user-status" class="user-status">Select a chat to start messaging</div>
+                    <div class="avatar" id="chat-user-avatar">F</div>
+                    <div class="chat-user-details">
+                        <div class="chat-username" id="chat-with-username">Select a conversation</div>
+                        <div class="chat-user-status" id="chat-user-status">Online</div>
                     </div>
                 </div>
                 <div class="chat-actions">
-                    <i class="fas fa-search" title="Search"></i>
-                    <i class="fas fa-ellipsis-v" title="More options"></i>
+                    <button class="icon-btn"><i class="fas fa-phone"></i></button>
+                    <button class="icon-btn"><i class="fas fa-video"></i></button>
+                    <button class="icon-btn"><i class="fas fa-info-circle"></i></button>
                 </div>
             </div>
-            
             <div class="messages-container" id="messages-container">
-                <!-- Messages will be populated by JavaScript -->
-                <div class="welcome-message">
-                    <p>Select a conversation from the sidebar to start chatting</p>
+                <div class="typing-indicator" id="typing-indicator">
+                    <span id="typing-user"></span> is typing...
                 </div>
+                <!-- Messages will be populated here -->
             </div>
-            
             <div class="message-input-container">
+                <button class="icon-btn"><i class="far fa-smile"></i></button>
+                <button class="icon-btn"><i class="fas fa-paperclip"></i></button>
+                <textarea class="message-input" id="message-input" placeholder="Type a message..." rows="1"></textarea>
                 <div class="input-actions">
-                    <i class="far fa-smile" title="Emoji"></i>
-                    <i class="fas fa-paperclip" title="Attach"></i>
-                </div>
-                <textarea class="message-input" id="message-input" placeholder="Type a message" rows="1"></textarea>
-                <div class="send-button" id="send-button">
-                    <i class="fas fa-paper-plane"></i>
+                    <button class="icon-btn" id="send-message-btn"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Panel -->
-    <div class="settings-panel" id="settings-panel">
-        <div class="settings-header">
-            <div class="settings-back" id="settings-back">
-                <i class="fas fa-arrow-left"></i>
+    <!-- Admin Auth Modal -->
+    <div class="modal" id="admin-auth-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Admin Authentication</h2>
+                <button class="modal-close" id="close-admin-auth">&times;</button>
             </div>
-            <div class="settings-title">Settings</div>
-        </div>
-        
-        <div class="settings-content">
-            <div class="settings-section">
-                <div class="settings-section-title">Profile</div>
-                
-                <div class="settings-item">
-                    <div class="profile-picture-upload">
-                        <img id="profile-picture-preview" class="profile-picture-preview" src="" alt="Profile">
-                        <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
-                        <button type="button" class="upload-button" id="upload-profile-picture">Change Photo</button>
-                    </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="admin-password">Admin Password</label>
+                    <input type="password" id="admin-password" placeholder="Enter admin password">
                 </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Display Name</div>
-                    </div>
-                    <input type="text" id="display-name-input" value="">
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Status</div>
-                    </div>
-                    <input type="text" id="status-input" value="">
-                </div>
+                <button class="btn btn-primary" id="admin-login-btn">Access Dashboard</button>
+                <div id="admin-auth-error" style="color: var(--error-color); margin-top: 10px; display: none;"></div>
             </div>
-            
-            <div class="settings-section">
-                <div class="settings-section-title">Privacy</div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Last Seen</div>
-                        <div class="settings-item-desc">Who can see your last seen</div>
-                    </div>
-                    <select id="last-seen-select">
-                        <option value="everyone">Everyone</option>
-                        <option value="contacts">My Contacts</option>
-                        <option value="nobody">Nobody</option>
-                    </select>
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Profile Photo</div>
-                        <div class="settings-item-desc">Who can see your profile photo</div>
-                    </div>
-                    <select id="profile-photo-select">
-                        <option value="everyone">Everyone</option>
-                        <option value="contacts">My Contacts</option>
-                        <option value="nobody">Nobody</option>
-                    </select>
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Read Receipts</div>
-                        <div class="settings-item-desc">Send read receipts for messages</div>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="read-receipts-toggle" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Blocked Users</div>
-                        <div class="settings-item-desc">Manage blocked users</div>
-                    </div>
-                    <button id="blocked-users-button">Manage</button>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <div class="settings-section-title">Theme</div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">App Theme</div>
-                        <div class="settings-item-desc">Choose light or dark mode</div>
-                    </div>
-                    <div class="theme-selector">
-                        <div class="theme-option theme-light active" data-theme="light">
-                            <i class="fas fa-sun"></i>
-                        </div>
-                        <div class="theme-option theme-dark" data-theme="dark">
-                            <i class="fas fa-moon"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <div class="settings-section-title">Bera AI Assistant</div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Assistant Name</div>
-                        <div class="settings-item-desc">Change your AI assistant's name</div>
-                    </div>
-                    <input type="text" id="ai-name-input" value="Bera AI">
-                </div>
-                
-                <div class="settings-item">
-                    <div class="settings-item-info">
-                        <div class="settings-item-title">Personality</div>
-                        <div class="settings-item-desc">Choose your AI's personality style</div>
-                    </div>
-                    <select id="ai-personality-select">
-                        <option value="friendly">Friendly</option>
-                        <option value="professional">Professional</option>
-                        <option value="funny">Funny</option>
-                        <option value="mentor">Mentor</option>
-                    </select>
-                </div>
-            </div>
-            
-            <button class="logout-button" id="logout-button">Log Out</button>
         </div>
     </div>
 
-    <!-- Admin Panel -->
-    <div class="admin-panel" id="admin-panel">
-        <div class="admin-header">
-            <div class="settings-back" id="admin-back">
-                <i class="fas fa-arrow-left"></i>
+    <!-- Admin Dashboard Modal -->
+    <div class="modal" id="admin-dashboard-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Admin Dashboard</h2>
+                <button class="modal-close" id="close-admin-dashboard">&times;</button>
             </div>
-            <div class="settings-title">Admin Dashboard</div>
-            
-            <div class="admin-tabs">
-                <div class="admin-tab active" data-tab="stats">Stats</div>
-                <div class="admin-tab" data-tab="users">Users</div>
-                <div class="admin-tab" data-tab="moderation">Moderation</div>
-            </div>
-        </div>
-        
-        <div class="admin-content">
-            <div class="admin-section stats-section">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="total-users">0</div>
-                        <div class="stat-label">Total Users</div>
+            <div class="modal-body">
+                <div class="modal-tabs">
+                    <div class="modal-tab active" data-tab="users">Users</div>
+                    <div class="modal-tab" data-tab="messages">Messages</div>
+                    <div class="modal-tab" data-tab="reports">Reports</div>
+                </div>
+
+                <div class="admin-tab-content" id="users-tab">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search users..." id="admin-user-search">
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="total-messages">0</div>
-                        <div class="stat-label">Total Messages</div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-list">
+                            <!-- Users will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="admin-tab-content" id="messages-tab" style="display: none;">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search messages..." id="admin-message-search">
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="active-connections">0</div>
-                        <div class="stat-label">Active Connections</div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Message</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-messages-list">
+                            <!-- Messages will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination" id="messages-pagination">
+                        <button id="prev-page">&laquo; Previous</button>
+                        <span id="page-info">Page 1 of 1</span>
+                        <button id="next-page">Next &raquo;</button>
                     </div>
                 </div>
-            </div>
-            
-            <div class="admin-section users-section" style="display: none;">
-                <div class="admin-section-title">User Management</div>
-                <div class="user-list" id="admin-user-list">
-                    <!-- Users will be populated by JavaScript -->
-                </div>
-            </div>
-            
-            <div class="admin-section moderation-section" style="display: none;">
-                <div class="admin-section-title">Message Moderation</div>
-                <div class="user-list" id="reported-messages-list">
-                    <!-- Reported messages will be populated by JavaScript -->
+
+                <div class="admin-tab-content" id="reports-tab" style="display: none;">
+                    <h3>Reports Overview</h3>
+                    <p>No reports available at this time.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Overlay -->
-    <div class="overlay" id="overlay"></div>
+    <!-- Install Prompt -->
+    <div class="install-prompt" id="install-prompt">
+        <p>Install gramX for a better experience?</p>
+        <div class="install-prompt-actions">
+            <button class="install-prompt-accept" id="install-app">Install</button>
+            <button class="install-prompt-dismiss" id="dismiss-prompt">Not Now</button>
+        </div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+
+        // Listen for beforeinstallprompt event
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install prompt
+            const installPrompt = document.getElementById('install-prompt');
+            installPrompt.classList.add('active');
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
             const authContainer = document.getElementById('auth-container');
             const appContainer = document.getElementById('app-container');
             const loginForm = document.getElementById('login-form');
             const registerForm = document.getElementById('register-form');
-            const loginError = document.getElementById('login-error');
-            const registerError = document.getElementById('register-error');
-            const authTabs = document.querySelectorAll('.auth-tab');
-            const messageInput = document.getElementById('message-input');
-            const sendButton = document.getElementById('send-button');
-            const messagesContainer = document.getElementById('messages-container');
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
             const conversationsList = document.getElementById('conversations-list');
-            const settingsPanel = document.getElementById('settings-panel');
-            const adminPanel = document.getElementById('admin-panel');
-            const overlay = document.getElementById('overlay');
-            const menuToggle = document.getElementById('menu-toggle');
-            const settingsBack = document.getElementById('settings-back');
-            const adminBack = document.getElementById('admin-back');
-            const logoutButton = document.getElementById('logout-button');
+            const messagesContainer = document.getElementById('messages-container');
+            const messageInput = document.getElementById('message-input');
+            const sendMessageBtn = document.getElementById('send-message-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const searchConversations = document.getElementById('search-conversations');
+            const adminAccessBtn = document.getElementById('admin-access-btn');
+            const adminAuthModal = document.getElementById('admin-auth-modal');
+            const adminDashboardModal = document.getElementById('admin-dashboard-modal');
+            const closeAdminAuth = document.getElementById('close-admin-auth');
+            const closeAdminDashboard = document.getElementById('close-admin-dashboard');
+            const adminLoginBtn = document.getElementById('admin-login-btn');
+            const adminPasswordInput = document.getElementById('admin-password');
+            const adminAuthError = document.getElementById('admin-auth-error');
+            const modalTabs = document.querySelectorAll('.modal-tab');
+            const installPrompt = document.getElementById('install-prompt');
+            const installAppBtn = document.getElementById('install-app');
+            const dismissPromptBtn = document.getElementById('dismiss-prompt');
             
-            // App State
-            let currentUser = null;
-            let currentChat = null;
-            let socket = null;
-            let token = null;
+            // Application state
+            let socket;
+            let currentUser = '';
+            let currentConversation = null;
             let conversations = [];
+            let onlineUsers = [];
+            let adminAuthenticated = false;
+            let currentMessagesPage = 1;
+            let totalMessagesPages = 1;
             
-            // Initialize the app
+            // Initialize the application
             function init() {
-                // Check if user is already logged in
-                token = localStorage.getItem('gramx_token');
-                if (token) {
-                    // Validate token and get user data
-                    fetch('/user-settings', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
+                setupEventListeners();
+                checkAuthStatus();
+                setupPWA();
+            }
+            
+            // Set up PWA functionality
+            function setupPWA() {
+                // Handle install prompt
+                if (installAppBtn) {
+                    installAppBtn.addEventListener('click', async () => {
+                        if (deferredPrompt) {
+                            deferredPrompt.prompt();
+                            const { outcome } = await deferredPrompt.userChoice;
+                            if (outcome === 'accepted') {
+                                console.log('User accepted the install prompt');
+                            }
+                            deferredPrompt = null;
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            currentUser = data.settings.username;
-                            showApp();
-                            connectSocket();
-                        } else {
-                            localStorage.removeItem('gramx_token');
-                            showAuth();
-                        }
-                    })
-                    .catch(() => {
-                        localStorage.removeItem('gramx_token');
-                        showAuth();
+                        installPrompt.classList.remove('active');
                     });
-                } else {
-                    showAuth();
                 }
                 
-                // Setup event listeners
-                setupEventListeners();
+                if (dismissPromptBtn) {
+                    dismissPromptBtn.addEventListener('click', () => {
+                        installPrompt.classList.remove('active');
+                    });
+                }
             }
             
-            // Show authentication UI
-            function showAuth() {
-                authContainer.style.display = 'flex';
-                appContainer.style.display = 'none';
+            // Check if user is already logged in (from localStorage)
+            function checkAuthStatus() {
+                const savedUser = localStorage.getItem('gramX_user');
+                if (savedUser) {
+                    const userData = JSON.parse(savedUser);
+                    currentUser = userData.username;
+                    connectToServer();
+                    showApp();
+                }
             }
             
-            // Show main app UI
-            function showApp() {
-                authContainer.style.display = 'none';
-                appContainer.style.display = 'flex';
+            // Set up event listeners
+            function setupEventListeners() {
+                // Auth tabs
+                loginTab.addEventListener('click', () => {
+                    loginTab.classList.add('active');
+                    registerTab.classList.remove('active');
+                    loginForm.style.display = 'flex';
+                    registerForm.style.display = 'none';
+                });
                 
-                // Load user data
-                loadUserData();
-                loadConversations();
+                registerTab.addEventListener('click', () => {
+                    registerTab.classList.add('active');
+                    loginTab.classList.remove('active');
+                    registerForm.style.display = 'flex';
+                    loginForm.style.display = 'none';
+                });
+                
+                // Form submissions
+                loginForm.addEventListener('submit', handleLogin);
+                registerForm.addEventListener('submit', handleRegister);
+                
+                // Message sending
+                sendMessageBtn.addEventListener('click', sendMessage);
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+                
+                // Typing indicators
+                messageInput.addEventListener('input', handleTyping);
+                
+                // Logout
+                logoutBtn.addEventListener('click', handleLogout);
+                
+                // Admin access
+                adminAccessBtn.addEventListener('click', () => {
+                    adminAuthModal.classList.add('active');
+                });
+                
+                closeAdminAuth.addEventListener('click', () => {
+                    adminAuthModal.classList.remove('active');
+                    adminAuthError.style.display = 'none';
+                });
+                
+                closeAdminDashboard.addEventListener('click', () => {
+                    adminDashboardModal.classList.remove('active');
+                });
+                
+                adminLoginBtn.addEventListener('click', handleAdminLogin);
+                
+                // Admin dashboard tabs
+                modalTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabName = tab.getAttribute('data-tab');
+                        
+                        // Update active tab
+                        modalTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Show correct content
+                        document.querySelectorAll('.admin-tab-content').forEach(content => {
+                            content.style.display = 'none';
+                        });
+                        document.getElementById(`${tabName}-tab`).style.display = 'block';
+                        
+                        // Load data if needed
+                        if (tabName === 'users' && adminAuthenticated) {
+                            loadAdminUsers();
+                        } else if (tabName === 'messages' && adminAuthenticated) {
+                            loadAdminMessages();
+                        }
+                    });
+                });
+                
+                // Admin search functionality
+                const adminUserSearch = document.getElementById('admin-user-search');
+                if (adminUserSearch) {
+                    adminUserSearch.addEventListener('input', debounce(() => {
+                        loadAdminUsers(adminUserSearch.value);
+                    }, 300));
+                }
+                
+                const adminMessageSearch = document.getElementById('admin-message-search');
+                if (adminMessageSearch) {
+                    adminMessageSearch.addEventListener('input', debounce(() => {
+                        currentMessagesPage = 1;
+                        loadAdminMessages(adminMessageSearch.value);
+                    }, 300));
+                }
+                
+                // Pagination
+                const prevPageBtn = document.getElementById('prev-page');
+                const nextPageBtn = document.getElementById('next-page');
+                
+                if (prevPageBtn) {
+                    prevPageBtn.addEventListener('click', () => {
+                        if (currentMessagesPage > 1) {
+                            currentMessagesPage--;
+                            loadAdminMessages(adminMessageSearch?.value, currentMessagesPage);
+                        }
+                    });
+                }
+                
+                if (nextPageBtn) {
+                    nextPageBtn.addEventListener('click', () => {
+                        if (currentMessagesPage < totalMessagesPages) {
+                            currentMessagesPage++;
+                            loadAdminMessages(adminMessageSearch?.value, currentMessagesPage);
+                        }
+                    });
+                }
             }
             
-            // Connect to Socket.IO
-            function connectSocket() {
+            // Handle admin login
+            async function handleAdminLogin() {
+                const password = adminPasswordInput.value;
+                
+                try {
+                    // Test admin access with a simple request
+                    const response = await fetch('/admin/users', {
+                        headers: {
+                            'Admin-Password': password
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        adminAuthenticated = true;
+                        adminAuthModal.classList.remove('active');
+                        adminDashboardModal.classList.add('active');
+                        loadAdminUsers();
+                    } else {
+                        adminAuthError.textContent = 'Invalid admin password';
+                        adminAuthError.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Admin login error:', error);
+                    adminAuthError.textContent = 'Authentication failed';
+                    adminAuthError.style.display = 'block';
+                }
+            }
+            
+            // Load admin users
+            async function loadAdminUsers(search = '') {
+                try {
+                    const response = await fetch(`/admin/users?search=${encodeURIComponent(search)}`, {
+                        headers: {
+                            'Admin-Password': adminPasswordInput.value
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderAdminUsers(data.users);
+                    } else {
+                        console.error('Failed to load admin users');
+                    }
+                } catch (error) {
+                    console.error('Error loading admin users:', error);
+                }
+            }
+            
+            // Render admin users
+            function renderAdminUsers(users) {
+                const usersList = document.getElementById('admin-users-list');
+                usersList.innerHTML = '';
+                
+                users.forEach(user => {
+                    const isOnline = onlineUsers.includes(user.username);
+                    const tr = document.createElement('tr');
+                    
+                    tr.innerHTML = `
+                        <td>${user.username}</td>
+                        <td><span class="badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'Online' : 'Offline'}</span></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td>${user.lastSeen ? new Date(user.lastSeen).toLocaleString() : 'Never'}</td>
+                        <td>
+                            <button class="btn btn-danger" data-username="${user.username}" onclick="blockUser('${user.username}')">Block</button>
+                        </td>
+                    `;
+                    
+                    usersList.appendChild(tr);
+                });
+            }
+            
+            // Load admin messages
+            async function loadAdminMessages(search = '', page = 1) {
+                try {
+                    const response = await fetch(`/admin/messages?search=${encodeURIComponent(search)}&page=${page}&limit=10`, {
+                        headers: {
+                            'Admin-Password': adminPasswordInput.value
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        renderAdminMessages(data.messages);
+                        
+                        // Update pagination
+                        currentMessagesPage = data.page;
+                        totalMessagesPages = Math.ceil(data.total / data.limit);
+                        
+                        const pageInfo = document.getElementById('page-info');
+                        const prevPageBtn = document.getElementById('prev-page');
+                        const nextPageBtn = document.getElementById('next-page');
+                        
+                        if (pageInfo) pageInfo.textContent = `Page ${data.page} of ${totalMessagesPages}`;
+                        if (prevPageBtn) prevPageBtn.disabled = data.page <= 1;
+                        if (nextPageBtn) nextPageBtn.disabled = data.page >= totalMessagesPages;
+                    } else {
+                        console.error('Failed to load admin messages');
+                    }
+                } catch (error) {
+                    console.error('Error loading admin messages:', error);
+                }
+            }
+            
+            // Render admin messages
+            function renderAdminMessages(messages) {
+                const messagesList = document.getElementById('admin-messages-list');
+                messagesList.innerHTML = '';
+                
+                messages.forEach(message => {
+                    const tr = document.createElement('tr');
+                    
+                    tr.innerHTML = `
+                        <td>${message.sender}</td>
+                        <td>${message.receiver}</td>
+                        <td>${message.text}</td>
+                        <td>${new Date(message.timestamp).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-danger" data-message-id="${message._id}" onclick="deleteMessage('${message._id}')">Delete</button>
+                        </td>
+                    `;
+                    
+                    messagesList.appendChild(tr);
+                });
+            }
+            
+            // Block user (admin function)
+            async function blockUser(username) {
+                if (!confirm(`Are you sure you want to block ${username}?`)) return;
+                
+                try {
+                    const response = await fetch('/admin/block-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Admin-Password': adminPasswordInput.value
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            reason: 'Violation of terms of service'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert(`User ${username} has been blocked successfully.`);
+                        loadAdminUsers(); // Refresh the list
+                    } else {
+                        alert('Failed to block user.');
+                    }
+                } catch (error) {
+                    console.error('Error blocking user:', error);
+                    alert('Error blocking user.');
+                }
+            }
+            
+            // Delete message (admin function)
+            async function deleteMessage(messageId) {
+                if (!confirm('Are you sure you want to delete this message?')) return;
+                
+                try {
+                    const response = await fetch('/admin/delete-message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Admin-Password': adminPasswordInput.value
+                        },
+                        body: JSON.stringify({
+                            messageId: messageId
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        alert('Message deleted successfully.');
+                        loadAdminMessages(); // Refresh the list
+                    } else {
+                        alert('Failed to delete message.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting message:', error);
+                    alert('Error deleting message.');
+                }
+            }
+            
+            // Handle user login
+            async function handleLogin(e) {
+                e.preventDefault();
+                const username = document.getElementById('login-username').value;
+                const password = document.getElementById('login-password').value;
+                
+                try {
+                    const response = await fetch('/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        currentUser = username;
+                        localStorage.setItem('gramX_user', JSON.stringify({ username }));
+                        connectToServer();
+                        showApp();
+                    } else {
+                        document.getElementById('login-error').textContent = data.error;
+                        document.getElementById('login-error').style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    document.getElementById('login-error').textContent = 'Login failed. Please try again.';
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            }
+            
+            // Handle user registration
+            async function handleRegister(e) {
+                e.preventDefault();
+                const username = document.getElementById('register-username').value;
+                const password = document.getElementById('register-password').value;
+                const confirmPassword = document.getElementById('register-confirm-password').value;
+                
+                if (password !== confirmPassword) {
+                    document.getElementById('register-error').textContent = 'Passwords do not match';
+                    document.getElementById('register-error').style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Switch to login tab after successful registration
+                        loginTab.click();
+                        document.getElementById('login-username').value = username;
+                        document.getElementById('register-error').style.display = 'none';
+                    } else {
+                        document.getElementById('register-error').textContent = data.error;
+                        document.getElementById('register-error').style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    document.getElementById('register-error').textContent = 'Registration failed. Please try again.';
+                    document.getElementById('register-error').style.display = 'block';
+                }
+            }
+            
+            // Connect to Socket.IO server
+            function connectToServer() {
                 socket = io();
                 
+                // Set up socket event listeners
                 socket.on('connect', () => {
                     console.log('Connected to server');
-                    socket.emit('user-login', {
-                        username: currentUser,
-                        displayName: document.getElementById('user-name').textContent
-                    });
+                    socket.emit('user-login', currentUser);
                 });
                 
                 socket.on('online-users', (users) => {
-                    console.log('Online users:', users);
+                    onlineUsers = users;
+                    updateOnlineStatuses();
                 });
                 
-                socket.on('user-conversations', (conversations) => {
-                    renderConversations(conversations);
+                socket.on('user-online', (username) => {
+                    if (!onlineUsers.includes(username)) {
+                        onlineUsers.push(username);
+                    }
+                    updateOnlineStatuses();
+                });
+                
+                socket.on('user-offline', (username) => {
+                    onlineUsers = onlineUsers.filter(user => user !== username);
+                    updateOnlineStatuses();
+                });
+                
+                socket.on('user-conversations', (conversationsData) => {
+                    conversations = conversationsData;
+                    renderConversationsList();
                 });
                 
                 socket.on('new-private-message', (message) => {
-                    if (currentChat && message.conversationId === getConversationId(currentUser, currentChat)) {
-                        appendMessage(message);
+                    addMessageToChat(message);
+                    // Update conversations list if needed
+                    if (currentConversation !== message.conversationId) {
+                        fetchConversations();
                     }
-                    // Update conversation list
-                    loadConversations();
                 });
                 
                 socket.on('conversation-history', (data) => {
-                    renderMessages(data.messages, data.targetUser, data.isAI);
+                    displayConversationHistory(data.messages, data.targetUser);
                 });
                 
                 socket.on('typing-start', (data) => {
-                    if (currentChat === data.sender) {
-                        showTypingIndicator(data.sender);
+                    if (currentConversation === data.conversationId) {
+                        typingIndicator.querySelector('#typing-user').textContent = data.sender;
+                        typingIndicator.classList.add('active');
                     }
                 });
                 
                 socket.on('typing-stop', (data) => {
-                    if (currentChat === data.sender) {
-                        hideTypingIndicator();
+                    if (currentConversation === data.conversationId) {
+                        typingIndicator.classList.remove('active');
                     }
                 });
                 
@@ -1332,315 +1512,183 @@
                     updateMessageStatus(data.messageId, 'read');
                 });
                 
-                socket.on('message-edited', (data) => {
-                    editMessage(data.messageId, data.newText, data.editedAt);
+                socket.on('admin-blocked', (data) => {
+                    alert(`Your account has been blocked by an administrator. Reason: ${data.reason}`);
+                    handleLogout();
                 });
                 
                 socket.on('message-deleted', (data) => {
-                    deleteMessage(data.messageId, data.deleteForEveryone);
-                });
-                
-                socket.on('user-online', (username) => {
-                    updateUserStatus(username, true);
-                });
-                
-                socket.on('user-offline', (username) => {
-                    updateUserStatus(username, false);
-                });
-                
-                socket.on('user-banned', (data) => {
-                    alert(`Your account has been banned. Reason: ${data.reason}`);
-                    logout();
-                });
-            }
-            
-            // Setup event listeners
-            function setupEventListeners() {
-                // Auth tabs
-                authTabs.forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        const tabName = tab.getAttribute('data-tab');
-                        authTabs.forEach(t => t.classList.remove('active'));
-                        document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-                        
-                        tab.classList.add('active');
-                        document.getElementById(`${tabName}-form`).classList.add('active');
-                    });
-                });
-                
-                // Login form
-                loginForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const username = document.getElementById('login-username').value;
-                    const password = document.getElementById('login-password').value;
-                    
-                    fetch('/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            localStorage.setItem('gramx_token', data.token);
-                            currentUser = data.username;
-                            showApp();
-                            connectSocket();
-                        } else {
-                            loginError.textContent = data.error;
+                    if (data.adminDeleted) {
+                        const messageEl = messagesContainer.querySelector(`[data-message-id="${data.messageId}"]`);
+                        if (messageEl) {
+                            messageEl.innerHTML = `
+                                <div class="message-admin-deleted">
+                                    <i class="fas fa-shield-alt"></i> This message was removed by an administrator
+                                </div>
+                            `;
+                            messageEl.className = 'message-admin-deleted';
                         }
-                    })
-                    .catch(error => {
-                        loginError.textContent = 'Login failed. Please try again.';
-                    });
-                });
-                
-                // Register form
-                registerForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    const username = document.getElementById('register-username').value;
-                    const email = document.getElementById('register-email').value;
-                    const displayName = document.getElementById('register-displayname').value;
-                    const password = document.getElementById('register-password').value;
-                    const confirmPassword = document.getElementById('register-confirm-password').value;
-                    
-                    if (password !== confirmPassword) {
-                        registerError.textContent = 'Passwords do not match';
-                        return;
-                    }
-                    
-                    fetch('/register', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, email, password, displayName })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Switch to login tab
-                            authTabs.forEach(t => t.classList.remove('active'));
-                            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
-                            
-                            document.querySelector('[data-tab="login"]').classList.add('active');
-                            document.getElementById('login-form').classList.add('active');
-                            
-                            registerError.textContent = '';
-                            document.getElementById('login-username').value = username;
-                        } else {
-                            registerError.textContent = data.error;
-                        }
-                    })
-                    .catch(error => {
-                        registerError.textContent = 'Registration failed. Please try again.';
-                    });
-                });
-                
-                // Send message
-                sendButton.addEventListener('click', sendMessage);
-                messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
                     }
                 });
                 
-                // Adjust textarea height
-                messageInput.addEventListener('input', function() {
-                    this.style.height = 'auto';
-                    this.style.height = (this.scrollHeight) + 'px';
-                });
-                
-                // Menu toggle
-                menuToggle.addEventListener('click', () => {
-                    // For now, just open settings
-                    openSettings();
-                });
-                
-                // Settings back button
-                settingsBack.addEventListener('click', closeSettings);
-                adminBack.addEventListener('click', closeAdminPanel);
-                
-                // Overlay click
-                overlay.addEventListener('click', () => {
-                    closeSettings();
-                    closeAdminPanel();
-                });
-                
-                // Logout button
-                logoutButton.addEventListener('click', logout);
-            }
-            
-            // Load user data
-            function loadUserData() {
-                fetch('/user-settings', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const user = data.settings;
-                        document.getElementById('user-name').textContent = user.displayName || user.username;
-                        document.getElementById('display-name-input').value = user.displayName || user.username;
-                        document.getElementById('status-input').value = user.status || 'Hey there! I am using gramX';
-                        
-                        // Apply theme
-                        document.documentElement.setAttribute('data-theme', user.theme || 'light');
-                    }
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
                 });
             }
             
-            // Load conversations
-            function loadConversations() {
-                fetch('/user-conversations', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
+            // Show the main application interface
+            function showApp() {
+                authContainer.style.display = 'none';
+                appContainer.style.display = 'flex';
+                
+                // Set username in sidebar
+                document.getElementById('sidebar-username').textContent = currentUser;
+                document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+                
+                // Fetch user conversations
+                fetchConversations();
+            }
+            
+            // Fetch user conversations from server
+            async function fetchConversations() {
+                try {
+                    const response = await fetch(`/user-conversations/${currentUser}`);
+                    const data = await response.json();
+                    if (data.conversations) {
                         conversations = data.conversations;
-                        renderConversations(conversations);
+                        renderConversationsList();
                     }
-                });
+                } catch (error) {
+                    console.error('Error fetching conversations:', error);
+                }
             }
             
             // Render conversations list
-            function renderConversations(conversations) {
+            function renderConversationsList() {
                 conversationsList.innerHTML = '';
                 
+                if (conversations.length === 0) {
+                    conversationsList.innerHTML = '<div class="no-conversations">No conversations yet. Start a new chat!</div>';
+                    return;
+                }
+                
                 conversations.forEach(conversation => {
-                    const conversationItem = document.createElement('div');
-                    conversationItem.className = 'conversation-item';
-                    if (currentChat === conversation.partner) {
-                        conversationItem.classList.add('active');
+                    const conversationEl = document.createElement('div');
+                    conversationEl.className = 'conversation-item';
+                    if (currentConversation === getConversationId(currentUser, conversation.partner)) {
+                        conversationEl.classList.add('active');
                     }
                     
-                    conversationItem.innerHTML = `
-                        <div class="avatar-placeholder">
-                            <i class="fas fa-user"></i>
+                    const isOnline = onlineUsers.includes(conversation.partner);
+                    
+                    conversationEl.innerHTML = `
+                        <div class="conversation-avatar">
+                            <div class="avatar">${conversation.partner.charAt(0).toUpperCase()}</div>
+                            ${isOnline ? '<div class="online-indicator"></div>' : ''}
                         </div>
-                        <div class="conversation-info">
+                        <div class="conversation-details">
                             <div class="conversation-top">
-                                <div class="conversation-name">
-                                    ${conversation.displayName}
-                                    ${conversation.isAI ? '<span class="ai-badge">AI</span>' : ''}
-                                </div>
-                                <div class="conversation-time">
-                                    ${conversation.lastMessage ? formatTime(conversation.lastMessage.timestamp) : ''}
-                                </div>
+                                <div class="conversation-name">${conversation.partner}</div>
+                                <div class="conversation-time">${formatTime(conversation.lastMessage?.timestamp)}</div>
                             </div>
                             <div class="conversation-bottom">
-                                <div class="conversation-lastmsg">
-                                    ${conversation.lastMessage ? 
-                                        (conversation.lastMessage.sender === currentUser ? 'You: ' : '') + 
-                                        conversation.lastMessage.text : 
-                                        'No messages yet'}
-                                </div>
-                                ${conversation.unreadCount > 0 ? 
-                                    `<div class="unread-count">${conversation.unreadCount}</div>` : ''}
+                                <div class="conversation-lastmsg">${conversation.lastMessage ? (conversation.lastMessage.sender === currentUser ? 'You: ' : '') + conversation.lastMessage.text : 'No messages yet'}</div>
+                                ${conversation.unreadCount > 0 ? `<div class="unread-count">${conversation.unreadCount}</div>` : ''}
                             </div>
                         </div>
                     `;
                     
-                    conversationItem.addEventListener('click', () => {
-                        openChat(conversation.partner, conversation.isAI);
+                    conversationEl.addEventListener('click', () => {
+                        openConversation(conversation.partner);
                     });
                     
-                    conversationsList.appendChild(conversationItem);
+                    conversationsList.appendChild(conversationEl);
                 });
             }
             
-            // Open chat with a user
-            function openChat(targetUser, isAI = false) {
-                currentChat = targetUser;
+            // Open a conversation
+            function openConversation(partner) {
+                const conversationId = getConversationId(currentUser, partner);
+                currentConversation = conversationId;
                 
                 // Update UI
+                document.getElementById('chat-with-username').textContent = partner;
+                document.getElementById('chat-user-avatar').textContent = partner.charAt(0).toUpperCase();
+                
+                // Check if partner is online
+                const isOnline = onlineUsers.includes(partner);
+                document.getElementById('chat-user-status').textContent = isOnline ? 'Online' : 'Offline';
+                
+                // Highlight active conversation
                 document.querySelectorAll('.conversation-item').forEach(item => {
                     item.classList.remove('active');
                 });
                 
-                // Update chat header
-                const conversation = conversations.find(c => c.partner === targetUser);
-                if (conversation) {
-                    document.getElementById('chat-user-name').textContent = conversation.displayName;
-                    document.getElementById('chat-user-status').innerHTML = isAI ? 
-                        '<span class="online-dot"></span>Online' : 
-                        (conversation.lastSeen ? `Last seen ${formatTime(conversation.lastSeen)}` : '');
-                }
+                // Join the conversation
+                socket.emit('join-conversation', {
+                    currentUser: currentUser,
+                    targetUser: partner
+                });
                 
-                // Join conversation
-                if (socket) {
-                    socket.emit('join-conversation', {
-                        currentUser: currentUser,
-                        targetUser: targetUser
-                    });
-                }
-                
-                // Show message input
-                messageInput.disabled = false;
-                messageInput.placeholder = isAI ? "Message Bera AI..." : "Type a message";
-            }
-            
-            // Render messages in chat
-            function renderMessages(messages, targetUser, isAI = false) {
+                // Clear messages container
                 messagesContainer.innerHTML = '';
                 
+                // Add typing indicator
+                messagesContainer.appendChild(typingIndicator);
+                
+                // Render conversations list to update active state
+                renderConversationsList();
+            }
+            
+            // Display conversation history
+            function displayConversationHistory(messages, targetUser) {
+                messagesContainer.innerHTML = '';
+                
+                // Add typing indicator
+                messagesContainer.appendChild(typingIndicator);
+                
                 if (messages.length === 0) {
-                    const welcomeMsg = document.createElement('div');
-                    welcomeMsg.className = 'welcome-message';
-                    welcomeMsg.innerHTML = `
-                        <p>${isAI ? 
-                            'This is your conversation with Bera AI. Ask me anything!' : 
-                            `No messages with ${targetUser} yet. Start a conversation!`}
-                        </p>
-                    `;
-                    messagesContainer.appendChild(welcomeMsg);
+                    const noMessages = document.createElement('div');
+                    noMessages.className = 'no-messages';
+                    noMessages.textContent = `No messages with ${targetUser} yet. Start the conversation!`;
+                    noMessages.style.textAlign = 'center';
+                    noMessages.style.padding = '20px';
+                    noMessages.style.color = 'var(--text-secondary)';
+                    messagesContainer.appendChild(noMessages);
                     return;
                 }
                 
                 messages.forEach(message => {
-                    appendMessage(message);
+                    addMessageToChat(message);
                 });
                 
                 // Scroll to bottom
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
             
-            // Append a message to the chat
-            function appendMessage(message) {
-                const messageEl = document.createElement('div');
-                const isOutgoing = message.sender === currentUser;
-                
-                messageEl.className = `message ${isOutgoing ? 'message-out' : 'message-in'}`;
-                messageEl.setAttribute('data-id', message._id || message.tempId);
-                
-                let statusIcon = '';
-                if (isOutgoing) {
-                    if (message.read) {
-                        statusIcon = '<i class="fas fa-check-double message-status" style="color: #53bdeb;"></i>';
-                    } else if (message.delivered) {
-                        statusIcon = '<i class="fas fa-check-double message-status"></i>';
-                    } else {
-                        statusIcon = '<i class="fas fa-check message-status"></i>';
-                    }
+            // Add a message to the chat UI
+            function addMessageToChat(message) {
+                // Check if message was deleted by admin
+                if (message.adminDeleted) {
+                    const deletedEl = document.createElement('div');
+                    deletedEl.className = 'message-admin-deleted';
+                    deletedEl.innerHTML = `
+                        <i class="fas fa-shield-alt"></i> This message was removed by an administrator
+                    `;
+                    messagesContainer.appendChild(deletedEl);
+                    return;
                 }
                 
+                const messageEl = document.createElement('div');
+                const isSent = message.sender === currentUser;
+                
+                messageEl.className = `message ${isSent ? 'message-sent' : 'message-received'}`;
+                messageEl.setAttribute('data-message-id', message._id || message.tempId);
+                
                 messageEl.innerHTML = `
-                    ${!isOutgoing && message.sender !== 'bera_ai' ? 
-                        `<div class="message-sender">${message.sender}</div>` : ''}
-                    <div class="message-text">${message.text}</div>
-                    <div class="message-time">
-                        ${formatTime(message.timestamp)}
-                        ${message.edited ? '<span class="message-edited">(edited)</span>' : ''}
-                        ${statusIcon}
-                    </div>
+                    <div class="message-text">${escapeHtml(message.text)}</div>
+                    <div class="message-time">${formatTime(message.timestamp)}</div>
+                    ${isSent ? `<div class="message-status">${message.read ? 'Read' : message.delivered ? 'Delivered' : 'Sending...'}</div>` : ''}
                 `;
                 
                 messagesContainer.appendChild(messageEl);
@@ -1649,203 +1697,114 @@
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
             
+            // Update message status (delivered, read)
+            function updateMessageStatus(messageId, status, tempId) {
+                const messageEl = messagesContainer.querySelector(`[data-message-id="${messageId}"]`) || 
+                                 messagesContainer.querySelector(`[data-message-id="${tempId}"]`);
+                
+                if (messageEl) {
+                    const statusEl = messageEl.querySelector('.message-status');
+                    if (statusEl) {
+                        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                    }
+                }
+            }
+            
             // Send a message
             function sendMessage() {
                 const text = messageInput.value.trim();
-                if (!text || !currentChat) return;
+                if (!text || !currentConversation) return;
                 
-                // Create temporary message object for immediate UI update
                 const tempId = 'temp-' + Date.now();
-                const tempMessage = {
-                    tempId,
-                    text,
+                const messageData = {
                     sender: currentUser,
-                    receiver: currentChat,
-                    timestamp: new Date(),
-                    conversationId: currentChat === 'bera_ai' ? 'bera_ai' : getConversationId(currentUser, currentChat),
-                    read: false,
-                    delivered: false
+                    receiver: document.getElementById('chat-with-username').textContent,
+                    text: text,
+                    tempId: tempId
                 };
                 
-                // Add to UI immediately
-                appendMessage(tempMessage);
+                // Add message to UI immediately
+                const tempMessage = {
+                    sender: currentUser,
+                    text: text,
+                    timestamp: new Date(),
+                    tempId: tempId
+                };
+                
+                addMessageToChat(tempMessage);
+                
+                // Send message via socket
+                socket.emit('send-private-message', messageData);
                 
                 // Clear input
                 messageInput.value = '';
                 messageInput.style.height = 'auto';
                 
-                // Send via socket
-                if (socket) {
-                    socket.emit('send-private-message', {
-                        sender: currentUser,
-                        receiver: currentChat,
-                        text,
-                        tempId
-                    });
-                }
+                // Stop typing indicator
+                socket.emit('typing-stop', { receiver: messageData.receiver });
             }
             
-            // Update message status
-            function updateMessageStatus(messageId, status, tempId = null) {
-                const selector = tempId ? `[data-id="${tempId}"]` : `[data-id="${messageId}"]`;
-                const messageEl = document.querySelector(selector);
-                if (!messageEl) return;
+            // Handle typing indicators
+            let typingTimer;
+            function handleTyping() {
+                if (!currentConversation) return;
                 
-                const statusEl = messageEl.querySelector('.message-status');
-                if (!statusEl) return;
+                const receiver = document.getElementById('chat-with-username').textContent;
                 
-                if (status === 'delivered') {
-                    statusEl.className = 'fas fa-check-double message-status';
-                } else if (status === 'read') {
-                    statusEl.className = 'fas fa-check-double message-status';
-                    statusEl.style.color = '#53bdeb';
-                }
+                // Emit typing start
+                socket.emit('typing-start', { receiver });
                 
-                // Update data-id if we used a temp ID
-                if (tempId && messageId) {
-                    messageEl.setAttribute('data-id', messageId);
-                }
-            }
-            
-            // Edit a message
-            function editMessage(messageId, newText, editedAt) {
-                const messageEl = document.querySelector(`[data-id="${messageId}"]`);
-                if (!messageEl) return;
+                // Clear previous timer
+                clearTimeout(typingTimer);
                 
-                const textEl = messageEl.querySelector('.message-text');
-                const timeEl = messageEl.querySelector('.message-time');
-                
-                if (textEl) textEl.textContent = newText;
-                
-                // Add edited indicator if not already there
-                if (!timeEl.querySelector('.message-edited')) {
-                    const editedEl = document.createElement('span');
-                    editedEl.className = 'message-edited';
-                    editedEl.textContent = '(edited)';
-                    timeEl.appendChild(editedEl);
-                }
+                // Set timer to stop typing indicator after 2 seconds
+                typingTimer = setTimeout(() => {
+                    socket.emit('typing-stop', { receiver });
+                }, 2000);
             }
             
-            // Delete a message
-            function deleteMessage(messageId, deleteForEveryone) {
-                const messageEl = document.querySelector(`[data-id="${messageId}"]`);
-                if (messageEl) {
-                    if (deleteForEveryone) {
-                        messageEl.remove();
-                    } else {
-                        // Just hide it for the current user
-                        messageEl.style.display = 'none';
-                    }
-                }
-            }
-            
-            // Show typing indicator
-            function showTypingIndicator(username) {
-                let indicator = document.getElementById('typing-indicator');
-                if (!indicator) {
-                    indicator = document.createElement('div');
-                    indicator.id = 'typing-indicator';
-                    indicator.className = 'typing-indicator';
-                    indicator.innerHTML = `
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        <div style="clear: both;"></div>
-                    `;
-                    messagesContainer.appendChild(indicator);
-                }
-                
-                indicator.style.display = 'block';
-                
-                // Scroll to bottom
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-            
-            // Hide typing indicator
-            function hideTypingIndicator() {
-                const indicator = document.getElementById('typing-indicator');
-                if (indicator) {
-                    indicator.style.display = 'none';
-                }
-            }
-            
-            // Update user status
-            function updateUserStatus(username, isOnline) {
-                if (currentChat === username) {
-                    const statusEl = document.getElementById('chat-user-status');
-                    if (statusEl) {
-                        statusEl.innerHTML = isOnline ? 
-                            '<span class="online-dot"></span>Online' : 
-                            `Last seen ${formatTime(new Date())}`;
-                    }
-                }
-                
-                // Update in conversations list
-                const conversationItems = document.querySelectorAll('.conversation-item');
-                conversationItems.forEach(item => {
-                    const nameEl = item.querySelector('.conversation-name');
-                    if (nameEl && nameEl.textContent.includes(username)) {
-                        const timeEl = item.querySelector('.conversation-time');
-                        if (timeEl) {
-                            timeEl.textContent = isOnline ? 'Online' : formatTime(new Date());
-                        }
-                    }
-                });
-            }
-            
-            // Open settings panel
-            function openSettings() {
-                settingsPanel.classList.add('open');
-                overlay.classList.add('active');
-            }
-            
-            // Close settings panel
-            function closeSettings() {
-                settingsPanel.classList.remove('open');
-                overlay.classList.remove('active');
-            }
-            
-            // Open admin panel
-            function openAdminPanel() {
-                adminPanel.classList.add('open');
-                overlay.classList.add('active');
-                loadAdminData();
-            }
-            
-            // Close admin panel
-            function closeAdminPanel() {
-                adminPanel.classList.remove('open');
-                overlay.classList.remove('active');
-            }
-            
-            // Load admin data
-            function loadAdminData() {
-                // This would fetch data from the server for the admin panel
-                // For now, we'll just set some placeholder values
-                document.getElementById('total-users').textContent = '125';
-                document.getElementById('total-messages').textContent = '2,458';
-                document.getElementById('active-connections').textContent = activeUsers.size;
-            }
-            
-            // Logout
-            function logout() {
+            // Handle user logout
+            function handleLogout() {
+                localStorage.removeItem('gramX_user');
                 if (socket) {
                     socket.disconnect();
                 }
-                localStorage.removeItem('gramx_token');
-                currentUser = null;
-                showAuth();
-                closeSettings();
-                closeAdminPanel();
+                currentUser = '';
+                currentConversation = null;
+                adminAuthenticated = false;
+                
+                appContainer.style.display = 'none';
+                authContainer.style.display = 'flex';
+                
+                // Reset forms
+                loginForm.reset();
+                registerForm.reset();
+                document.getElementById('login-error').style.display = 'none';
+                document.getElementById('register-error').style.display = 'none';
             }
             
-            // Utility function to generate conversation ID
+            // Update online status indicators
+            function updateOnlineStatuses() {
+                // Update conversations list
+                renderConversationsList();
+                
+                // Update current chat status if in a conversation
+                if (currentConversation) {
+                    const partner = document.getElementById('chat-with-username').textContent;
+                    const isOnline = onlineUsers.includes(partner);
+                    document.getElementById('chat-user-status').textContent = isOnline ? 'Online' : 'Offline';
+                }
+            }
+            
+            // Helper function to generate conversation ID
             function getConversationId(user1, user2) {
                 return [user1, user2].sort().join('_');
             }
             
-            // Utility function to format time
+            // Helper function to format time
             function formatTime(timestamp) {
+                if (!timestamp) return '';
+                
                 const date = new Date(timestamp);
                 const now = new Date();
                 const diff = now - date;
@@ -1863,9 +1822,33 @@
                 }
             }
             
-            // Initialize the app
+            // Helper function to escape HTML
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Debounce function for search
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            // Make functions available globally for onclick handlers
+            window.blockUser = blockUser;
+            window.deleteMessage = deleteMessage;
+            
+            // Initialize the application
             init();
         });
     </script>
 </body>
-</html>
+    </html>
