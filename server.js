@@ -3,6 +3,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
+const bcrypt = require('bcrypt');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +22,8 @@ const COLLECTIONS = {
     MESSAGES: 'messages',
     CONVERSATIONS: 'conversations',
     USER_SETTINGS: 'user_settings',
-    BLOCKED_USERS: 'blocked_users'
+    BLOCKED_USERS: 'blocked_users',
+    ADMIN_LOGS: 'admin_logs'
 };
 
 let db;
@@ -42,6 +45,7 @@ async function connectToDatabase() {
         await db.collection(COLLECTIONS.MESSAGES).createIndex({ receiver: 1, read: 1 });
         await db.collection(COLLECTIONS.MESSAGES).createIndex({ sender: 1, receiver: 1 });
         await db.collection(COLLECTIONS.USER_SETTINGS).createIndex({ username: 1 }, { unique: true });
+        await db.collection(COLLECTIONS.MESSAGES).createIndex({ text: 'text' }); // For text search
         
         return client;
     } catch (error) {
@@ -143,6 +147,7 @@ async function getUserSettings(username) {
                     readReceipts: true
                 },
                 blockedUsers: [],
+                avatar: 'default1',
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -157,110 +162,6 @@ async function getUserSettings(username) {
         return null;
     }
 }
-// Admin authentication middleware
-const adminAuth = (req, res, next) => {
-  const adminPassword = req.headers['admin-password'];
-  if (adminPassword === process.env.ADMIN_PASSWORD) {
-    next();
-  } else {
-    res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-};
-
-// Admin routes
-app.get('/admin/users', adminAuth, async (req, res) => {
-  try {
-    const users = await db.collection(COLLECTIONS.USERS)
-      .find({}, { projection: { password: 0 } })
-      .sort({ createdAt: -1 })
-      .toArray();
-    res.json({ success: true, users });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to fetch users' });
-  }
-});
-
-app.post('/admin/block-user', adminAuth, async (req, res) => {
-  try {
-    const { username, reason } = req.body;
-    
-    // Add to blocked users collection
-    await db.collection(COLLECTIONS.BLOCKED_USERS).insertOne({
-      username,
-      reason,
-      blockedAt: new Date(),
-      blockedBy: 'admin'
-    });
-    
-    // Disconnect user if online
-    const userSocketId = userSockets.get(username);
-    if (userSocketId) {
-      io.to(userSocketId).emit('admin-blocked', { reason });
-      io.to(userSocketId).disconnect(true);
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to block user' });
-  }
-});
-
-app.get('/admin/messages', adminAuth, async (req, res) => {
-  try {
-    const { page = 1, limit = 50, search } = req.query;
-    const skip = (page - 1) * limit;
-    
-    let query = {};
-    if (search) {
-      query = { $text: { $search: search } };
-    }
-    
-    const messages = await db.collection(COLLECTIONS.MESSAGES)
-      .find(query)
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .toArray();
-    
-    const total = await db.collection(COLLECTIONS.MESSAGES).countDocuments(query);
-    
-    res.json({ success: true, messages, total, page: parseInt(page), limit: parseInt(limit) });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to fetch messages' });
-  }
-});
-
-app.post('/admin/delete-message', adminAuth, async (req, res) => {
-  try {
-    const { messageId } = req.body;
-    
-    await db.collection(COLLECTIONS.MESSAGES).updateOne(
-      { _id: new ObjectId(messageId) },
-      { $set: { adminDeleted: true, deletedAt: new Date(), deletedBy: 'admin' } }
-    );
-    
-    // Notify users about message deletion
-    const message = await db.collection(COLLECTIONS.MESSAGES).findOne({ _id: new ObjectId(messageId) });
-    if (message) {
-      const users = [message.sender, message.receiver];
-      users.forEach(username => {
-        const socketId = userSockets.get(username);
-        if (socketId) {
-          io.to(socketId).emit('message-deleted', { messageId, adminDeleted: true });
-        }
-      });
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to delete message' });
-  }
-});
-
-
-
-
-
 
 // Check if user is blocked
 async function isBlocked(blocker, blocked) {
@@ -276,9 +177,47 @@ async function isBlocked(blocker, blocked) {
     }
 }
 
+// Admin authentication middleware
+const adminAuth = (req, res, next) => {
+    const adminPassword = req.headers['admin-password'];
+    if (adminPassword === process.env.ADMIN_PASSWORD) {
+        next();
+    } else {
+        res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+};
+
+// Log admin action
+async function logAdminAction(action, target, adminUser = 'system') {
+    try {
+        await db.collection(COLLECTIONS.ADMIN_LOGS).insertOne({
+            action,
+            target,
+            adminUser,
+            timestamp: new Date()
+        });
+    } catch (error) {
+        console.error('Error logging admin action:', error);
+    }
+}
+
 // Serve main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Serve PWA files
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+app.get('/sw.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+app.get('/icon-:size.png', (req, res) => {
+    const size = req.params.size;
+    res.sendFile(path.join(__dirname, 'public', `icon-${size}.png`));
 });
 
 // API Routes
@@ -290,16 +229,28 @@ app.post('/register', async (req, res) => {
             return res.json({ success: false, error: 'Username and password are required' });
         }
         
+        if (username.length < 3 || username.length > 20) {
+            return res.json({ success: false, error: 'Username must be between 3 and 20 characters' });
+        }
+        
+        if (password.length < 6) {
+            return res.json({ success: false, error: 'Password must be at least 6 characters' });
+        }
+        
         // Check if user already exists
         const existingUser = await db.collection(COLLECTIONS.USERS).findOne({ username });
         if (existingUser) {
             return res.json({ success: false, error: 'Username taken' });
         }
         
+        // Hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        
         // Create new user
         await db.collection(COLLECTIONS.USERS).insertOne({
             username,
-            password, // In production, hash this password!
+            password: hashedPassword,
             createdAt: new Date(),
             lastSeen: new Date()
         });
@@ -318,8 +269,8 @@ app.post('/login', async (req, res) => {
             return res.json({ success: false, error: 'Username and password are required' });
         }
         
-        const user = await db.collection(COLLECTIONS.USERS).findOne({ username, password });
-        if (user) {
+        const user = await db.collection(COLLECTIONS.USERS).findOne({ username });
+        if (user && await bcrypt.compare(password, user.password)) {
             // Update last seen
             await db.collection(COLLECTIONS.USERS).updateOne(
                 { username },
@@ -475,6 +426,122 @@ app.get('/blocked-users/:username', async (req, res) => {
     }
 });
 
+// ADMIN ROUTES
+app.get('/admin/users', adminAuth, async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        let query = {};
+        if (search) {
+            query.username = { $regex: search, $options: 'i' };
+        }
+        
+        const users = await db.collection(COLLECTIONS.USERS)
+            .find(query, { projection: { password: 0 } })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .toArray();
+            
+        const total = await db.collection(COLLECTIONS.USERS).countDocuments(query);
+        
+        res.json({ success: true, users, total, page: parseInt(page), limit: parseInt(limit) });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch users' });
+    }
+});
+
+app.post('/admin/block-user', adminAuth, async (req, res) => {
+    try {
+        const { username, reason } = req.body;
+        
+        // Add to blocked users collection
+        await db.collection(COLLECTIONS.BLOCKED_USERS).insertOne({
+            username,
+            reason,
+            blockedAt: new Date(),
+            blockedBy: 'admin'
+        });
+        
+        // Add to user's blocked list
+        await db.collection(COLLECTIONS.USER_SETTINGS).updateOne(
+            { username },
+            { $addToSet: { blockedUsers: username } },
+            { upsert: true }
+        );
+        
+        // Disconnect user if online
+        const userSocketId = userSockets.get(username);
+        if (userSocketId) {
+            io.to(userSocketId).emit('admin-blocked', { reason });
+            io.to(userSocketId).disconnect(true);
+        }
+        
+        // Log admin action
+        await logAdminAction('block_user', username, 'admin');
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to block user' });
+    }
+});
+
+app.get('/admin/messages', adminAuth, async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        let query = {};
+        if (search) {
+            query.$text = { $search: search };
+        }
+        
+        const messages = await db.collection(COLLECTIONS.MESSAGES)
+            .find(query)
+            .sort({ timestamp: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .toArray();
+        
+        const total = await db.collection(COLLECTIONS.MESSAGES).countDocuments(query);
+        
+        res.json({ success: true, messages, total, page: parseInt(page), limit: parseInt(limit) });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to fetch messages' });
+    }
+});
+
+app.post('/admin/delete-message', adminAuth, async (req, res) => {
+    try {
+        const { messageId } = req.body;
+        
+        await db.collection(COLLECTIONS.MESSAGES).updateOne(
+            { _id: new ObjectId(messageId) },
+            { $set: { adminDeleted: true, deletedAt: new Date(), deletedBy: 'admin' } }
+        );
+        
+        // Notify users about message deletion
+        const message = await db.collection(COLLECTIONS.MESSAGES).findOne({ _id: new ObjectId(messageId) });
+        if (message) {
+            const users = [message.sender, message.receiver];
+            users.forEach(username => {
+                const socketId = userSockets.get(username);
+                if (socketId) {
+                    io.to(socketId).emit('message-deleted', { messageId, adminDeleted: true });
+                }
+            });
+        }
+        
+        // Log admin action
+        await logAdminAction('delete_message', messageId, 'admin');
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Failed to delete message' });
+    }
+});
+
 // Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -525,7 +592,7 @@ io.on('connection', (socket) => {
             
             // Get conversation messages from DB
             const conversationMessages = await db.collection(COLLECTIONS.MESSAGES)
-                .find({ conversationId })
+                .find({ conversationId, adminDeleted: { $ne: true } })
                 .sort({ timestamp: 1 })
                 .toArray();
             
@@ -774,6 +841,29 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('update-user-settings', async (data) => {
+        try {
+            const userData = activeUsers.get(socket.id);
+            if (!userData) return;
+            
+            const { settings } = data;
+            
+            await db.collection(COLLECTIONS.USER_SETTINGS).updateOne(
+                { username: userData.username },
+                { 
+                    $set: { 
+                        ...settings,
+                        updatedAt: new Date()
+                    } 
+                },
+                { upsert: true }
+            );
+            
+        } catch (error) {
+            console.error('Update user settings error:', error);
+        }
+    });
+
     socket.on('disconnect', async () => {
         try {
             const userData = activeUsers.get(socket.id);
@@ -829,6 +919,8 @@ connectToDatabase().then((client) => {
         console.log(`💾 MongoDB persistence: ENABLED`);
         console.log(`🔍 Text search: ENABLED`);
         console.log(`⚙️ Settings system: ENABLED`);
+        console.log(`🛡️ Admin dashboard: ENABLED`);
+        console.log(`📲 PWA support: ENABLED`);
     });
     
     // Handle graceful shutdown
