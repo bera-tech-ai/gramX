@@ -278,17 +278,17 @@
             border-bottom-color: var(--whatsapp-green);
         }
 
-        .conversations-list, .status-screen {
+        .conversations-list, .status-screen, .contacts-list {
             flex: 1;
             overflow-y: auto;
             background: #FFFFFF;
         }
 
-        .dark-theme .conversations-list, .dark-theme .status-screen {
+        .dark-theme .conversations-list, .dark-theme .status-screen, .dark-theme .contacts-list {
             background: #111B21;
         }
 
-        .conversation-item, .status-item {
+        .conversation-item, .status-item, .contact-item {
             padding: 12px 16px;
             border-bottom: 1px solid #F0F0F0;
             display: flex;
@@ -299,19 +299,19 @@
             transition: all 0.2s ease;
         }
 
-        .dark-theme .conversation-item, .dark-theme .status-item {
+        .dark-theme .conversation-item, .dark-theme .status-item, .dark-theme .contact-item {
             border-color: #2A2F32;
         }
 
-        .conversation-item:active, .status-item:active {
+        .conversation-item:active, .status-item:active, .contact-item:active {
             background: #F5F6F6;
         }
 
-        .dark-theme .conversation-item:active, .dark-theme .status-item:active {
+        .dark-theme .conversation-item:active, .dark-theme .status-item:active, .dark-theme .contact-item:active {
             background: #2A2F32;
         }
 
-        .conversation-avatar, .status-avatar {
+        .conversation-avatar, .status-avatar, .contact-avatar {
             width: 48px;
             height: 48px;
             border-radius: 50%;
@@ -328,12 +328,12 @@
             background-position: center;
         }
 
-        .conversation-info, .status-info {
+        .conversation-info, .status-info, .contact-info {
             flex: 1;
             min-width: 0;
         }
 
-        .conversation-name, .status-name {
+        .conversation-name, .status-name, .contact-name {
             font-weight: 600;
             font-size: 16px;
             margin-bottom: 4px;
@@ -346,11 +346,11 @@
             color: #000000;
         }
 
-        .dark-theme .conversation-name, .dark-theme .status-name {
+        .dark-theme .conversation-name, .dark-theme .status-name, .dark-theme .contact-name {
             color: #FFFFFF;
         }
 
-        .conversation-preview {
+        .conversation-preview, .contact-about {
             font-size: 14px;
             color: var(--whatsapp-light-text);
             white-space: nowrap;
@@ -568,6 +568,24 @@
             align-items: center;
             justify-content: flex-end;
             gap: 4px;
+        }
+
+        .message-status {
+            display: inline-flex;
+            align-items: center;
+            color: var(--whatsapp-light-text);
+        }
+
+        .status-sent i {
+            color: gray;
+        }
+
+        .status-delivered i {
+            color: gray;
+        }
+
+        .status-read i {
+            color: #34B7F1;
         }
 
         .message-image {
@@ -1186,6 +1204,79 @@
             color: #E9EDEF;
         }
 
+        /* Chat Options Modal */
+        .chat-options-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-options-content {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .dark-theme .chat-options-content {
+            background: #202C33;
+        }
+
+        .chat-options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-option-button {
+            padding: 12px;
+            background: #F0F0F0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .dark-theme .chat-option-button {
+            background: #2A2F32;
+            color: #E9EDEF;
+        }
+
+        /* Status Upload Modal */
+        .status-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-modal-content {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .dark-theme .status-modal-content {
+            background: #202C33;
+        }
+
         /* Responsive */
         @media (max-width: 340px) {
             .message { max-width: 75%; }
@@ -1246,7 +1337,7 @@
         <div class="search-container" id="search-container" style="display: none;">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" class="search-input" placeholder="Search" id="search-input">
+                <input type="text" class="search-input" placeholder="Search" id="search-input" oninput="searchUsers()">
             </div>
         </div>
 
@@ -1254,6 +1345,7 @@
             <div class="tab active" onclick="showTab('chats')">Chats</div>
             <div class="tab" onclick="showTab('status')">Status</div>
             <div class="tab" onclick="showTab('calls')">Calls</div>
+            <div class="tab" onclick="showTab('contacts')">Contacts</div>
         </div>
 
         <!-- Chats Tab -->
@@ -1267,14 +1359,15 @@
 
         <!-- Status Tab -->
         <div id="status-tab" class="status-screen" style="display: none;">
-            <div class="status-item" onclick="addStatus()">
-                <div class="status-avatar">M</div>
+            <div class="status-item" onclick="showStatusModal()">
+                <div class="status-avatar" id="my-status-avatar"></div>
                 <div class="status-info">
                     <div class="status-name">My Status</div>
-                    <div class="status-time">Add a status</div>
+                    <div class="status-time">Tap to add status update</div>
                 </div>
             </div>
-            <div class="empty-state">
+            <div id="statuses-list"></div>
+            <div class="empty-state" id="no-statuses">
                 <div class="empty-icon">📸</div>
                 No statuses yet
             </div>
@@ -1288,8 +1381,16 @@
             </div>
         </div>
 
+        <!-- Contacts Tab -->
+        <div id="contacts-tab" class="contacts-list" style="display: none;">
+            <div class="empty-state" id="no-contacts">
+                <div class="empty-icon">👥</div>
+                No contacts yet
+            </div>
+        </div>
+
         <!-- Floating action button -->
-        <div class="floating-button" onclick="showAllUsers()">
+        <div class="floating-button" onclick="showTab('contacts')">
             <i class="fas fa-comment"></i>
         </div>
         
@@ -1306,6 +1407,10 @@
             <div class="nav-item" onclick="showTab('calls')">
                 <div class="nav-icon"><i class="fas fa-phone"></i></div>
                 <div>Calls</div>
+            </div>
+            <div class="nav-item" onclick="showTab('contacts')">
+                <div class="nav-icon"><i class="fas fa-user-friends"></i></div>
+                <div>Contacts</div>
             </div>
         </div>
     </div>
@@ -1376,7 +1481,9 @@
                         <i class="fas fa-camera"></i>
                     </div>
                 </div>
-                <div class="profile-name" id="profile-name">User Name</div>
+                <input type="text" id="profile-display-name" class="auth-input" placeholder="Display Name" style="margin-bottom: 10px;">
+                <textarea id="profile-about" class="auth-input" placeholder="About" style="height: 80px; resize: none;"></textarea>
+                <button class="upload-button" onclick="saveProfileEdit()" style="margin-top: 10px;">Save Profile</button>
                 <div class="profile-username" id="profile-username">@username</div>
             </div>
             
@@ -1397,12 +1504,12 @@
 
                 <div class="settings-item">
                     <div class="settings-item-info">
-                        <div class="settings-item-title">Background Image</div>
-                        <div class="settings-item-desc">Upload a custom background image for the app</div>
+                        <div class="settings-item-title">Chat Wallpaper</div>
+                        <div class="settings-item-desc">Upload a custom wallpaper for chats</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <input type="file" id="background-file-input" class="file-input" accept="image/*" onchange="handleBackgroundUpload(event)">
-                        <button class="upload-button" onclick="document.getElementById('background-file-input').click()" aria-label="Upload background image">Upload Background</button>
+                        <button class="upload-button" onclick="document.getElementById('background-file-input').click()" aria-label="Upload background image">Upload Wallpaper</button>
                         <button class="remove-button" id="remove-background-btn" onclick="removeBackground()" style="display: none;" aria-label="Remove background">Remove</button>
                     </div>
                     <div class="preview-container" id="background-preview-container" style="display: none;">
@@ -1475,6 +1582,37 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
+
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Blocked Users</div>
+                        <div class="settings-item-desc">Manage blocked users</div>
+                    </div>
+                    <button class="upload-button" onclick="showBlockedUsers()">Manage</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">Account</div>
+                
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Two-step Verification</div>
+                        <div class="settings-item-desc">Add extra security</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="two-step-toggle" onchange="toggleTwoStep()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Delete Account</div>
+                        <div class="settings-item-desc">Permanently delete your account</div>
+                    </div>
+                    <button class="remove-button" onclick="deleteAccount()">Delete</button>
+                </div>
             </div>
             
             <button class="logout-button" onclick="logout()">Log Out</button>
@@ -1527,6 +1665,35 @@
         </div>
     </div>
 
+    <!-- Chat Options Modal -->
+    <div class="chat-options-modal" id="chat-options-modal">
+        <div class="chat-options-content">
+            <h3>Chat Options</h3>
+            <div class="chat-options-list">
+                <button class="chat-option-button" onclick="muteChat()">Mute Notifications</button>
+                <button class="chat-option-button" onclick="clearChat()">Clear Chat</button>
+                <button class="chat-option-button" onclick="blockUser()">Block User</button>
+                <button class="chat-option-button" onclick="reportUser()">Report</button>
+                <button class="chat-option-button" onclick="closeChatOptions()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Upload Modal -->
+    <div class="status-modal" id="status-modal">
+        <div class="status-modal-content">
+            <h3>Add Status</h3>
+            <textarea id="status-text" class="auth-input" placeholder="Type your status..." style="height: 100px; resize: none;"></textarea>
+            <input type="file" id="status-file" accept="image/*" style="display: none;" onchange="previewStatusImage(event)">
+            <button class="upload-button" onclick="document.getElementById('status-file').click()">Upload Image</button>
+            <div class="preview-container" id="status-preview-container" style="display: none;">
+                <img id="status-preview" style="max-width: 100%; border-radius: 8px;" alt="Status preview">
+            </div>
+            <button class="auth-button" onclick="uploadStatus()">Post Status</button>
+            <button class="modal-button secondary" onclick="closeStatusModal()">Cancel</button>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // App state
@@ -1536,19 +1703,16 @@
         let onlineUsers = [];
         let allUsers = [];
         let userConversations = [];
-        let pendingMessages = {};
         let typingTimeout = null;
         let currentConversationId = null;
         let userSettings = {};
         let selectedAvatar = null;
         let uploadedAvatarDataUrl = null;
         let uploadedBackgroundDataUrl = null;
-
-        // New variables for admin functionality
-        let adminAuthenticated = false;
-        let adminPassword = "";
-        let currentAdminPage = 1;
-        let totalAdminPages = 1;
+        let statuses = [];
+        let blockedUsers = [];
+        let mutedChats = [];
+        let uploadedStatusImage = null;
         let deferredPrompt = null;
 
         // Default settings
@@ -1563,37 +1727,17 @@
             },
             avatar: 'default1',
             customAvatar: null,
-            customBackground: null
+            customBackground: null,
+            twoStep: false,
+            mutedChats: [],
+            blockedUsers: []
         };
 
-        // PWA setup (unchanged)
+        // PWA setup
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            const installPrompt = document.getElementById('install-prompt');
-            if (installPrompt) installPrompt.style.display = 'block';
         });
-
-        function setupPWA() {
-            const installAppBtn = document.getElementById('install-app');
-            const dismissPromptBtn = document.getElementById('dismiss-prompt');
-            if (installAppBtn) {
-                installAppBtn.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        deferredPrompt = null;
-                    }
-                    document.getElementById('install-prompt').style.display = 'none';
-                });
-            }
-            if (dismissPromptBtn) {
-                dismissPromptBtn.addEventListener('click', () => {
-                    document.getElementById('install-prompt').style.display = 'none';
-                });
-            }
-        }
-
-        // Admin features (unchanged, omitted for brevity - include full from previous if needed)
 
         // UI Functions
         function showScreen(screenId) {
@@ -1610,28 +1754,18 @@
 
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
             
-            document.getElementById('chats-tab').style.display = tabName === 'chats' ? 'block' : 'none';
-            document.getElementById('status-tab').style.display = tabName === 'status' ? 'block' : 'none';
-            document.getElementById('calls-tab').style.display = tabName === 'calls' ? 'block' : 'none';
+            ['chats', 'status', 'calls', 'contacts'].forEach(t => {
+                document.getElementById(`${t}-tab`).style.display = tabName === t ? 'block' : 'none';
+            });
 
-            if (tabName === 'status') {
-                // Sample statuses
-                document.getElementById('status-tab').innerHTML = `
-                    <div class="status-item" onclick="addStatus()">
-                        <div class="status-avatar">M</div>
-                        <div class="status-info">
-                            <div class="status-name">My Status</div>
-                            <div class="status-time">Add a status</div>
-                        </div>
-                    </div>
-                    <div class="empty-state" style="height: auto; padding: 20px;">
-                        <div class="empty-icon">📸</div>
-                        No statuses yet
-                    </div>
-                `;
-            } else if (tabName === 'calls') {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.querySelector(`.nav-item[onclick="showTab('${tabName}')"]`).classList.add('active');
+
+            if (tabName === 'status') fetchStatuses();
+            if (tabName === 'contacts') fetchAllUsers();
+            if (tabName === 'calls') {
                 document.getElementById('calls-tab').innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">📞</div>
@@ -1647,67 +1781,61 @@
             if (searchContainer.style.display === 'block') document.getElementById('search-input').focus();
         }
 
+        function searchUsers() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const list = document.getElementById('chats-tab');
+            list.querySelectorAll('.conversation-item').forEach(item => {
+                const name = item.querySelector('.conversation-name').textContent.toLowerCase();
+                item.style.display = name.includes(query) ? 'flex' : 'none';
+            });
+        }
+
         function showSettings() {
             loadUserSettings();
+            document.getElementById('profile-display-name').value = userSettings.displayName || currentUser;
+            document.getElementById('profile-about').value = userSettings.about || '';
             showScreen('settings-screen');
-        }
-
-        function showChatOptions() {
-            alert('Chat options (e.g., mute, clear chat)');
-        }
-
-        function showAllUsers() {
-            showTab('chats'); // Or open new chat picker
         }
 
         // Settings functions
         function loadUserSettings() {
-            const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
-            if (savedSettings) {
-                try {
-                    userSettings = JSON.parse(savedSettings);
-                    if (userSettings.customAvatar && !userSettings.customAvatar.startsWith('data:image/')) userSettings.customAvatar = null;
-                    if (userSettings.customBackground && !userSettings.customBackground.startsWith('data:image/')) userSettings.customBackground = null;
-                } catch (e) {
-                    console.error('Invalid settings, resetting:', e);
-                    userSettings = { ...defaultSettings };
+            socket.emit('get-user-settings', currentUser, (settings) => {
+                userSettings = settings || { ...defaultSettings };
+                mutedChats = userSettings.mutedChats || [];
+                blockedUsers = userSettings.blockedUsers || [];
+                document.getElementById('theme-selector').value = userSettings.theme;
+                document.getElementById('notifications-toggle').checked = userSettings.notifications;
+                document.getElementById('sound-toggle').checked = userSettings.sound;
+                document.getElementById('last-seen-selector').value = userSettings.privacy.lastSeen;
+                document.getElementById('profile-photo-selector').value = userSettings.privacy.profilePhoto;
+                document.getElementById('read-receipts-toggle').checked = userSettings.privacy.readReceipts;
+                document.getElementById('two-step-toggle').checked = userSettings.twoStep;
+                
+                applyTheme(userSettings.theme);
+                
+                if (userSettings.customBackground) {
+                    document.body.style.setProperty('--custom-bg-image', `url(${userSettings.customBackground})`);
+                    document.body.classList.add('custom-background');
+                    uploadedBackgroundDataUrl = userSettings.customBackground;
+                    const previewContainer = document.getElementById('background-preview-container');
+                    const preview = document.getElementById('background-preview');
+                    const removeBtn = document.getElementById('remove-background-btn');
+                    if (previewContainer && preview) {
+                        previewContainer.style.display = 'block';
+                        preview.style.backgroundImage = `url(${userSettings.customBackground})`;
+                    }
+                    if (removeBtn) removeBtn.style.display = 'inline-block';
                 }
-            } else {
-                userSettings = { ...defaultSettings };
-            }
-            
-            document.getElementById('theme-selector').value = userSettings.theme;
-            document.getElementById('notifications-toggle').checked = userSettings.notifications;
-            document.getElementById('sound-toggle').checked = userSettings.sound;
-            document.getElementById('last-seen-selector').value = userSettings.privacy.lastSeen;
-            document.getElementById('profile-photo-selector').value = userSettings.privacy.profilePhoto;
-            document.getElementById('read-receipts-toggle').checked = userSettings.privacy.readReceipts;
-            
-            applyTheme(userSettings.theme);
-            
-            if (userSettings.customBackground) {
-                document.body.style.setProperty('--custom-bg-image', `url(${userSettings.customBackground})`);
-                document.body.classList.add('custom-background');
-                uploadedBackgroundDataUrl = userSettings.customBackground;
-                const previewContainer = document.getElementById('background-preview-container');
-                const preview = document.getElementById('background-preview');
-                const removeBtn = document.getElementById('remove-background-btn');
-                if (previewContainer && preview) {
-                    previewContainer.style.display = 'block';
-                    preview.style.backgroundImage = `url(${userSettings.customBackground})`;
-                }
-                if (removeBtn) removeBtn.style.display = 'inline-block';
-            }
-            
-            document.getElementById('profile-name').textContent = currentUser;
-            document.getElementById('profile-username').textContent = `@${currentUser}`;
-            
-            setAvatar(userSettings.avatar, userSettings.customAvatar);
+                
+                document.getElementById('profile-name').textContent = userSettings.displayName || currentUser;
+                document.getElementById('profile-username').textContent = `@${currentUser}`;
+                
+                setAvatar(userSettings.avatar, userSettings.customAvatar);
+            });
         }
 
         function saveUserSettings() {
-            localStorage.setItem(`gramx_settings_${currentUser}`, JSON.stringify(userSettings));
-            if (socket) socket.emit('update-user-settings', userSettings);
+            socket.emit('update-user-settings', { username: currentUser, settings: userSettings });
         }
 
         function applyTheme(theme) {
@@ -1726,6 +1854,7 @@
 
         function toggleNotifications() {
             userSettings.notifications = document.getElementById('notifications-toggle').checked;
+            if (userSettings.notifications) requestNotificationPermission();
             saveUserSettings();
         }
 
@@ -1747,6 +1876,30 @@
         function toggleReadReceipts() {
             userSettings.privacy.readReceipts = document.getElementById('read-receipts-toggle').checked;
             saveUserSettings();
+        }
+
+        function toggleTwoStep() {
+            userSettings.twoStep = document.getElementById('two-step-toggle').checked;
+            saveUserSettings();
+        }
+
+        function saveProfileEdit() {
+            userSettings.displayName = document.getElementById('profile-display-name').value;
+            userSettings.about = document.getElementById('profile-about').value;
+            saveUserSettings();
+            document.getElementById('profile-name').textContent = userSettings.displayName || currentUser;
+            updateConversationsList();
+            alert('Profile updated!');
+        }
+
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This is permanent.')) {
+                socket.emit('delete-account', currentUser);
+            }
+        }
+
+        function showBlockedUsers() {
+            alert('Blocked users: ' + blockedUsers.join(', ')); // Can be enhanced to modal
         }
 
         // Background Upload
@@ -1791,12 +1944,12 @@
                 showUploadError(errorDiv, 'Failed to process image. Please try again.');
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.innerHTML = 'Upload Background';
+                uploadBtn.innerHTML = 'Upload Wallpaper';
             }
         }
 
         function removeBackground() {
-            if (confirm('Remove custom background?')) {
+            if (confirm('Remove custom wallpaper?')) {
                 uploadedBackgroundDataUrl = null;
                 document.body.style.setProperty('--custom-bg-image', 'none');
                 document.body.classList.remove('custom-background');
@@ -1821,7 +1974,6 @@
             
             document.querySelectorAll('.avatar-option').forEach(option => option.classList.remove('selected'));
             if (userSettings.customAvatar) {
-                // Show preview for custom
                 const preview = document.getElementById('avatar-preview');
                 preview.src = userSettings.customAvatar;
                 previewContainer.style.display = 'block';
@@ -1891,9 +2043,10 @@
                 userSettings.customAvatar = uploadedAvatarDataUrl;
                 userSettings.avatar = null;
             } else {
+                userSettings.avatar = selectedAvatar;
                 userSettings.customAvatar = null;
             }
-            setAvatar(selectedAvatar, userSettings.customAvatar);
+            setAvatar(userSettings.avatar, userSettings.customAvatar);
             saveUserSettings();
             closeAvatarModal();
         }
@@ -1906,12 +2059,11 @@
                 avatarElement.style.backgroundImage = `url(${customAvatar})`;
                 avatarElement.style.backgroundColor = 'transparent';
                 avatarElement.innerHTML = '<div class="profile-avatar-edit"><i class="fas fa-camera"></i></div>';
-                avatarElement.style.color = 'transparent';
             } else {
                 const color = getAvatarColor(avatarId);
                 avatarElement.style.backgroundImage = 'none';
                 avatarElement.style.background = color;
-                avatarElement.innerHTML = `<div style="color: white;">${letter}</div><div class="profile-avatar-edit"><i class="fas fa-camera"></i></div>`;
+                avatarElement.innerHTML = letter + '<div class="profile-avatar-edit"><i class="fas fa-camera"></i></div>';
             }
             
             updateUserAvatarInUI(currentUser, avatarId, customAvatar);
@@ -1930,10 +2082,9 @@
         }
 
         function updateUserAvatarInUI(username, avatarId, customAvatar) {
-            // Update in lists (simplified)
-            const avatars = document.querySelectorAll('.conversation-avatar, .user-avatar, .status-avatar');
+            const avatars = document.querySelectorAll('.conversation-avatar, .contact-avatar, .status-avatar');
             avatars.forEach(avatar => {
-                if (avatar.textContent.includes(username.charAt(0))) {
+                if (avatar.dataset.username === username) {
                     if (customAvatar) {
                         avatar.style.backgroundImage = `url(${customAvatar})`;
                         avatar.style.backgroundColor = 'transparent';
@@ -1945,6 +2096,16 @@
                     }
                 }
             });
+            const myStatusAvatar = document.getElementById('my-status-avatar');
+            if (myStatusAvatar) {
+                if (customAvatar) {
+                    myStatusAvatar.style.backgroundImage = `url(${customAvatar})`;
+                    myStatusAvatar.innerHTML = '';
+                } else {
+                    myStatusAvatar.style.background = getAvatarColor(avatarId);
+                    myStatusAvatar.innerHTML = username.charAt(0).toUpperCase();
+                }
+            }
         }
 
         // Image compression helper
@@ -1956,7 +2117,8 @@
 
                 img.onload = () => {
                     const maxSize = 800;
-                    let { width, height } = img;
+                    let width = img.width;
+                    let height = img.height;
                     if (width > height) {
                         if (width > maxSize) {
                             height = (height * maxSize) / width;
@@ -1993,8 +2155,8 @@
 
         // Authentication
         async function register() {
-            const username = document.getElementById('register-username').value;
-            const password = document.getElementById('register-password').value;
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value.trim();
             
             if (!username || !password) {
                 showError('register-error', 'Please enter both username and password');
@@ -2022,8 +2184,8 @@
         }
 
         async function login() {
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
             
             if (!username || !password) {
                 showError('login-error', 'Please enter both username and password');
@@ -2031,11 +2193,6 @@
             }
             
             try {
-                const button = document.querySelector('#login-screen .auth-button');
-                const originalText = button.textContent;
-                button.innerHTML = '<div class="loading"></div>';
-                button.disabled = true;
-
                 const response = await fetch('/login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -2044,12 +2201,8 @@
                 
                 const result = await response.json();
                 
-                button.textContent = originalText;
-                button.disabled = false;
-                
                 if (result.success) {
                     currentUser = username;
-                    localStorage.setItem('gramx_current_user', username);
                     initializeSocket();
                     showScreen('chat-list-screen');
                 } else {
@@ -2057,29 +2210,43 @@
                 }
             } catch (error) {
                 showError('login-error', 'Network error. Please try again.');
-                const button = document.querySelector('#login-screen .auth-button');
-                button.textContent = 'Login';
-                button.disabled = false;
             }
         }
 
         function logout() {
             if (socket) socket.disconnect();
             currentUser = null;
-            localStorage.removeItem('gramx_current_user');
             document.body.style.setProperty('--custom-bg-image', 'none');
             document.body.classList.remove('custom-background');
             showScreen('login-screen');
         }
 
-        // Socket (simplified for demo)
+        // Socket
         function initializeSocket() {
             socket = io();
             
             socket.on('connect', () => {
-                console.log('Connected to server');
                 socket.emit('user-login', currentUser);
                 loadUserSettings();
+                fetchAllUsers();
+                fetchConversations();
+                fetchStatuses();
+            });
+            
+            socket.on('user-online', (username) => {
+                if (!onlineUsers.includes(username)) {
+                    onlineUsers.push(username);
+                    updateOnlineUsersList();
+                }
+            });
+            
+            socket.on('user-offline', (username) => {
+                onlineUsers = onlineUsers.filter(u => u !== username);
+                updateOnlineUsersList();
+                if (currentTargetUser === username) {
+                    document.getElementById('status-text').textContent = 'offline';
+                    document.getElementById('status-dot').className = 'offline-dot';
+                }
             });
             
             socket.on('online-users', (users) => {
@@ -2092,44 +2259,110 @@
                 updateConversationsList();
             });
             
+            socket.on('conversation-history', (data) => {
+                currentConversationId = data.conversationId;
+                const container = document.getElementById('private-messages-container');
+                container.innerHTML = '<div class="typing-indicator" id="typing-indicator"><span id="typing-user"></span> is typing<span class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span></div>';
+                data.messages.forEach(msg => addMessageToChat(msg, msg.sender === currentUser));
+            });
+            
             socket.on('new-private-message', (message) => {
+                if (blockedUsers.includes(message.sender)) return;
+                
                 if ((message.sender === currentTargetUser && message.receiver === currentUser) || 
                     (message.receiver === currentTargetUser && message.sender === currentUser)) {
-                    addMessageToChat(message);
+                    addMessageToChat(message, message.sender === currentUser);
+                    if (message.receiver === currentUser && userSettings.privacy.readReceipts) {
+                        socket.emit('message-read', { messageId: message._id });
+                    }
+                } else {
+                    // Notification
+                    if (userSettings.notifications && Notification.permission === 'granted') {
+                        new Notification('New message from ' + message.sender, { body: message.text });
+                    }
+                    if (userSettings.sound && !mutedChats.includes(message.sender)) {
+                        const audio = new Audio('/notification.mp3'); // Assume sound file
+                        audio.play();
+                    }
                 }
+                fetchConversations(); // Update list
+            });
+            
+            socket.on('message-delivered', (data) => {
+                updateMessageStatus(data.messageId || data.tempId, 'delivered');
+            });
+            
+            socket.on('messages-read', (data) => {
+                data.messageIds.forEach(id => updateMessageStatus(id, 'read'));
+            });
+            
+            socket.on('message-deleted', (data) => {
+                const msgElement = document.getElementById(`message-${data.messageId}`);
+                if (msgElement) msgElement.remove();
+            });
+            
+            socket.on('chat-cleared', (data) => {
+                if (currentTargetUser === data.target || currentTargetUser === data.user) {
+                    document.getElementById('private-messages-container').innerHTML = '<div class="typing-indicator" id="typing-indicator"><span id="typing-user"></span> is typing<span class="typing-dots"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span></div>';
+                }
+                fetchConversations();
             });
             
             socket.on('typing-start', (data) => {
-                if (data.conversationId === currentConversationId) {
-                    const typingIndicator = document.getElementById('typing-indicator');
-                    const typingUser = document.getElementById('typing-user');
-                    typingUser.textContent = data.sender;
-                    typingIndicator.style.display = 'block';
-                    const container = document.getElementById('private-messages-container');
-                    container.scrollTop = container.scrollHeight;
+                if (data.sender === currentTargetUser) {
+                    document.getElementById('typing-indicator').style.display = 'block';
+                    document.getElementById('private-messages-container').scrollTop = document.getElementById('private-messages-container').scrollHeight;
                 }
             });
             
             socket.on('typing-stop', (data) => {
-                if (data.conversationId === currentConversationId) {
+                if (data.sender === currentTargetUser) {
                     document.getElementById('typing-indicator').style.display = 'none';
                 }
             });
+            
+            socket.on('new-status', fetchStatuses);
+            
+            socket.on('account-deleted', () => {
+                alert('Account deleted');
+                logout();
+            });
         }
 
-        // Update lists (simplified)
+        // Fetch functions
+        function fetchAllUsers() {
+            fetch('/users')
+                .then(res => res.json())
+                .then(users => {
+                    allUsers = users.filter(u => u.username !== currentUser);
+                    updateContactsList();
+                });
+        }
+
+        function fetchConversations() {
+            socket.emit('get-conversations', currentUser);
+        }
+
+        function fetchStatuses() {
+            socket.emit('get-statuses', (fetchedStatuses) => {
+                statuses = fetchedStatuses;
+                updateStatusesList();
+            });
+        }
+
+        // Update lists
         function updateConversationsList() {
             const container = document.getElementById('chats-tab');
             const emptyState = document.getElementById('no-conversations');
             
+            container.innerHTML = '';
+            
             if (userConversations.length === 0) {
                 emptyState.style.display = 'flex';
-                container.innerHTML = '';
                 return;
             }
             
             emptyState.style.display = 'none';
-            container.innerHTML = '';
             
             userConversations.forEach(conv => {
                 const convElement = document.createElement('div');
@@ -2137,36 +2370,126 @@
                 convElement.onclick = () => startPrivateChat(conv.partner);
                 
                 const lastMessageTime = conv.lastMessage ? new Date(conv.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                const lastMessageText = conv.lastMessage ? (conv.lastMessage.sender === currentUser ? 'You: ' : '') + conv.lastMessage.text : 'No messages yet';
+                const lastMessageText = conv.lastMessage ? (conv.lastMessage.sender === currentUser ? 'You: ' : '') + (conv.lastMessage.text || '[Image]') : 'No messages yet';
                 const isOnline = onlineUsers.includes(conv.partner);
                 const name = conv.type === 'group' ? conv.partner + ' 👥' : conv.partner;
                 
                 convElement.innerHTML = `
-                    <div class="conversation-avatar">${name.charAt(0).toUpperCase()}</div>
+                    <div class="conversation-avatar" data-username="${conv.partner}">${name.charAt(0).toUpperCase()}</div>
                     <div class="conversation-info">
                         <div class="conversation-name">${name}</div>
                         <div class="conversation-preview">${lastMessageText}</div>
                     </div>
                     <div class="conversation-meta">
                         <div class="conversation-time">${lastMessageTime}</div>
-                        ${isOnline ? '<span class="online-dot"></span>' : ''}
                         ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
                     </div>
                 `;
                 
+                if (isOnline) {
+                    const meta = convElement.querySelector('.conversation-meta');
+                    const dot = document.createElement('span');
+                    dot.className = 'online-dot';
+                    meta.appendChild(dot);
+                }
+                
                 container.appendChild(convElement);
+                updateUserAvatarInUI(conv.partner, conv.avatar, conv.customAvatar);
+            });
+        }
+
+        function updateContactsList() {
+            const container = document.getElementById('contacts-tab');
+            const emptyState = document.getElementById('no-contacts');
+            
+            container.innerHTML = '';
+            
+            if (allUsers.length === 0) {
+                emptyState.style.display = 'flex';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            allUsers.forEach(user => {
+                const contactElement = document.createElement('div');
+                contactElement.className = 'contact-item';
+                contactElement.onclick = () => startPrivateChat(user.username);
+                
+                const isOnline = onlineUsers.includes(user.username);
+                
+                contactElement.innerHTML = `
+                    <div class="contact-avatar" data-username="${user.username}">${user.username.charAt(0).toUpperCase()}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${user.displayName || user.username}</div>
+                        <div class="contact-about">${user.about || 'Hey there! I am using gramX.'}</div>
+                    </div>
+                    <div class="conversation-meta">
+                        ${isOnline ? '<span class="online-dot"></span>' : ''}
+                    </div>
+                `;
+                
+                container.appendChild(contactElement);
+                updateUserAvatarInUI(user.username, user.avatar, user.customAvatar);
+            });
+        }
+
+        function updateStatusesList() {
+            const list = document.getElementById('statuses-list');
+            const emptyState = document.getElementById('no-statuses');
+            
+            list.innerHTML = '';
+            
+            if (statuses.length === 0) {
+                emptyState.style.display = 'flex';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            statuses.forEach(status => {
+                const statusElement = document.createElement('div');
+                statusElement.className = 'status-item';
+                statusElement.onclick = () => viewStatus(status);
+                
+                const time = new Date(status.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                statusElement.innerHTML = `
+                    <div class="status-avatar" data-username="${status.user}">${status.user.charAt(0).toUpperCase()}</div>
+                    <div class="status-info">
+                        <div class="status-name">${status.user}</div>
+                        <div class="status-time">${time}</div>
+                    </div>
+                `;
+                
+                list.appendChild(statusElement);
+                updateUserAvatarInUI(status.user, status.avatar, status.customAvatar);
             });
         }
 
         function updateOnlineUsersList() {
-            // Simplified - populate all-users tab with online
-            const container = document.getElementById('all-tab'); // If used
-            // ... (implement as needed)
+            document.querySelectorAll('.contact-item, .conversation-item').forEach(item => {
+                const username = item.querySelector('.contact-avatar, .conversation-avatar').dataset.username;
+                const meta = item.querySelector('.conversation-meta');
+                const existingDot = meta.querySelector('.online-dot');
+                if (onlineUsers.includes(username)) {
+                    if (!existingDot) {
+                        const dot = document.createElement('span');
+                        dot.className = 'online-dot';
+                        meta.appendChild(dot);
+                    }
+                } else {
+                    if (existingDot) existingDot.remove();
+                }
+            });
         }
 
         // Chat functions
         function startPrivateChat(targetUser) {
-            if (!currentUser) return;
+            if (blockedUsers.includes(targetUser)) {
+                alert('You have blocked this user.');
+                return;
+            }
             
             currentTargetUser = targetUser;
             document.getElementById('chat-target-name').textContent = targetUser;
@@ -2184,19 +2507,38 @@
             
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isMy ? 'my-message' : 'their-message'}`;
+            messageDiv.id = `message-${message.tempId || message._id}`;
             const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            let content = `<div class="message-text">${message.text}</div>`;
+            let content = `<div class="message-text">${message.text || ''}</div>`;
             if (message.image) {
                 content += `<img src="${message.image}" class="message-image" alt="Sent image" onclick="enlargeImage(this.src)">`;
+            }
+            let statusHtml = '';
+            if (isMy) {
+                statusHtml = `<span class="message-status status-sent" id="status-${message.tempId || message._id}"><i class="fas fa-check"></i></span>`;
             }
             messageDiv.innerHTML = `
                 ${!isMy ? `<div class="message-sender">${message.sender}</div>` : ''}
                 ${content}
-                <div class="message-time">${time}</div>
+                <div class="message-time">${time} ${statusHtml}</div>
             `;
             
             container.insertBefore(messageDiv, document.getElementById('typing-indicator'));
             container.scrollTop = container.scrollHeight;
+        }
+
+        function updateMessageStatus(id, status) {
+            const statusElement = document.getElementById(`status-${id}`);
+            if (statusElement) {
+                statusElement.className = `message-status status-${status}`;
+                if (status === 'sent') {
+                    statusElement.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (status === 'delivered') {
+                    statusElement.innerHTML = '<i class="fas fa-check-double"></i>';
+                } else if (status === 'read') {
+                    statusElement.innerHTML = '<i class="fas fa-check-double"></i>';
+                }
+            }
         }
 
         function sendPrivateMessage() {
@@ -2209,22 +2551,12 @@
                     sender: currentUser,
                     receiver: currentTargetUser,
                     text: text,
-                    tempId: tempId
-                };
-                
-                const tempMessage = {
-                    sender: currentUser,
-                    receiver: currentTargetUser,
-                    text: text,
                     tempId: tempId,
                     timestamp: new Date()
                 };
                 
-                addMessageToChat(tempMessage, true);
-                
-                socket.emit('typing-stop', { receiver: currentTargetUser });
+                addMessageToChat(messageData, true);
                 socket.emit('send-private-message', messageData);
-                
                 input.value = '';
             }
         }
@@ -2233,25 +2565,23 @@
             const file = event.target.files[0];
             if (!file || !file.type.startsWith('image/')) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imgData = e.target.result;
+            compressImage(file, 0.7).then(imgData => {
+                const tempId = 'temp-' + Date.now();
                 const message = {
                     sender: currentUser,
                     receiver: currentTargetUser,
-                    text: '[Image]',
+                    text: '',
                     image: imgData,
+                    tempId: tempId,
                     timestamp: new Date()
                 };
                 addMessageToChat(message, true);
                 socket.emit('send-private-message', message);
-            };
-            reader.readAsDataURL(file);
+            });
             event.target.value = '';
         }
 
         function enlargeImage(src) {
-            // Simple modal for full image
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:2000;';
             modal.innerHTML = `<img src="${src}" style="max-width:90%;max-height:90%;border-radius:8px;">`;
@@ -2277,10 +2607,101 @@
 
         function backToChatList() {
             showScreen('chat-list-screen');
-            if (socket && currentUser) socket.emit('user-login', currentUser);
+            fetchConversations();
         }
 
-        // WhatsApp Features
+        // Chat Options
+        function showChatOptions() {
+            document.getElementById('chat-options-modal').style.display = 'flex';
+        }
+
+        function closeChatOptions() {
+            document.getElementById('chat-options-modal').style.display = 'none';
+        }
+
+        function muteChat() {
+            if (mutedChats.includes(currentTargetUser)) {
+                mutedChats = mutedChats.filter(u => u !== currentTargetUser);
+            } else {
+                mutedChats.push(currentTargetUser);
+            }
+            userSettings.mutedChats = mutedChats;
+            saveUserSettings();
+            alert(`Chat with ${currentTargetUser} ${mutedChats.includes(currentTargetUser) ? 'muted' : 'unmuted'}`);
+            closeChatOptions();
+        }
+
+        function clearChat() {
+            if (confirm('Clear all messages in this chat?')) {
+                socket.emit('clear-chat', { user: currentUser, target: currentTargetUser });
+            }
+            closeChatOptions();
+        }
+
+        function blockUser() {
+            if (confirm(`Block ${currentTargetUser}?`)) {
+                blockedUsers.push(currentTargetUser);
+                userSettings.blockedUsers = blockedUsers;
+                saveUserSettings();
+                backToChatList();
+            }
+            closeChatOptions();
+        }
+
+        function reportUser() {
+            alert(`Reported ${currentTargetUser}`);
+            closeChatOptions();
+        }
+
+        // Status functions
+        function showStatusModal() {
+            document.getElementById('status-text').value = '';
+            uploadedStatusImage = null;
+            document.getElementById('status-preview-container').style.display = 'none';
+            document.getElementById('status-modal').style.display = 'flex';
+        }
+
+        function closeStatusModal() {
+            document.getElementById('status-modal').style.display = 'none';
+        }
+
+        function previewStatusImage(event) {
+            const file = event.target.files[0];
+            compressImage(file, 0.7).then(imgData => {
+                uploadedStatusImage = imgData;
+                const preview = document.getElementById('status-preview');
+                preview.src = imgData;
+                document.getElementById('status-preview-container').style.display = 'block';
+            });
+        }
+
+        function uploadStatus() {
+            const text = document.getElementById('status-text').value.trim();
+            if (!text && !uploadedStatusImage) return alert('Add text or image');
+            
+            const status = {
+                user: currentUser,
+                text,
+                image: uploadedStatusImage,
+                timestamp: new Date()
+            };
+            
+            socket.emit('add-status', status);
+            closeStatusModal();
+        }
+
+        function viewStatus(status) {
+            alert(`Status from ${status.user}: ${status.text || '[Image]'}`); // Can be enhanced to show image
+        }
+
+        // Notifications
+        function requestNotificationPermission() {
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Calls (mock)
         function startVoiceCall() {
             alert('Starting voice call with ' + currentTargetUser);
         }
@@ -2289,6 +2710,7 @@
             alert('Starting video call with ' + currentTargetUser);
         }
 
+        // Group (mock, enhance if needed)
         function showNewGroupModal() {
             document.getElementById('group-modal').style.display = 'flex';
         }
@@ -2299,58 +2721,20 @@
         }
 
         function createGroup() {
-            const name = document.getElementById('group-name').value;
+            const name = document.getElementById('group-name').value.trim();
             if (!name) return alert('Enter group name');
-            userConversations.push({ partner: name, type: 'group', lastMessage: { text: 'Group created', timestamp: new Date() } });
+            // Mock group creation
+            userConversations.push({ partner: name, type: 'group', lastMessage: { text: 'Group created', timestamp: new Date() }, unreadCount: 0 });
             updateConversationsList();
             closeGroupModal();
         }
 
-        function addStatus() {
-            // Simulate status upload
-            alert('Add status (text or photo)');
-            // Could open file picker for image
-        }
-
         // Init
         window.onload = () => {
-            const savedUser = localStorage.getItem('gramx_current_user');
-            if (savedUser) {
-                document.getElementById('login-username').value = savedUser;
-                currentUser = savedUser;
-                initializeSocket();
-                showScreen('chat-list-screen');
-            }
-
-            // Tab handlers
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    const tabName = e.target.getAttribute('onclick').match(/'([^']+)'/)[1];
-                    showTab(tabName);
-                });
-            });
-
-            // Bottom nav
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    const tabName = e.target.querySelector('div').textContent.toLowerCase() || e.target.textContent.toLowerCase();
-                    showTab(tabName === 'chats' ? 'chats' : tabName);
-                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
-                });
-            });
-
+            requestNotificationPermission();
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
             if (prefersDark.matches) document.body.classList.add('dark-theme');
-            prefersDark.addEventListener('change', e => {
-                const savedSettings = localStorage.getItem(`gramx_settings_${currentUser}`);
-                if (savedSettings) {
-                    const settings = JSON.parse(savedSettings);
-                    if (settings.theme === 'auto') applyTheme('auto');
-                }
-            });
-
-            setupPWA();
+            prefersDark.addEventListener('change', e => applyTheme('auto'));
         };
     </script>
 </body>
