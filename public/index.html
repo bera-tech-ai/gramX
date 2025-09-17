@@ -433,6 +433,27 @@
             opacity: 0.5;
         }
 
+        .filter-button {
+            padding: 8px 16px;
+            background: var(--whatsapp-green);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+            margin: 10px;
+        }
+
+        .dark-theme .filter-button {
+            background: #005C4B;
+        }
+
+        .last-seen {
+            font-size: 12px;
+            color: var(--whatsapp-light-text);
+        }
+
         /* CHAT SCREEN - WhatsApp Style */
         .chat-header { 
             background: var(--whatsapp-dark-green);
@@ -1383,6 +1404,7 @@
 
         <!-- Contacts Tab -->
         <div id="contacts-tab" class="contacts-list" style="display: none;">
+            <button class="filter-button" onclick="toggleOnlineOnly()" id="online-toggle-btn">Show Online Only</button>
             <div class="empty-state" id="no-contacts">
                 <div class="empty-icon">👥</div>
                 No contacts yet
@@ -1714,6 +1736,7 @@
         let mutedChats = [];
         let uploadedStatusImage = null;
         let deferredPrompt = null;
+        let showOnlineOnly = false;
 
         // Default settings
         const defaultSettings = {
@@ -2237,6 +2260,9 @@
                 if (!onlineUsers.includes(username)) {
                     onlineUsers.push(username);
                     updateOnlineUsersList();
+                    if (!allUsers.find(u => u.username === username)) {
+                        fetchAllUsers();
+                    }
                 }
             });
             
@@ -2398,20 +2424,42 @@
             });
         }
 
+        function toggleOnlineOnly() {
+            showOnlineOnly = !showOnlineOnly;
+            document.getElementById('online-toggle-btn').textContent = showOnlineOnly ? 'Show All' : 'Show Online Only';
+            updateContactsList();
+        }
+
+        function formatLastSeen(dateStr) {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+                return 'today at ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays === 1) {
+                return 'yesterday at ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
         function updateContactsList() {
             const container = document.getElementById('contacts-tab');
             const emptyState = document.getElementById('no-contacts');
             
             container.innerHTML = '';
             
-            if (allUsers.length === 0) {
+            let displayedUsers = showOnlineOnly ? allUsers.filter(u => onlineUsers.includes(u.username)) : allUsers;
+            
+            if (displayedUsers.length === 0) {
                 emptyState.style.display = 'flex';
                 return;
             }
             
             emptyState.style.display = 'none';
             
-            allUsers.forEach(user => {
+            displayedUsers.forEach(user => {
                 const contactElement = document.createElement('div');
                 contactElement.className = 'contact-item';
                 contactElement.onclick = () => startPrivateChat(user.username);
@@ -2423,6 +2471,7 @@
                     <div class="contact-info">
                         <div class="contact-name">${user.displayName || user.username}</div>
                         <div class="contact-about">${user.about || 'Hey there! I am using gramX.'}</div>
+                        ${!isOnline && user.lastSeen ? `<div class="last-seen">Last seen ${formatLastSeen(user.lastSeen)}</div>` : ''}
                     </div>
                     <div class="conversation-meta">
                         ${isOnline ? '<span class="online-dot"></span>' : ''}
@@ -2481,6 +2530,17 @@
                 } else {
                     if (existingDot) existingDot.remove();
                 }
+                const lastSeenElement = item.querySelector('.last-seen');
+                if (lastSeenElement) {
+                    if (onlineUsers.includes(username)) {
+                        lastSeenElement.remove();
+                    } else {
+                        const user = allUsers.find(u => u.username === username);
+                        if (user && user.lastSeen) {
+                            lastSeenElement.textContent = `Last seen ${formatLastSeen(user.lastSeen)}`;
+                        }
+                    }
+                }
             });
         }
 
@@ -2495,8 +2555,18 @@
             document.getElementById('chat-target-name').textContent = targetUser;
             
             const isOnline = onlineUsers.includes(targetUser);
-            document.getElementById('status-text').textContent = isOnline ? 'online' : 'offline';
-            document.getElementById('status-dot').className = isOnline ? 'online-dot' : 'offline-dot';
+            const user = allUsers.find(u => u.username === targetUser);
+            if (isOnline) {
+                document.getElementById('status-text').textContent = 'online';
+                document.getElementById('status-dot').className = 'online-dot';
+            } else {
+                document.getElementById('status-dot').className = 'offline-dot';
+                if (user && user.lastSeen && userSettings.privacy.lastSeen !== 'nobody') {
+                    document.getElementById('status-text').textContent = `last seen ${formatLastSeen(user.lastSeen)}`;
+                } else {
+                    document.getElementById('status-text').textContent = 'offline';
+                }
+            }
             
             socket.emit('join-conversation', { currentUser, targetUser });
             showScreen('private-chat-screen');
