@@ -4,19 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>gramX - Complete Messaging</title>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0088cc">
+    <!-- Icons for PWA -->
+    <link rel="icon" type="image/png" href="/icon-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             height: 100vh;
             overscroll-behavior: none;
             transition: background 0.3s ease;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3); /* Overlay for readability */
+            z-index: -1;
+            transition: opacity 0.3s ease;
         }
 
         body.dark-theme {
             background: linear-gradient(135deg, #0a1a2a 0%, #05121f 100%);
+        }
+
+        body.custom-background {
+            background-image: var(--custom-bg-image, none);
         }
 
         .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
@@ -1103,6 +1130,50 @@
             color: white;
         }
 
+        .upload-button {
+            padding: 8px 16px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+
+        .upload-button:hover {
+            background: #0066aa;
+        }
+
+        .dark-theme .upload-button {
+            background: #4eb6e9;
+        }
+
+        .dark-theme .upload-button:hover {
+            background: #3a95c7;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .preview-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e0e0e0;
+        }
+
+        .dark-theme .preview-image {
+            border-color: #3a4b5d;
+        }
+
         .logout-button {
             width: 100%;
             padding: 15px;
@@ -1115,7 +1186,316 @@
             cursor: pointer;
             margin-top: 20px;
         }
+        
+   /* ADMIN MODAL STYLES */
+        .admin-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none;
+        }
 
+        .admin-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-theme .admin-modal-content {
+            background: #1e2c3a;
+            color: white;
+        }
+
+        .admin-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dark-theme .admin-modal-header {
+            border-color: #2d3e50;
+        }
+
+        .admin-modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0088cc;
+        }
+
+        .dark-theme .admin-modal-title {
+            color: #4eb6e9;
+        }
+
+        .admin-modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .dark-theme .admin-modal-close {
+            color: #8899a6;
+        }
+
+        .admin-tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .dark-theme .admin-tabs {
+            border-color: #2d3e50;
+        }
+
+        .admin-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid transparent;
+        }
+
+        .dark-theme .admin-tab {
+            color: #8899a6;
+        }
+
+        .admin-tab.active {
+            color: #0088cc;
+            border-bottom-color: #0088cc;
+        }
+
+        .dark-theme .admin-tab.active {
+            color: #4eb6e9;
+            border-bottom-color: #4eb6e9;
+        }
+
+        .admin-section {
+            margin-bottom: 20px;
+        }
+
+        .admin-section-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .dark-theme .admin-section-title {
+            color: white;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .admin-table th, .admin-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .dark-theme .admin-table th, 
+        .dark-theme .admin-table td {
+            border-color: #2d3e50;
+        }
+
+        .admin-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .dark-theme .admin-table th {
+            background-color: #2a3b4d;
+            color: white;
+        }
+
+        .admin-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dark-theme .admin-table tr:hover {
+            background-color: #2a3b4d;
+        }
+
+        .admin-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-online {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .badge-offline {
+            background-color: #ccc;
+            color: #333;
+        }
+
+        .dark-theme .badge-offline {
+            color: white;
+        }
+
+        .admin-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .btn-block {
+            background-color: #ff3b30;
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #ff9500;
+            color: white;
+        }
+
+        .admin-search {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+        }
+
+        .dark-theme .admin-search {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
+        .admin-pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .admin-pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .dark-theme .admin-pagination button {
+            background: #2a3b4d;
+            border-color: #3a4b5d;
+            color: white;
+        }
+
+        .admin-pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Install Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            max-width: 300px;
+        }
+
+        .dark-theme .install-prompt {
+            background-color: #1e2c3a;
+            border-color: #2d3e50;
+            color: white;
+        }
+
+        .install-prompt p {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .install-prompt-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .install-prompt-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .install-prompt-accept {
+            background-color: #0088cc;
+            color: white;
+        }
+
+        .dark-theme .install-prompt-accept {
+            background-color: #4eb6e9;
+        }
+
+        .install-prompt-dismiss {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .dark-theme .install-prompt-dismiss {
+            background-color: #2a3b4d;
+            color: white;
+        }
+
+        /* Hidden admin access button */
+        .admin-access-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .admin-access-btn:hover {
+            opacity: 1;
+        }
+        
         /* Avatar upload modal */
         .modal-overlay {
             position: fixed;
@@ -1188,6 +1568,22 @@
             outline-color: #4eb6e9;
         }
 
+        .upload-avatar-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .dark-theme .upload-avatar-section {
+            border-color: #3a4b5d;
+        }
+
+        .upload-avatar-section input[type="file"] {
+            margin-top: 10px;
+        }
+
         .modal-buttons {
             display: flex;
             gap: 10px;
@@ -1219,6 +1615,33 @@
         .dark-theme .modal-button.secondary {
             background: #2a3b4d;
             color: white;
+        }
+
+        /* Background upload section */
+        .background-upload-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .dark-theme .background-upload-section {
+            border-color: #3a4b5d;
+        }
+
+        .background-preview {
+            width: 200px;
+            height: 100px;
+            border-radius: 8px;
+            margin-top: 10px;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .dark-theme .background-preview {
+            border-color: #3a4b5d;
         }
 
         /* Responsive */
@@ -1417,6 +1840,21 @@
                         <option value="auto">Auto (System)</option>
                     </select>
                 </div>
+
+                <!-- New Background Upload Section -->
+                <div class="settings-item">
+                    <div class="settings-item-info">
+                        <div class="settings-item-title">Background Image</div>
+                        <div class="settings-item-desc">Upload a custom background image for the app</div>
+                    </div>
+                    <div>
+                        <input type="file" id="background-file-input" class="file-input" accept="image/*" onchange="handleBackgroundUpload(event)">
+                        <button class="upload-button" onclick="document.getElementById('background-file-input').click()">Upload Background</button>
+                        <div class="preview-container" id="background-preview-container" style="display: none;">
+                            <div class="background-preview" id="background-preview"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="settings-section">
@@ -1487,19 +1925,130 @@
             <button class="logout-button" onclick="logout()">Log Out</button>
         </div>
     </div>
+    
+  <!-- Hidden Admin Access Button -->
+    <button class="admin-access-btn" id="admin-access-btn" title="Admin Access">
+        <i class="fas fa-shield-alt"></i>
+    </button>
+
+    <!-- Install Prompt -->
+    <div class="install-prompt" id="install-prompt">
+        <p>Install gramX for a better experience?</p>
+        <div class="install-prompt-actions">
+            <button class="install-prompt-accept" id="install-app">Install</button>
+            <button class="install-prompt-dismiss" id="dismiss-prompt">Not Now</button>
+        </div>
+    </div>
+
+    <!-- Admin Auth Modal -->
+    <div class="admin-modal-overlay" id="admin-auth-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h2 class="admin-modal-title">Admin Authentication</h2>
+                <button class="admin-modal-close" id="close-admin-auth">&times;</button>
+            </div>
+            <div class="admin-section">
+                <p>Enter admin password to access dashboard:</p>
+                <input type="password" id="admin-password" class="admin-search" placeholder="Admin password">
+                <div id="admin-auth-error" style="color: #ff3b30; margin-top: 10px; display: none;"></div>
+            </div>
+            <button class="auth-button" id="admin-login-btn" style="width: 100%">Access Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Modal -->
+    <div class="admin-modal-overlay" id="admin-dashboard-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h2 class="admin-modal-title">Admin Dashboard</h2>
+                <button class="admin-modal-close" id="close-admin-dashboard">&times;</button>
+            </div>
+            
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-tab="users">Users</div>
+                <div class="admin-tab" data-tab="messages">Messages</div>
+                <div class="admin-tab" data-tab="reports">Reports</div>
+            </div>
+            
+            <div class="admin-tab-content" id="users-tab">
+                <input type="text" class="admin-search" id="admin-user-search" placeholder="Search users...">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Last Seen</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-list">
+                        <!-- Users will be populated here -->
+                    </tbody>
+                </table>
+                <div class="admin-pagination" id="users-pagination">
+                    <button id="users-prev-page">&laquo; Previous</button>
+                    <span id="users-page-info">Page 1 of 1</span>
+                    <button id="users-next-page">Next &raquo;</button>
+                </div>
+            </div>
+            
+            <div class="admin-tab-content" id="messages-tab" style="display: none;">
+                <input type="text" class="admin-search" id="admin-message-search" placeholder="Search messages...">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Message</th>
+                            <th>Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-messages-list">
+                        <!-- Messages will be populated here -->
+                    </tbody>
+                </table>
+                <div class="admin-pagination" id="messages-pagination">
+                    <button id="messages-prev-page">&laquo; Previous</button>
+                    <span id="messages-page-info">Page 1 of 1</span>
+                    <button id="messages-next-page">Next &raquo;</button>
+                </div>
+            </div>
+            
+            <div class="admin-tab-content" id="reports-tab" style="display: none;">
+                <div class="admin-section">
+                    <h3 class="admin-section-title">Reports Overview</h3>
+                    <p>No reports available at this time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Avatar Selection Modal -->
     <div class="modal-overlay" id="avatar-modal">
         <div class="modal-content">
             <div class="modal-title">Choose Profile Picture</div>
             
+            <!-- Upload Section in Modal -->
+            <div class="upload-avatar-section">
+                <p>Or upload your own photo</p>
+                <input type="file" id="avatar-file-input" class="file-input" accept="image/*" onchange="handleAvatarUpload(event)">
+                <button class="upload-button" onclick="document.getElementById('avatar-file-input').click()">Upload Photo</button>
+                <div class="preview-container" id="avatar-preview-container" style="display: none;">
+                    <img class="preview-image" id="avatar-preview" alt="Preview">
+                </div>
+            </div>
+            
+            <p style="text-align: center; color: #666; font-size: 14px;">Or choose a default</p>
+            
             <div class="avatar-options">
-                <div class="avatar-option" style="background-color: #0088cc;" onclick="selectAvatar('default1')">U</div>
-                <div class="avatar-option" style="background-color: #4CAF50;" onclick="selectAvatar('default2')">U</div>
-                <div class="avatar-option" style="background-color: #FF9800;" onclick="selectAvatar('default3')">U</div>
-                <div class="avatar-option" style="background-color: #9C27B0;" onclick="selectAvatar('default4')">U</div>
-                <div class="avatar-option" style="background-color: #F44336;" onclick="selectAvatar('default5')">U</div>
-                <div class="avatar-option" style="background-color: #00BCD4;" onclick="selectAvatar('default6')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #0088cc 0%, #0055cc 100%);" onclick="selectAvatar('default1')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);" onclick="selectAvatar('default2')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #FF9800 0%, #EF6C00 100%);" onclick="selectAvatar('default3')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%);" onclick="selectAvatar('default4')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #F44336 0%, #C62828 100%);" onclick="selectAvatar('default5')">U</div>
+                <div class="avatar-option" style="background: linear-gradient(135deg, #00BCD4 0%, #00838F 100%);" onclick="selectAvatar('default6')">U</div>
             </div>
             
             <div class="modal-buttons">
@@ -1523,6 +2072,15 @@
         let currentConversationId = null;
         let userSettings = {};
         let selectedAvatar = null;
+        let uploadedAvatarDataUrl = null; // For custom uploaded avatar
+        let uploadedBackgroundDataUrl = null; // For custom background
+
+        // New variables for admin functionality
+        let adminAuthenticated = false;
+        let adminPassword = "";
+        let currentAdminPage = 1;
+        let totalAdminPages = 1;
+        let deferredPrompt = null;
 
         // Initialize user settings with defaults
         const defaultSettings = {
@@ -1534,8 +2092,406 @@
                 profilePhoto: 'everyone',
                 readReceipts: true
             },
-            avatar: 'default1'
+            avatar: 'default1',
+            customAvatar: null, // base64 data URL for custom avatar
+            customBackground: null // base64 data URL for custom background
         };
+
+        // PWA Installation Handling
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installPrompt = document.getElementById('install-prompt');
+            if (installPrompt) {
+                installPrompt.style.display = 'block';
+            }
+        });
+
+        // Setup PWA event listeners
+        function setupPWA() {
+            const installAppBtn = document.getElementById('install-app');
+            const dismissPromptBtn = document.getElementById('dismiss-prompt');
+            
+            if (installAppBtn) {
+                installAppBtn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            console.log('User accepted the install prompt');
+                        }
+                        deferredPrompt = null;
+                    }
+                    const installPrompt = document.getElementById('install-prompt');
+                    if (installPrompt) {
+                        installPrompt.style.display = 'none';
+                    }
+                });
+            }
+            
+            if (dismissPromptBtn) {
+                dismissPromptBtn.addEventListener('click', () => {
+                    const installPrompt = document.getElementById('install-prompt');
+                    if (installPrompt) {
+                        installPrompt.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(function(registration) {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        })
+                        .catch(function(error) {
+                            console.log('ServiceWorker registration failed: ', error);
+                        });
+                });
+            }
+        }
+
+        // Admin Functions (unchanged from original)
+        function setupAdminFeatures() {
+            const adminAccessBtn = document.getElementById('admin-access-btn');
+            const adminAuthModal = document.getElementById('admin-auth-modal');
+            const adminDashboardModal = document.getElementById('admin-dashboard-modal');
+            const closeAdminAuth = document.getElementById('close-admin-auth');
+            const closeAdminDashboard = document.getElementById('close-admin-dashboard');
+            const adminLoginBtn = document.getElementById('admin-login-btn');
+            const adminPasswordInput = document.getElementById('admin-password');
+            const adminAuthError = document.getElementById('admin-auth-error');
+            const adminTabs = document.querySelectorAll('.admin-tab');
+            
+            // Admin access button
+            if (adminAccessBtn) {
+                adminAccessBtn.addEventListener('click', () => {
+                    adminAuthModal.style.display = 'flex';
+                });
+            }
+            
+            // Close admin auth modal
+            if (closeAdminAuth) {
+                closeAdminAuth.addEventListener('click', () => {
+                    adminAuthModal.style.display = 'none';
+                    adminAuthError.style.display = 'none';
+                });
+            }
+            
+            // Close admin dashboard modal
+            if (closeAdminDashboard) {
+                closeAdminDashboard.addEventListener('click', () => {
+                    adminDashboardModal.style.display = 'none';
+                });
+            }
+            
+            // Admin login
+            if (adminLoginBtn) {
+                adminLoginBtn.addEventListener('click', handleAdminLogin);
+            }
+            
+            // Admin tabs
+            if (adminTabs) {
+                adminTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabName = tab.getAttribute('data-tab');
+                        
+                        // Update active tab
+                        adminTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // Show correct content
+                        document.querySelectorAll('.admin-tab-content').forEach(content => {
+                            content.style.display = 'none';
+                        });
+                        document.getElementById(`${tabName}-tab`).style.display = 'block';
+                        
+                        // Load data if needed
+                        if (tabName === 'users' && adminAuthenticated) {
+                            loadAdminUsers();
+                        } else if (tabName === 'messages' && adminAuthenticated) {
+                            loadAdminMessages();
+                        }
+                    });
+                });
+            }
+            
+            // Admin search functionality
+            const adminUserSearch = document.getElementById('admin-user-search');
+            if (adminUserSearch) {
+                adminUserSearch.addEventListener('input', debounce(() => {
+                    loadAdminUsers(adminUserSearch.value);
+                }, 300));
+            }
+            
+            const adminMessageSearch = document.getElementById('admin-message-search');
+            if (adminMessageSearch) {
+                adminMessageSearch.addEventListener('input', debounce(() => {
+                    currentAdminPage = 1;
+                    loadAdminMessages(adminMessageSearch.value);
+                }, 300));
+            }
+            
+            // Pagination
+            const usersPrevPageBtn = document.getElementById('users-prev-page');
+            const usersNextPageBtn = document.getElementById('users-next-page');
+            const messagesPrevPageBtn = document.getElementById('messages-prev-page');
+            const messagesNextPageBtn = document.getElementById('messages-next-page');
+            
+            if (usersPrevPageBtn) {
+                usersPrevPageBtn.addEventListener('click', () => {
+                    if (currentAdminPage > 1) {
+                        currentAdminPage--;
+                        loadAdminUsers(adminUserSearch?.value, currentAdminPage);
+                    }
+                });
+            }
+            
+            if (usersNextPageBtn) {
+                usersNextPageBtn.addEventListener('click', () => {
+                    if (currentAdminPage < totalAdminPages) {
+                        currentAdminPage++;
+                        loadAdminUsers(adminUserSearch?.value, currentAdminPage);
+                    }
+                });
+            }
+            
+            if (messagesPrevPageBtn) {
+                messagesPrevPageBtn.addEventListener('click', () => {
+                    if (currentAdminPage > 1) {
+                        currentAdminPage--;
+                        loadAdminMessages(adminMessageSearch?.value, currentAdminPage);
+                    }
+                });
+            }
+            
+            if (messagesNextPageBtn) {
+                messagesNextPageBtn.addEventListener('click', () => {
+                    if (currentAdminPage < totalAdminPages) {
+                        currentAdminPage++;
+                        loadAdminMessages(adminMessageSearch?.value, currentAdminPage);
+                    }
+                });
+            }
+        }
+
+        // Handle admin login
+        async function handleAdminLogin() {
+            const password = document.getElementById('admin-password').value;
+            const adminAuthError = document.getElementById('admin-auth-error');
+            
+            try {
+                // Test admin access with a simple request
+                const response = await fetch('/admin/users', {
+                    headers: {
+                        'Admin-Password': password
+                    }
+                });
+                
+                if (response.ok) {
+                    adminAuthenticated = true;
+                    adminPassword = password;
+                    document.getElementById('admin-auth-modal').style.display = 'none';
+                    document.getElementById('admin-dashboard-modal').style.display = 'flex';
+                    loadAdminUsers();
+                } else {
+                    adminAuthError.textContent = 'Invalid admin password';
+                    adminAuthError.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Admin login error:', error);
+                adminAuthError.textContent = 'Authentication failed';
+                adminAuthError.style.display = 'block';
+            }
+        }
+
+        // Load admin users
+        async function loadAdminUsers(search = '', page = 1) {
+            try {
+                const response = await fetch(`/admin/users?search=${encodeURIComponent(search)}&page=${page}&limit=10`, {
+                    headers: {
+                        'Admin-Password': adminPassword
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderAdminUsers(data.users);
+                    
+                    // Update pagination
+                    currentAdminPage = data.page;
+                    totalAdminPages = Math.ceil(data.total / data.limit);
+                    
+                    const pageInfo = document.getElementById('users-page-info');
+                    const prevPageBtn = document.getElementById('users-prev-page');
+                    const nextPageBtn = document.getElementById('users-next-page');
+                    
+                    if (pageInfo) pageInfo.textContent = `Page ${data.page} of ${totalAdminPages}`;
+                    if (prevPageBtn) prevPageBtn.disabled = data.page <= 1;
+                    if (nextPageBtn) nextPageBtn.disabled = data.page >= totalAdminPages;
+                } else {
+                    console.error('Failed to load admin users');
+                }
+            } catch (error) {
+                console.error('Error loading admin users:', error);
+            }
+        }
+
+        // Render admin users
+        function renderAdminUsers(users) {
+            const usersList = document.getElementById('admin-users-list');
+            if (!usersList) return;
+            
+            usersList.innerHTML = '';
+            
+            users.forEach(user => {
+                const isOnline = onlineUsers.includes(user.username);
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${user.username}</td>
+                    <td><span class="admin-badge ${isOnline ? 'badge-online' : 'badge-offline'}">${isOnline ? 'Online' : 'Offline'}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>${user.lastSeen ? new Date(user.lastSeen).toLocaleString() : 'Never'}</td>
+                    <td>
+                        <button class="admin-action-btn btn-block" onclick="adminBlockUser('${user.username}')">Block</button>
+                    </td>
+                `;
+                
+                usersList.appendChild(tr);
+            });
+        }
+
+        // Load admin messages
+        async function loadAdminMessages(search = '', page = 1) {
+            try {
+                const response = await fetch(`/admin/messages?search=${encodeURIComponent(search)}&page=${page}&limit=10`, {
+                    headers: {
+                        'Admin-Password': adminPassword
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderAdminMessages(data.messages);
+                    
+                    // Update pagination
+                    currentAdminPage = data.page;
+                    totalAdminPages = Math.ceil(data.total / data.limit);
+                    
+                    const pageInfo = document.getElementById('messages-page-info');
+                    const prevPageBtn = document.getElementById('messages-prev-page');
+                    const nextPageBtn = document.getElementById('messages-next-page');
+                    
+                    if (pageInfo) pageInfo.textContent = `Page ${data.page} of ${totalAdminPages}`;
+                    if (prevPageBtn) prevPageBtn.disabled = data.page <= 1;
+                    if (nextPageBtn) nextPageBtn.disabled = data.page >= totalAdminPages;
+                } else {
+                    console.error('Failed to load admin messages');
+                }
+            } catch (error) {
+                console.error('Error loading admin messages:', error);
+            }
+        }
+
+        // Render admin messages
+        function renderAdminMessages(messages) {
+            const messagesList = document.getElementById('admin-messages-list');
+            if (!messagesList) return;
+            
+            messagesList.innerHTML = '';
+            
+            messages.forEach(message => {
+                const tr = document.createElement('tr');
+                
+                tr.innerHTML = `
+                    <td>${message.sender}</td>
+                    <td>${message.receiver}</td>
+                    <td>${message.text}</td>
+                    <td>${new Date(message.timestamp).toLocaleString()}</td>
+                    <td>
+                        <button class="admin-action-btn btn-delete" onclick="adminDeleteMessage('${message._id}')">Delete</button>
+                    </td>
+                `;
+                
+                messagesList.appendChild(tr);
+            });
+        }
+
+        // Block user (admin function)
+        async function adminBlockUser(username) {
+            if (!confirm(`Are you sure you want to block ${username}?`)) return;
+            
+            try {
+                const response = await fetch('/admin/block-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Admin-Password': adminPassword
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        reason: 'Violation of terms of service'
+                    })
+                });
+                
+                if (response.ok) {
+                    alert(`User ${username} has been blocked successfully.`);
+                    loadAdminUsers(); // Refresh the list
+                } else {
+                    alert('Failed to block user.');
+                }
+            } catch (error) {
+                console.error('Error blocking user:', error);
+                alert('Error blocking user.');
+            }
+        }
+
+        // Delete message (admin function)
+        async function adminDeleteMessage(messageId) {
+            if (!confirm('Are you sure you want to delete this message?')) return;
+            
+            try {
+                const response = await fetch('/admin/delete-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Admin-Password': adminPassword
+                    },
+                    body: JSON.stringify({
+                        messageId: messageId
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Message deleted successfully.');
+                    loadAdminMessages(); // Refresh the list
+                } else {
+                    alert('Failed to delete message.');
+                }
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Error deleting message.');
+            }
+        }
+
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Make admin functions available globally
+        window.adminBlockUser = adminBlockUser;
+        window.adminDeleteMessage = adminDeleteMessage;
 
         // UI Functions
         function showScreen(screenId) {
@@ -1610,12 +2566,25 @@
             // Apply theme
             applyTheme(userSettings.theme);
             
+            // Apply custom background if exists
+            if (userSettings.customBackground) {
+                document.body.style.setProperty('--custom-bg-image', `url(${userSettings.customBackground})`);
+                document.body.classList.add('custom-background');
+                uploadedBackgroundDataUrl = userSettings.customBackground;
+                const previewContainer = document.getElementById('background-preview-container');
+                const preview = document.getElementById('background-preview');
+                if (previewContainer && preview) {
+                    previewContainer.style.display = 'block';
+                    preview.style.backgroundImage = `url(${userSettings.customBackground})`;
+                }
+            }
+            
             // Update profile info
             document.getElementById('profile-name').textContent = currentUser;
             document.getElementById('profile-username').textContent = `@${currentUser}`;
             
-            // Set avatar
-            setAvatar(userSettings.avatar);
+            // Set avatar (now supports custom image)
+            setAvatar(userSettings.avatar, userSettings.customAvatar);
         }
 
         function saveUserSettings() {
@@ -1666,9 +2635,45 @@
             saveUserSettings();
         }
 
+        // Background Upload Handler
+        function handleBackgroundUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                uploadedBackgroundDataUrl = dataUrl;
+                document.body.style.setProperty('--custom-bg-image', `url(${dataUrl})`);
+                document.body.classList.add('custom-background');
+                userSettings.customBackground = dataUrl;
+                saveUserSettings();
+
+                // Show preview
+                const previewContainer = document.getElementById('background-preview-container');
+                const preview = document.getElementById('background-preview');
+                if (previewContainer && preview) {
+                    previewContainer.style.display = 'block';
+                    preview.style.backgroundImage = `url(${dataUrl})`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Avatar Modal Functions (Enhanced for Upload)
         function openAvatarModal() {
             selectedAvatar = userSettings.avatar;
+            uploadedAvatarDataUrl = userSettings.customAvatar || null;
             document.getElementById('avatar-modal').style.display = 'flex';
+            
+            // Reset preview
+            const previewContainer = document.getElementById('avatar-preview-container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
             
             // Highlight current selection
             document.querySelectorAll('.avatar-option').forEach(option => {
@@ -1676,7 +2681,7 @@
             });
             
             const currentOption = document.querySelector(`.avatar-option[onclick="selectAvatar('${userSettings.avatar}')"]`);
-            if (currentOption) {
+            if (currentOption && !userSettings.customAvatar) {
                 currentOption.classList.add('selected');
             }
         }
@@ -1687,6 +2692,7 @@
 
         function selectAvatar(avatarId) {
             selectedAvatar = avatarId;
+            uploadedAvatarDataUrl = null; // Clear custom if selecting default
             
             // Update selection UI
             document.querySelectorAll('.avatar-option').forEach(option => {
@@ -1697,25 +2703,76 @@
             if (selectedOption) {
                 selectedOption.classList.add('selected');
             }
+
+            // Hide preview if shown
+            const previewContainer = document.getElementById('avatar-preview-container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
+        }
+
+        // Avatar Upload Handler
+        function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                uploadedAvatarDataUrl = dataUrl;
+
+                // Show preview
+                const previewContainer = document.getElementById('avatar-preview-container');
+                const preview = document.getElementById('avatar-preview');
+                if (previewContainer && preview) {
+                    previewContainer.style.display = 'block';
+                    preview.src = dataUrl;
+                }
+
+                // Clear default selection
+                document.querySelectorAll('.avatar-option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+            };
+            reader.readAsDataURL(file);
         }
 
         function saveAvatar() {
-            userSettings.avatar = selectedAvatar;
-            setAvatar(selectedAvatar);
+            if (uploadedAvatarDataUrl) {
+                userSettings.customAvatar = uploadedAvatarDataUrl;
+                userSettings.avatar = null; // No default if custom
+            } else {
+                userSettings.customAvatar = null;
+            }
+            setAvatar(selectedAvatar, userSettings.customAvatar);
             saveUserSettings();
             closeAvatarModal();
         }
 
-        function setAvatar(avatarId) {
+        function setAvatar(avatarId, customAvatar) {
             const avatarElement = document.getElementById('profile-avatar');
-            const color = getAvatarColor(avatarId);
             const letter = currentUser ? currentUser.charAt(0).toUpperCase() : 'U';
             
-            avatarElement.style.background = color;
-            avatarElement.textContent = letter;
+            if (customAvatar) {
+                // Use custom image
+                avatarElement.style.backgroundImage = `url(${customAvatar})`;
+                avatarElement.style.backgroundColor = 'transparent';
+                avatarElement.innerHTML = ''; // Remove letter for image
+                avatarElement.style.color = 'transparent';
+            } else {
+                // Use default gradient
+                const color = getAvatarColor(avatarId);
+                avatarElement.style.backgroundImage = 'none';
+                avatarElement.style.background = color;
+                avatarElement.innerHTML = `<div class="profile-avatar-edit"><i class="fas fa-camera"></i></div>`;
+                avatarElement.style.color = 'white';
+            }
             
             // Also update avatar in chat list if needed
-            updateUserAvatarInUI(currentUser, avatarId);
+            updateUserAvatarInUI(currentUser, avatarId, customAvatar);
         }
 
         function getAvatarColor(avatarId) {
@@ -1731,7 +2788,7 @@
             return colors[avatarId] || colors['default1'];
         }
 
-        function updateUserAvatarInUI(username, avatarId) {
+        function updateUserAvatarInUI(username, avatarId, customAvatar) {
             // Update in conversations list
             const conversationItems = document.querySelectorAll('.conversation-item');
             conversationItems.forEach(item => {
@@ -1739,8 +2796,15 @@
                 if (nameElement && nameElement.textContent.includes(username)) {
                     const avatarElement = item.querySelector('.conversation-avatar');
                     if (avatarElement) {
-                        avatarElement.style.background = getAvatarColor(avatarId);
-                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                        if (customAvatar) {
+                            avatarElement.style.backgroundImage = `url(${customAvatar})`;
+                            avatarElement.style.backgroundColor = 'transparent';
+                            avatarElement.innerHTML = '';
+                        } else {
+                            avatarElement.style.backgroundImage = 'none';
+                            avatarElement.style.background = getAvatarColor(avatarId);
+                            avatarElement.innerHTML = username.charAt(0).toUpperCase();
+                        }
                     }
                 }
             });
@@ -1752,8 +2816,15 @@
                 if (nameElement && nameElement.textContent.includes(username)) {
                     const avatarElement = item.querySelector('.user-avatar');
                     if (avatarElement) {
-                        avatarElement.style.background = getAvatarColor(avatarId);
-                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                        if (customAvatar) {
+                            avatarElement.style.backgroundImage = `url(${customAvatar})`;
+                            avatarElement.style.backgroundColor = 'transparent';
+                            avatarElement.innerHTML = '';
+                        } else {
+                            avatarElement.style.backgroundImage = 'none';
+                            avatarElement.style.background = getAvatarColor(avatarId);
+                            avatarElement.innerHTML = username.charAt(0).toUpperCase();
+                        }
                     }
                 }
             });
@@ -1843,10 +2914,13 @@
             }
             currentUser = null;
             localStorage.removeItem('gramx_current_user');
+            // Reset custom background on logout
+            document.body.style.setProperty('--custom-bg-image', 'none');
+            document.body.classList.remove('custom-background');
             showScreen('login-screen');
         }
 
-        // Socket initialization and event handling
+        // Socket initialization and event handling (unchanged)
         function initializeSocket() {
             socket = io();
             
@@ -2005,7 +3079,7 @@
             });
         }
 
-        // Update UI functions
+        // Update UI functions (updated to handle custom avatars)
         function updateConversationsList() {
             const container = document.getElementById('conversations-tab');
             const emptyState = document.getElementById('no-conversations');
@@ -2034,20 +3108,32 @@
                 
                 const isOnline = onlineUsers.includes(conv.partner);
                 
-                // Get avatar color from settings if available
+                // Get avatar from partner's settings
                 let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
-                const partnerSettings = localStorage.getItem(`gramx_settings_${conv.partner}`);
-                if (partnerSettings) {
+                let partnerAvatarId = 'default1';
+                let partnerCustomAvatar = null;
+                const partnerSettingsStr = localStorage.getItem(`gramx_settings_${conv.partner}`);
+                if (partnerSettingsStr) {
                     try {
-                        const settings = JSON.parse(partnerSettings);
-                        avatarColor = getAvatarColor(settings.avatar);
+                        const settings = JSON.parse(partnerSettingsStr);
+                        if (settings.customAvatar) {
+                            partnerCustomAvatar = settings.customAvatar;
+                        } else if (settings.avatar) {
+                            partnerAvatarId = settings.avatar;
+                            avatarColor = getAvatarColor(partnerAvatarId);
+                        }
                     } catch (e) {
                         console.error('Error parsing partner settings:', e);
                     }
                 }
                 
+                let avatarHTML = `<div class="conversation-avatar" style="background: ${avatarColor}">${conv.partner.charAt(0).toUpperCase()}</div>`;
+                if (partnerCustomAvatar) {
+                    avatarHTML = `<div class="conversation-avatar" style="background-image: url(${partnerCustomAvatar}); background-color: transparent;"></div>`;
+                }
+                
                 convElement.innerHTML = `
-                    <div class="conversation-avatar" style="background: ${avatarColor}">${conv.partner.charAt(0).toUpperCase()}</div>
+                    ${avatarHTML}
                     <div class="conversation-info">
                         <div class="conversation-name">
                             ${conv.partner}
@@ -2085,20 +3171,32 @@
                 userElement.className = 'user-item';
                 userElement.onclick = () => startPrivateChat(user);
                 
-                // Get avatar color from settings if available
+                // Get avatar from user's settings
                 let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
-                const userSettings = localStorage.getItem(`gramx_settings_${user}`);
-                if (userSettings) {
+                let userAvatarId = 'default1';
+                let userCustomAvatar = null;
+                const userSettingsStr = localStorage.getItem(`gramx_settings_${user}`);
+                if (userSettingsStr) {
                     try {
-                        const settings = JSON.parse(userSettings);
-                        avatarColor = getAvatarColor(settings.avatar);
+                        const settings = JSON.parse(userSettingsStr);
+                        if (settings.customAvatar) {
+                            userCustomAvatar = settings.customAvatar;
+                        } else if (settings.avatar) {
+                            userAvatarId = settings.avatar;
+                            avatarColor = getAvatarColor(userAvatarId);
+                        }
                     } catch (e) {
                         console.error('Error parsing user settings:', e);
                     }
                 }
                 
+                let avatarHTML = `<div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>`;
+                if (userCustomAvatar) {
+                    avatarHTML = `<div class="user-avatar" style="background-image: url(${userCustomAvatar}); background-color: transparent;"></div>`;
+                }
+                
                 userElement.innerHTML = `
-                    <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
+                    ${avatarHTML}
                     <div class="user-info">
                         <div class="user-name">${user}</div>
                         <div class="user-status"><span class="online-dot"></span>Online</div>
@@ -2138,20 +3236,32 @@
                     
                     const isOnline = onlineUsers.includes(user);
                     
-                    // Get avatar color from settings if available
+                    // Get avatar from user's settings
                     let avatarColor = 'linear-gradient(135deg, #0088cc 0%, #0055cc 100%)';
-                    const userSettings = localStorage.getItem(`gramx_settings_${user}`);
-                    if (userSettings) {
+                    let userAvatarId = 'default1';
+                    let userCustomAvatar = null;
+                    const userSettingsStr = localStorage.getItem(`gramx_settings_${user}`);
+                    if (userSettingsStr) {
                         try {
-                            const settings = JSON.parse(userSettings);
-                            avatarColor = getAvatarColor(settings.avatar);
+                            const settings = JSON.parse(userSettingsStr);
+                            if (settings.customAvatar) {
+                                userCustomAvatar = settings.customAvatar;
+                            } else if (settings.avatar) {
+                                userAvatarId = settings.avatar;
+                                avatarColor = getAvatarColor(userAvatarId);
+                            }
                         } catch (e) {
                             console.error('Error parsing user settings:', e);
                         }
                     }
                     
+                    let avatarHTML = `<div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>`;
+                    if (userCustomAvatar) {
+                        avatarHTML = `<div class="user-avatar" style="background-image: url(${userCustomAvatar}); background-color: transparent;"></div>`;
+                    }
+                    
                     userElement.innerHTML = `
-                        <div class="user-avatar" style="background: ${avatarColor}">${user.charAt(0).toUpperCase()}</div>
+                        ${avatarHTML}
                         <div class="user-info">
                             <div class="user-name">${user}</div>
                             <div class="user-status">
@@ -2172,7 +3282,7 @@
             }
         }
 
-        // Chat functions
+        // Chat functions (unchanged)
         function startPrivateChat(targetUser) {
             if (!currentUser) return;
             
@@ -2379,6 +3489,12 @@
                     }
                 }
             });
+
+            // Setup admin features
+            setupAdminFeatures();
+            
+            // Setup PWA
+            setupPWA();
         };
     </script>
 </body>
