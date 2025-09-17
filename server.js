@@ -394,7 +394,8 @@ app.get('/users', async (req, res) => {
                 displayName: s.displayName,
                 about: s.about,
                 avatar: s.avatar,
-                customAvatar: s.customAvatar
+                customAvatar: s.customAvatar,
+                lastSeen: u.lastSeen
             };
         });
         res.json(merged);
