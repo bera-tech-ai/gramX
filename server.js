@@ -20,7 +20,8 @@ const COLLECTIONS = {
     MESSAGES: 'messages',
     CONVERSATIONS: 'conversations',
     USER_SETTINGS: 'user_settings',
-    BLOCKED_USERS: 'blocked_users'
+    BLOCKED_USERS: 'blocked_users',
+    STATUSES: 'statuses'
 };
 
 let db;
@@ -102,6 +103,7 @@ async function getUserConversations(username) {
             const partner = usersInConv.find(user => user !== username);
             
             if (partner) {
+                const partnerSetting = await db.collection(COLLECTIONS.USER_SETTINGS).findOne({ username: partner });
                 userConversations.push({
                     partner,
                     lastMessage: conv.lastMessage ? {
@@ -109,7 +111,9 @@ async function getUserConversations(username) {
                         timestamp: conv.lastMessage.timestamp,
                         sender: conv.lastMessage.sender
                     } : null,
-                    unreadCount: conv.unreadCount
+                    unreadCount: conv.unreadCount,
+                    avatar: partnerSetting?.avatar,
+                    customAvatar: partnerSetting?.customAvatar
                 });
             }
         }
@@ -142,7 +146,14 @@ async function getUserSettings(username) {
                     profilePhoto: 'everyone',
                     readReceipts: true
                 },
+                avatar: 'default1',
+                customAvatar: null,
+                customBackground: null,
+                twoStep: false,
+                mutedChats: [],
                 blockedUsers: [],
+                displayName: username,
+                about: 'Hey there! I am using gramX.',
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
@@ -371,6 +382,27 @@ app.get('/blocked-users/:username', async (req, res) => {
     }
 });
 
+// Get users
+app.get('/users', async (req, res) => {
+    try {
+        const users = await db.collection(COLLECTIONS.USERS).find({}).toArray();
+        const settings = await db.collection(COLLECTIONS.USER_SETTINGS).find({}).toArray();
+        const merged = users.map(u => {
+            const s = settings.find(s => s.username === u.username) || {};
+            return {
+                username: u.username,
+                displayName: s.displayName,
+                about: s.about,
+                avatar: s.avatar,
+                customAvatar: s.customAvatar
+            };
+        });
+        res.json(merged);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
 // Socket.io handling
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
@@ -403,9 +435,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('join-conversation', async (data) => {
+    socket.on('get-user-settings', async (username, callback) => {
+        callback(await getUserSettings(username));
+    });
+
+    socket.on('update-user-settings', async (data) => {
+        const { username, settings } = data;
+        await db.collection(COLLECTIONS.USER_SETTINGS).updateOne({ username }, { $set: settings });
+    });
+
+    socket.on('join-conversation', async ({ currentUser, targetUser }) => {
         try {
-            const { currentUser, targetUser } = data;
             const conversationId = getConversationId(currentUser, targetUser);
             
             // Check if users are blocked
@@ -668,6 +708,37 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error('Delete message error:', error);
         }
+    });
+
+    socket.on('clear-chat', async ({ user, target }) => {
+        const conversationId = getConversationId(user, target);
+        await db.collection(COLLECTIONS.MESSAGES).deleteMany({ conversationId });
+        io.to(userSockets.get(user)).emit('chat-cleared', { target });
+        io.to(userSockets.get(target)).emit('chat-cleared', { user });
+    });
+
+    socket.on('add-status', async (status) => {
+        await db.collection(COLLECTIONS.STATUSES).insertOne(status);
+        setTimeout(async () => await db.collection(COLLECTIONS.STATUSES).deleteOne({ _id: status._id }), 24 * 60 * 60 * 1000);
+        io.emit('new-status');
+    });
+
+    socket.on('get-statuses', async (callback) => {
+        let statuses = await db.collection(COLLECTIONS.STATUSES).find({}).sort({ timestamp: -1 }).toArray();
+        for (let s of statuses) {
+            const setting = await db.collection(COLLECTIONS.USER_SETTINGS).findOne({ username: s.user });
+            s.avatar = setting?.avatar;
+            s.customAvatar = setting?.customAvatar;
+        }
+        callback(statuses);
+    });
+
+    socket.on('delete-account', async (username) => {
+        await db.collection(COLLECTIONS.USERS).deleteOne({ username });
+        await db.collection(COLLECTIONS.MESSAGES).deleteMany({ $or: [{ sender: username }, { receiver: username }] });
+        await db.collection(COLLECTIONS.USER_SETTINGS).deleteOne({ username });
+        await db.collection(COLLECTIONS.STATUSES).deleteMany({ user: username });
+        io.emit('account-deleted', username);
     });
 
     socket.on('disconnect', async () => {
