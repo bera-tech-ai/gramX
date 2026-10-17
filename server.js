@@ -7,12 +7,13 @@ const express = require('express');
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
 
+const APP_NAME = 'B-Messenger';
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'gramXDB';
 const PORT = process.env.PORT || 3000;
 
 if (!MONGODB_URI) {
-    console.error('MONGODB_URI is not set. Add it to your .env file or your hosting environment.');
+    console.error('MONGODB_URI is not set. Add it to your .env file or hosting environment.');
     process.exit(1);
 }
 
@@ -28,23 +29,29 @@ const LIMITS = {
     STATUS_TEXT: 500,
     NAME: 40,
     ABOUT: 140,
-    IMAGE_CHARS: 3 * 1024 * 1024,
     PASSWORD_MIN: 6,
     PASSWORD_MAX: 100,
-    HISTORY: 500
+    HISTORY: 500,
+    CONVERSATIONS: 200,
+    PEOPLE: 300,
+    IMAGE_CHARS: 3 * 1024 * 1024,
+    AUDIO_CHARS: 4 * 1024 * 1024,
+    AUDIO_SECONDS: 120
 };
 
 const STATUS_TTL_MS = 24 * 60 * 60 * 1000;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
-const IMAGE_RE = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/;
+const IMAGE_RE = /^data:image\/(png|jpeg|webp);base64,/;
+const AUDIO_RE = /^data:audio\/(webm|ogg|mp4|mpeg|wav|x-m4a);base64,/;
 const PRIVACY_VALUES = ['everyone', 'contacts', 'nobody'];
-const THEMES = ['light', 'dark', 'auto'];
+const THEMES = ['dark', 'light', 'auto'];
+const STATUS_BACKGROUNDS = ['#14402C', '#1F3A5F', '#5B2A4A', '#4A3B12', '#2A2F36', '#0F5C4A'];
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 5 * 1024 * 1024 });
+const io = new Server(server, { maxHttpBufferSize: 6 * 1024 * 1024 });
 
-app.use(express.json({ limit: '6mb' }));
+app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let db;
@@ -71,9 +78,9 @@ async function connectToDatabase() {
     await messages().createIndex({ sender: 1, receiver: 1, timestamp: 1 });
     await messages().createIndex({ receiver: 1, read: 1 });
     await statuses().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-    await statuses().createIndex({ user: 1, timestamp: -1 });
+    await statuses().createIndex({ user: 1, timestamp: 1 });
 
-    console.log('Connected to MongoDB');
+    console.log(`Connected to MongoDB (${DB_NAME})`);
 }
 
 // Passwords
@@ -89,7 +96,7 @@ function verifyPassword(stored, password) {
         const [salt, hash] = stored.split(':');
         const test = crypto.scryptSync(password, salt, 64).toString('hex');
         return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(test, 'hex'));
-    } catch (e) {
+    } catch (err) {
         return false;
     }
 }
@@ -100,19 +107,20 @@ function escapeRegex(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function isValidImage(value) {
-    return typeof value === 'string' && value.length <= LIMITS.IMAGE_CHARS && IMAGE_RE.test(value);
+function validDataUrl(value, re, maxChars) {
+    return typeof value === 'string' && value.length <= maxChars && re.test(value);
 }
 
 async function userExists(username) {
     return !!(await users().findOne({ username }, { projection: { _id: 1 } }));
 }
 
-async function eitherBlocked(a, b) {
-    const found = await settingsCol().findOne({
-        $or: [{ username: a, blockedUsers: b }, { username: b, blockedUsers: a }]
-    }, { projection: { _id: 1 } });
-    return !!found;
+async function blockState(me, other) {
+    const [mine, theirs] = await Promise.all([
+        settingsCol().findOne({ username: me, blockedUsers: other }, { projection: { _id: 1 } }),
+        settingsCol().findOne({ username: other, blockedUsers: me }, { projection: { _id: 1 } })
+    ]);
+    return { byMe: !!mine, byThem: !!theirs };
 }
 
 // Presence
@@ -129,9 +137,9 @@ function emitToUser(username, event, payload) {
 
 // Settings
 
-function defaultSettings() {
+function defaultSettings(displayName = null) {
     return {
-        theme: 'auto',
+        theme: 'dark',
         notifications: true,
         sound: true,
         privacy: { lastSeen: 'everyone', profilePhoto: 'everyone', readReceipts: true },
@@ -141,8 +149,8 @@ function defaultSettings() {
         twoStep: false,
         mutedChats: [],
         blockedUsers: [],
-        displayName: null,
-        about: 'Hey there! I am using gramX.',
+        displayName,
+        about: 'Hey there! I am using B-Messenger.',
         updatedAt: new Date()
     };
 }
@@ -164,31 +172,32 @@ function sanitizeSettings(input) {
     const patch = {};
     if (!input || typeof input !== 'object') return patch;
 
-    if (input.displayName !== undefined) {
+    if ('displayName' in input) {
         patch.displayName = input.displayName === null
             ? null
             : (String(input.displayName).trim().slice(0, LIMITS.NAME) || null);
     }
-    if (input.about !== undefined) {
+    if ('about' in input) {
         patch.about = String(input.about ?? '').slice(0, LIMITS.ABOUT);
     }
-    if (input.avatar !== undefined) {
+    if ('avatar' in input) {
         patch.avatar = String(input.avatar).slice(0, 20);
     }
-    if (input.customAvatar !== undefined) {
+    if ('customAvatar' in input) {
         if (input.customAvatar === null) patch.customAvatar = null;
-        else if (isValidImage(input.customAvatar)) patch.customAvatar = input.customAvatar;
+        else if (validDataUrl(input.customAvatar, IMAGE_RE, LIMITS.IMAGE_CHARS)) patch.customAvatar = input.customAvatar;
         else throw fail('That profile photo is too large or not supported');
     }
-    if (input.customBackground !== undefined) {
+    if ('customBackground' in input) {
         if (input.customBackground === null) patch.customBackground = null;
-        else if (isValidImage(input.customBackground)) patch.customBackground = input.customBackground;
+        else if (validDataUrl(input.customBackground, IMAGE_RE, LIMITS.IMAGE_CHARS)) patch.customBackground = input.customBackground;
         else throw fail('That wallpaper is too large or not supported');
     }
     if (THEMES.includes(input.theme)) patch.theme = input.theme;
     if (typeof input.notifications === 'boolean') patch.notifications = input.notifications;
     if (typeof input.sound === 'boolean') patch.sound = input.sound;
     if (typeof input.twoStep === 'boolean') patch.twoStep = input.twoStep;
+    if (Array.isArray(input.mutedChats)) patch.mutedChats = input.mutedChats.map(String).slice(0, 500);
 
     if (input.privacy && typeof input.privacy === 'object') {
         if (PRIVACY_VALUES.includes(input.privacy.lastSeen)) patch['privacy.lastSeen'] = input.privacy.lastSeen;
@@ -198,7 +207,7 @@ function sanitizeSettings(input) {
     return patch;
 }
 
-// Visibility and profiles
+// Profiles and visibility
 
 async function visibleTo(viewer, owner, setting) {
     if (viewer === owner || setting === 'everyone') return true;
@@ -242,10 +251,16 @@ function publicMessage(m) {
         deleted: !!m.deleted
     };
     if (m.deleted) return base;
-    return { ...base, text: m.text || '', image: m.image || null };
+    return {
+        ...base,
+        text: m.text || '',
+        image: m.image || null,
+        audio: m.audio || null,
+        audioDuration: m.audioDuration || 0
+    };
 }
 
-// Conversations
+// Conversations and receipts
 
 async function getConversations(me) {
     const rows = await messages().aggregate([
@@ -255,14 +270,19 @@ async function getConversations(me) {
         {
             $group: {
                 _id: '$partner',
-                last: { $first: '$$ROOT' },
+                text: { $first: '$text' },
+                sender: { $first: '$sender' },
+                deleted: { $first: '$deleted' },
+                timestamp: { $first: '$timestamp' },
+                hasImage: { $first: { $cond: [{ $ifNull: ['$image', false] }, true, false] } },
+                hasAudio: { $first: { $cond: [{ $ifNull: ['$audio', false] }, true, false] } },
                 unread: {
                     $sum: { $cond: [{ $and: [{ $eq: ['$receiver', me] }, { $eq: ['$read', false] }] }, 1, 0] }
                 }
             }
         },
-        { $sort: { 'last.timestamp': -1 } },
-        { $limit: 200 }
+        { $sort: { timestamp: -1 } },
+        { $limit: LIMITS.CONVERSATIONS }
     ]).toArray();
 
     const result = [];
@@ -272,11 +292,12 @@ async function getConversations(me) {
             partner: row._id,
             profile,
             lastMessage: {
-                text: row.last.deleted ? '' : (row.last.text || ''),
-                hasImage: !!row.last.image && !row.last.deleted,
-                deleted: !!row.last.deleted,
-                sender: row.last.sender,
-                timestamp: row.last.timestamp
+                text: row.deleted ? '' : (row.text || ''),
+                hasImage: !row.deleted && row.hasImage,
+                hasAudio: !row.deleted && row.hasAudio,
+                deleted: !!row.deleted,
+                sender: row.sender,
+                timestamp: row.timestamp
             },
             unreadCount: row.unread
         });
@@ -285,7 +306,6 @@ async function getConversations(me) {
 }
 
 async function markReadFrom(partner, me) {
-    const settings = await getSettings(me);
     const unread = await messages().find(
         { sender: partner, receiver: me, read: false },
         { projection: { _id: 1 } }
@@ -295,7 +315,8 @@ async function markReadFrom(partner, me) {
     const ids = unread.map(m => m._id);
     await messages().updateMany({ _id: { $in: ids } }, { $set: { read: true, readAt: new Date() } });
 
-    if (settings.privacy?.readReceipts) {
+    const mySettings = await getSettings(me);
+    if (mySettings.privacy?.readReceipts) {
         emitToUser(partner, 'messages-read', { reader: me, messageIds: ids.map(String) });
     }
 }
@@ -322,7 +343,7 @@ async function markDeliveredFor(me) {
     }
 }
 
-// Auth middleware for HTTP routes
+// HTTP auth
 
 async function requireAuth(req, res, next) {
     try {
@@ -350,6 +371,8 @@ app.post('/register', async (req, res) => {
     try {
         const username = String(req.body.username || '').trim();
         const password = String(req.body.password || '');
+        const fullName = String(req.body.fullName || '').trim().slice(0, LIMITS.NAME);
+        const phone = String(req.body.phone || '').replace(/[^\d+ ]/g, '').trim().slice(0, 20);
 
         if (!USERNAME_RE.test(username)) {
             return res.json({ success: false, error: 'Usernames use 3 to 20 letters, numbers, or underscores' });
@@ -361,10 +384,14 @@ app.post('/register', async (req, res) => {
         await users().insertOne({
             username,
             passwordHash: hashPassword(password),
+            fullName: fullName || null,
+            phone: phone || null,
             sessionToken: null,
             createdAt: new Date(),
             lastSeen: new Date()
         });
+
+        await settingsCol().insertOne({ username, ...defaultSettings(fullName || null) });
         res.json({ success: true, username });
     } catch (err) {
         if (err.code === 11000) return res.json({ success: false, error: 'Username taken' });
@@ -387,7 +414,6 @@ app.post('/login', async (req, res) => {
         if (user?.passwordHash) {
             valid = verifyPassword(user.passwordHash, password);
         } else if (user && user.password && user.password === password) {
-            // Accounts created before hashing: upgrade the stored password on first login
             valid = true;
             await users().updateOne(
                 { username },
@@ -433,13 +459,13 @@ app.get('/users', requireAuth, async (req, res) => {
     try {
         const me = req.username;
         const list = await users().find({ username: { $ne: me } }, { projection: { username: 1 } })
-            .limit(500).toArray();
+            .limit(LIMITS.PEOPLE).toArray();
         const profiles = [];
         for (const u of list) profiles.push(await buildProfile(me, u.username));
         res.json({ success: true, users: profiles });
     } catch (err) {
         console.error('Users error:', err);
-        res.status(500).json({ success: false, error: 'Could not load users' });
+        res.status(500).json({ success: false, error: 'Could not load people' });
     }
 });
 
@@ -490,7 +516,7 @@ io.on('connection', (socket) => {
 
     markDeliveredFor(me).catch(err => console.error('Delivery update error:', err));
 
-    // Wraps a handler: runs fn(payload, me) and replies through the ack callback if one was sent
+    // Wraps each handler: runs fn(payload, me) and replies through the ack callback
     const on = (name, fn) => socket.on(name, async (...args) => {
         const ack = typeof args[args.length - 1] === 'function' ? args.pop() : null;
         try {
@@ -530,17 +556,21 @@ io.on('connection', (socket) => {
         const target = String(d.target || '');
         if (!target || target === me) throw fail('Invalid chat');
         if (!(await userExists(target))) throw fail('User not found');
-        if (await eitherBlocked(me, target)) throw fail("You can't message this user");
 
+        const block = await blockState(me, target);
         const history = await messages().find({
             $or: [{ sender: me, receiver: target }, { sender: target, receiver: me }],
             hiddenFor: { $ne: me }
-        }).sort({ timestamp: 1 }).limit(LIMITS.HISTORY).toArray();
+        }).sort({ timestamp: -1 }).limit(LIMITS.HISTORY).toArray();
 
         const profile = await buildProfile(me, target);
         await markReadFrom(target, me);
 
-        return { profile, messages: history.map(publicMessage) };
+        return {
+            profile,
+            blocked: block,
+            messages: history.reverse().map(publicMessage)
+        };
     });
 
     on('mark-read', async (d, me) => {
@@ -553,27 +583,37 @@ io.on('connection', (socket) => {
         const receiver = String(d.receiver || '');
         const text = typeof d.text === 'string' ? d.text.trim().slice(0, LIMITS.TEXT) : '';
         const image = d.image || null;
+        const audio = d.audio || null;
+        const audioDuration = Math.min(Math.max(Number(d.audioDuration) || 0, 0), LIMITS.AUDIO_SECONDS);
 
         if (!receiver || receiver === me) throw fail('Choose someone to message');
-        if (!text && !image) throw fail('Message is empty');
-        if (image && !isValidImage(image)) throw fail('That photo is too large or not supported');
+        if (!text && !image && !audio) throw fail('Message is empty');
+        if (image && !validDataUrl(image, IMAGE_RE, LIMITS.IMAGE_CHARS)) throw fail('That photo is too large or not supported');
+        if (audio && !validDataUrl(audio, AUDIO_RE, LIMITS.AUDIO_CHARS)) throw fail('That voice note is too long or not supported');
         if (!(await userExists(receiver))) throw fail('User not found');
-        if (await eitherBlocked(me, receiver)) throw fail("You can't message this user");
+
+        const block = await blockState(me, receiver);
+        if (block.byMe) throw fail('Unblock this contact to send messages');
+        if (block.byThem) throw fail("You can't message this contact");
 
         const online = isOnline(receiver);
+        const now = new Date();
         const doc = {
             sender: me,
             receiver,
             text,
             image,
-            timestamp: new Date(),
+            audio,
+            audioDuration,
+            timestamp: now,
             read: false,
             readAt: null,
             delivered: online,
-            deliveredAt: online ? new Date() : null,
+            deliveredAt: online ? now : null,
             deleted: false,
             hiddenFor: []
         };
+
         const result = await messages().insertOne(doc);
         doc._id = result.insertedId;
         const message = publicMessage(doc);
@@ -594,7 +634,7 @@ io.on('connection', (socket) => {
 
         await messages().updateOne(
             { _id: id },
-            { $set: { deleted: true, text: '', image: null, deletedAt: new Date() } }
+            { $set: { deleted: true, text: '', image: null, audio: null, deletedAt: new Date() } }
         );
         const payload = { messageId: String(id) };
         emitToUser(msg.sender, 'message-deleted', payload);
@@ -650,14 +690,17 @@ io.on('connection', (socket) => {
     on('add-status', async (d, me) => {
         const text = typeof d.text === 'string' ? d.text.trim().slice(0, LIMITS.STATUS_TEXT) : '';
         const image = d.image || null;
+        const bg = STATUS_BACKGROUNDS.includes(d.bg) ? d.bg : STATUS_BACKGROUNDS[0];
+
         if (!text && !image) throw fail('Add some text or a photo');
-        if (image && !isValidImage(image)) throw fail('That photo is too large or not supported');
+        if (image && !validDataUrl(image, IMAGE_RE, LIMITS.IMAGE_CHARS)) throw fail('That photo is too large or not supported');
 
         const now = new Date();
         await statuses().insertOne({
             user: me,
             text,
             image,
+            bg,
             timestamp: now,
             expiresAt: new Date(now.getTime() + STATUS_TTL_MS)
         });
@@ -679,6 +722,7 @@ io.on('connection', (socket) => {
                 user: s.user,
                 text: s.text || '',
                 image: s.image || null,
+                bg: s.bg || STATUS_BACKGROUNDS[0],
                 timestamp: s.timestamp,
                 expiresAt: s.expiresAt
             })),
@@ -724,7 +768,7 @@ io.on('connection', (socket) => {
 connectToDatabase()
     .then(() => {
         server.listen(PORT, () => {
-            console.log(`gramX server running on port ${PORT}`);
+            console.log(`${APP_NAME} server running on port ${PORT}`);
             console.log(`Open http://localhost:${PORT} in your browser`);
         });
     })
