@@ -21,7 +21,8 @@ const COLLECTIONS = {
     USERS: 'users',
     MESSAGES: 'messages',
     USER_SETTINGS: 'user_settings',
-    STATUSES: 'statuses'
+    STATUSES: 'statuses',
+    CHAT_PREFS: 'chat_prefs'
 };
 
 const LIMITS = {
@@ -36,9 +37,11 @@ const LIMITS = {
     PEOPLE: 300,
     IMAGE_CHARS: 3 * 1024 * 1024,
     AUDIO_CHARS: 4 * 1024 * 1024,
-    AUDIO_SECONDS: 120
+    AUDIO_SECONDS: 120,
+    PINNED_MAX: 3
 };
 
+const BUBBLE_COLORS = ['#11412B', '#1E3A5F', '#4A2B5C', '#5C3A1E', '#1F4A4A', '#5C1E2B'];
 const STATUS_TTL_MS = 24 * 60 * 60 * 1000;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const IMAGE_RE = /^data:image\/(png|jpeg|webp);base64,/;
@@ -61,6 +64,7 @@ const users = () => db.collection(COLLECTIONS.USERS);
 const messages = () => db.collection(COLLECTIONS.MESSAGES);
 const settingsCol = () => db.collection(COLLECTIONS.USER_SETTINGS);
 const statuses = () => db.collection(COLLECTIONS.STATUSES);
+const chatPrefs = () => db.collection(COLLECTIONS.CHAT_PREFS);
 
 function fail(message) {
     const err = new Error(message);
@@ -79,6 +83,7 @@ async function connectToDatabase() {
     await messages().createIndex({ receiver: 1, read: 1 });
     await statuses().createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
     await statuses().createIndex({ user: 1, timestamp: 1 });
+    await chatPrefs().createIndex({ owner: 1, partner: 1 }, { unique: true });
 
     console.log(`Connected to MongoDB (${DB_NAME})`);
 }
@@ -142,6 +147,7 @@ function defaultSettings(displayName = null) {
         theme: 'dark',
         notifications: true,
         sound: true,
+        keepArchived: false,
         privacy: { lastSeen: 'everyone', profilePhoto: 'everyone', readReceipts: true },
         avatar: 'default1',
         customAvatar: null,
@@ -196,6 +202,7 @@ function sanitizeSettings(input) {
     if (THEMES.includes(input.theme)) patch.theme = input.theme;
     if (typeof input.notifications === 'boolean') patch.notifications = input.notifications;
     if (typeof input.sound === 'boolean') patch.sound = input.sound;
+    if (typeof input.keepArchived === 'boolean') patch.keepArchived = input.keepArchived;
     if (typeof input.twoStep === 'boolean') patch.twoStep = input.twoStep;
     if (Array.isArray(input.mutedChats)) patch.mutedChats = input.mutedChats.map(String).slice(0, 500);
 
@@ -205,6 +212,21 @@ function sanitizeSettings(input) {
         if (typeof input.privacy.readReceipts === 'boolean') patch['privacy.readReceipts'] = input.privacy.readReceipts;
     }
     return patch;
+}
+
+// Chat preferences (per user, per chat)
+
+async function getPrefsMap(owner) {
+    const rows = await chatPrefs().find({ owner }).toArray();
+    return new Map(rows.map(r => [r.partner, r]));
+}
+
+async function countPinned(owner, exceptPartner) {
+    return chatPrefs().countDocuments({
+        owner,
+        pinned: true,
+        partner: { $ne: exceptPartner }
+    });
 }
 
 // Profiles and visibility
@@ -240,6 +262,9 @@ async function buildProfile(viewer, username, settings) {
     };
 }
 
+// Messages sent to clients. One-view photos never include the image here;
+// the receiver fetches it once with open-one-view.
+
 function publicMessage(m) {
     const base = {
         _id: String(m._id),
@@ -251,12 +276,17 @@ function publicMessage(m) {
         deleted: !!m.deleted
     };
     if (m.deleted) return base;
+    if (m.oneView) {
+        return { ...base, text: '', image: null, audio: null, audioDuration: 0, oneView: true, opened: !!m.opened };
+    }
     return {
         ...base,
         text: m.text || '',
         image: m.image || null,
         audio: m.audio || null,
-        audioDuration: m.audioDuration || 0
+        audioDuration: m.audioDuration || 0,
+        oneView: false,
+        opened: false
     };
 }
 
@@ -275,6 +305,7 @@ async function getConversations(me) {
                 deleted: { $first: '$deleted' },
                 timestamp: { $first: '$timestamp' },
                 hasImage: { $first: { $cond: [{ $ifNull: ['$image', false] }, true, false] } },
+                oneView: { $first: { $cond: [{ $eq: ['$oneView', true] }, true, false] } },
                 hasAudio: { $first: { $cond: [{ $ifNull: ['$audio', false] }, true, false] } },
                 unread: {
                     $sum: { $cond: [{ $and: [{ $eq: ['$receiver', me] }, { $eq: ['$read', false] }] }, 1, 0] }
@@ -285,16 +316,23 @@ async function getConversations(me) {
         { $limit: LIMITS.CONVERSATIONS }
     ]).toArray();
 
+    const prefs = await getPrefsMap(me);
     const result = [];
+
     for (const row of rows) {
         const profile = await buildProfile(me, row._id);
+        const pref = prefs.get(row._id) || {};
         result.push({
             partner: row._id,
             profile,
+            pinned: !!pref.pinned,
+            pinnedAt: pref.pinnedAt || null,
+            archived: !!pref.archived,
             lastMessage: {
                 text: row.deleted ? '' : (row.text || ''),
                 hasImage: !row.deleted && row.hasImage,
                 hasAudio: !row.deleted && row.hasAudio,
+                oneView: !row.deleted && row.oneView,
                 deleted: !!row.deleted,
                 sender: row.sender,
                 timestamp: row.timestamp
@@ -566,11 +604,70 @@ io.on('connection', (socket) => {
         const profile = await buildProfile(me, target);
         await markReadFrom(target, me);
 
+        const pref = await chatPrefs().findOne({ owner: me, partner: target }) || {};
+
         return {
             profile,
             blocked: block,
-            messages: history.reverse().map(publicMessage)
+            messages: history.reverse().map(publicMessage),
+            prefs: {
+                pinned: !!pref.pinned,
+                archived: !!pref.archived,
+                color: pref.color || null,
+                wallpaper: pref.wallpaper || null
+            }
         };
+    });
+
+    on('set-chat-prefs', async (d, me) => {
+        const target = String(d.target || '');
+        if (!target || target === me || !(await userExists(target))) throw fail('User not found');
+
+        const patch = {};
+
+        if (typeof d.pinned === 'boolean') {
+            if (d.pinned) {
+                const pinnedCount = await countPinned(me, target);
+                if (pinnedCount >= LIMITS.PINNED_MAX) {
+                    throw fail(`You can pin up to ${LIMITS.PINNED_MAX} chats`);
+                }
+                patch.pinned = true;
+                patch.pinnedAt = new Date();
+            } else {
+                patch.pinned = false;
+                patch.pinnedAt = null;
+            }
+        }
+
+        if (typeof d.archived === 'boolean') {
+            patch.archived = d.archived;
+            if (d.archived) {
+                patch.pinned = false;
+                patch.pinnedAt = null;
+            }
+        }
+
+        if ('color' in d) {
+            if (d.color === null) patch.color = null;
+            else if (BUBBLE_COLORS.includes(d.color)) patch.color = d.color;
+            else throw fail('Choose a colour from the list');
+        }
+
+        if ('wallpaper' in d) {
+            if (d.wallpaper === null) patch.wallpaper = null;
+            else if (validDataUrl(d.wallpaper, IMAGE_RE, LIMITS.IMAGE_CHARS)) patch.wallpaper = d.wallpaper;
+            else throw fail('That wallpaper is too large or not supported');
+        }
+
+        if (!Object.keys(patch).length) throw fail('Nothing to save');
+
+        patch.updatedAt = new Date();
+        await chatPrefs().updateOne(
+            { owner: me, partner: target },
+            { $set: patch },
+            { upsert: true }
+        );
+        return {};
     });
 
     on('mark-read', async (d, me) => {
@@ -584,9 +681,11 @@ io.on('connection', (socket) => {
         const text = typeof d.text === 'string' ? d.text.trim().slice(0, LIMITS.TEXT) : '';
         const image = d.image || null;
         const audio = d.audio || null;
+        const oneView = d.oneView === true;
         const audioDuration = Math.min(Math.max(Number(d.audioDuration) || 0, 0), LIMITS.AUDIO_SECONDS);
 
         if (!receiver || receiver === me) throw fail('Choose someone to message');
+        if (oneView && !image) throw fail('One-view works with photos only');
         if (!text && !image && !audio) throw fail('Message is empty');
         if (image && !validDataUrl(image, IMAGE_RE, LIMITS.IMAGE_CHARS)) throw fail('That photo is too large or not supported');
         if (audio && !validDataUrl(audio, AUDIO_RE, LIMITS.AUDIO_CHARS)) throw fail('That voice note is too long or not supported');
@@ -601,10 +700,12 @@ io.on('connection', (socket) => {
         const doc = {
             sender: me,
             receiver,
-            text,
-            image,
-            audio,
-            audioDuration,
+            text: oneView ? '' : text,
+            image: image,
+            audio: oneView ? null : audio,
+            audioDuration: oneView ? 0 : audioDuration,
+            oneView,
+            opened: false,
             timestamp: now,
             read: false,
             readAt: null,
@@ -618,12 +719,47 @@ io.on('connection', (socket) => {
         doc._id = result.insertedId;
         const message = publicMessage(doc);
 
+        // Like WhatsApp: a new message brings an archived chat back to the main list,
+        // unless the receiver has chosen to keep chats archived.
+        const receiverSettings = await getSettings(receiver);
+        if (!receiverSettings.keepArchived) {
+            await chatPrefs().updateOne(
+                { owner: receiver, partner: me },
+                { $set: { archived: false, updatedAt: now } }
+            );
+        }
+
         emitToUser(me, 'message-saved', { tempId: d.tempId, message });
         if (online) {
             emitToUser(receiver, 'new-private-message', message);
             emitToUser(me, 'message-delivered', { messageIds: [String(doc._id)] });
         }
         return { message };
+    });
+
+    on('open-one-view', async (d, me) => {
+        if (!ObjectId.isValid(d.messageId)) throw fail('Photo not found');
+        const id = new ObjectId(d.messageId);
+        const msg = await messages().findOne({ _id: id, oneView: true });
+        if (!msg || msg.receiver !== me) throw fail('Photo not found');
+        if (msg.opened || !msg.image) throw fail('This photo has already been opened');
+
+        const image = msg.image;
+        await messages().updateOne(
+            { _id: id },
+            {
+                $set: {
+                    opened: true,
+                    openedAt: new Date(),
+                    read: true,
+                    readAt: msg.readAt || new Date(),
+                    image: null
+                }
+            }
+        );
+
+        emitToUser(msg.sender, 'one-view-opened', { messageId: String(id) });
+        return { image };
     });
 
     on('delete-message', async (d, me) => {
@@ -743,6 +879,7 @@ io.on('connection', (socket) => {
         await messages().deleteMany({ $or: [{ sender: me }, { receiver: me }] });
         await settingsCol().deleteOne({ username: me });
         await statuses().deleteMany({ user: me });
+        await chatPrefs().deleteMany({ $or: [{ owner: me }, { partner: me }] });
         emitToUser(me, 'account-deleted', {});
         return {};
     });
