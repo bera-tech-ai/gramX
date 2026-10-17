@@ -51,7 +51,7 @@ const BUBBLE_COLORS = ['#11412B', '#1E3A5F', '#4A2B5C', '#5C3A1E', '#1F4A4A', '#
 const STATUS_TTL_MS = 24 * 60 * 60 * 1000;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 const IMAGE_RE = /^data:image\/(png|jpeg|webp);base64,/;
-const AUDIO_RE = /^data:audio\/(webm|ogg|mp4|mpeg|wav|x-m4a);base64,/;
+const AUDIO_RE = /^data:audio\/(webm|ogg|mp4|mpeg|wav|x-m4a)(;[a-z0-9=.-]+)*;base64,/;
 const PRIVACY_VALUES = ['everyone', 'contacts', 'nobody'];
 const THEMES = ['dark', 'light', 'auto'];
 const STATUS_BACKGROUNDS = ['#14402C', '#1F3A5F', '#5B2A4A', '#4A3B12', '#2A2F36', '#0F5C4A'];
@@ -1185,6 +1185,47 @@ io.on('connection', (socket) => {
         await groupSystemMessage(after, `${me} left the group`);
         await emitGroup(after, 'groups-changed', {});
         emitToUser(me, 'groups-changed', {});
+        return {};
+    });
+
+    on('set-activity', async (d, me) => {
+        const kind = d.kind === 'recording' ? 'recording' : 'typing';
+        const on = d.on === true;
+
+        if (d.groupId) {
+            const g = await getGroupForMember(String(d.groupId), me);
+            for (const m of g.members) {
+                if (m !== me) emitToUser(m, 'activity', { groupId: String(g._id), from: me, kind, on });
+            }
+        } else {
+            const target = String(d.target || '');
+            if (!target || target === me) return {};
+            emitToUser(target, 'activity', { from: me, kind, on });
+        }
+        return {};
+    });
+
+    on('mark-group-read', async (d, me) => {
+        const g = await getGroupForMember(String(d.groupId || ''), me);
+        await groups().updateOne({ _id: g._id }, { $set: { [`readMarks.${me}`]: new Date() } });
+        return {};
+    });
+
+    on('clear-group-chat', async (d, me) => {
+        const g = await getGroupForMember(String(d.groupId || ''), me);
+        await messages().updateMany({ groupId: String(g._id) }, { $addToSet: { hiddenFor: me } });
+        emitToUser(me, 'group-cleared', { groupId: String(g._id) });
+        return {};
+    });
+
+    on('delete-group', async (d, me) => {
+        const g = await getGroupForMember(String(d.groupId || ''), me);
+        requireAdmin(g, me);
+        const id = String(g._id);
+        const members = [...g.members];
+        await messages().deleteMany({ groupId: id });
+        await groups().deleteOne({ _id: g._id });
+        for (const m of members) emitToUser(m, 'group-deleted', { groupId: id });
         return {};
     });
 
