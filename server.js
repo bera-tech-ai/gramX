@@ -23,7 +23,12 @@ const COLLECTIONS = {
     USER_SETTINGS: 'user_settings',
     STATUSES: 'statuses',
     CHAT_PREFS: 'chat_prefs',
-    GROUPS: 'groups'
+    GROUPS: 'groups',
+    STARRED: 'starred',
+    CHANNELS: 'channels',
+    CHANNEL_POSTS: 'channel_posts',
+    ADMINS: 'admins',
+    ADMIN_LOGS: 'admin_logs'
 };
 
 const LIMITS = {
@@ -72,6 +77,63 @@ const settingsCol = () => db.collection(COLLECTIONS.USER_SETTINGS);
 const statuses = () => db.collection(COLLECTIONS.STATUSES);
 const chatPrefs = () => db.collection(COLLECTIONS.CHAT_PREFS);
 const groups = () => db.collection(COLLECTIONS.GROUPS);
+const starred = () => db.collection(COLLECTIONS.STARRED);
+const channels = () => db.collection(COLLECTIONS.CHANNELS);
+const channelPosts = () => db.collection(COLLECTIONS.CHANNEL_POSTS);
+
+// Channel info as seen by one user
+function channelView(c, me) {
+    const subscribers = c.subscribers || [];
+    const admins = c.admins || [];
+    return {
+        _id: String(c._id),
+        name: c.name,
+        description: c.description || '',
+        photo: c.photo || null,
+        createdBy: c.createdBy,
+        admins,
+        subscriberCount: subscribers.length,
+        isOwner: c.createdBy === me,
+        isAdmin: admins.includes(me),
+        subscribed: subscribers.includes(me),
+        createdAt: c.createdAt,
+        lastPost: c.lastPost || null
+    };
+}
+
+// A channel post as seen by one user; reactions are returned as counts plus the viewer's own choice
+function publicPost(p, me) {
+    const reactions = p.reactions || {};
+    const counts = {};
+    Object.values(reactions).forEach(e => { counts[e] = (counts[e] || 0) + 1; });
+    if (p.deleted) {
+        return { _id: String(p._id), channelId: p.channelId, sender: p.sender, timestamp: p.timestamp, deleted: true, counts: {}, myReaction: null };
+    }
+    return {
+        _id: String(p._id),
+        channelId: p.channelId,
+        sender: p.sender,
+        timestamp: p.timestamp,
+        deleted: false,
+        text: p.text || '',
+        image: p.image || null,
+        audio: p.audio || null,
+        audioDuration: p.audioDuration || 0,
+        counts,
+        myReaction: me ? (reactions[me] || null) : null
+    };
+}
+
+async function getChannel(id) {
+    if (!ObjectId.isValid(id)) throw fail('Channel not found');
+    const c = await channels().findOne({ _id: new ObjectId(id) });
+    if (!c) throw fail('Channel not found');
+    return c;
+}
+
+async function emitChannel(c, event, payload) {
+    for (const s of c.subscribers || []) emitToUser(s, event, payload);
+}
 
 function fail(message) {
     const err = new Error(message);
@@ -93,11 +155,66 @@ async function connectToDatabase() {
     await statuses().createIndex({ user: 1, timestamp: 1 });
     await chatPrefs().createIndex({ owner: 1, partner: 1 }, { unique: true });
     await groups().createIndex({ members: 1 });
+    await starred().createIndex({ owner: 1, messageId: 1 }, { unique: true });
+    await channels().createIndex({ subscribers: 1 });
+    await channelPosts().createIndex({ channelId: 1, timestamp: 1 });
+    await ensureAdmin();
 
     console.log(`Connected to MongoDB (${DB_NAME})`);
 }
 
 // Passwords
+
+// Account status: active, suspended (until a date or indefinitely), or banned
+
+function accountBlock(user) {
+    if (!user) return null;
+    if (user.status === 'banned') return 'This account has been banned.';
+    if (user.status === 'suspended') {
+        const until = user.suspendedUntil ? new Date(user.suspendedUntil) : null;
+        if (!until || until > new Date()) {
+            return until ? `This account is suspended until ${until.toLocaleString()}.` : 'This account is suspended.';
+        }
+    }
+    return null;
+}
+
+function accountStatus(user) {
+    if (accountBlock(user)) return user.status;
+    return 'active';
+}
+
+function disconnectUser(username) {
+    io.in(`user:${username}`).disconnectSockets(true);
+}
+
+function sanitizeReply(r) {
+    if (!r || typeof r !== 'object' || !r._id) return null;
+    return {
+        _id: String(r._id).slice(0, 40),
+        sender: String(r.sender || '').slice(0, 40),
+        text: String(r.text || '').slice(0, 140),
+        kind: ['text', 'photo', 'voice'].includes(r.kind) ? r.kind : 'text'
+    };
+}
+
+// Creates or updates the admin account from ADMIN_EMAIL and ADMIN_PASSWORD
+async function ensureAdmin() {
+    const email = (process.env.ADMIN_EMAIL || 'admin@bmessenger.com').trim().toLowerCase();
+    const password = process.env.ADMIN_PASSWORD || 'Adminbera';
+    if (!process.env.ADMIN_PASSWORD) {
+        console.warn('ADMIN_PASSWORD is not set, so the default admin password is in use. Set it in your environment.');
+    }
+    await db.collection(COLLECTIONS.ADMINS).updateOne(
+        { email },
+        {
+            $set: { email, passwordHash: hashPassword(password), updatedAt: new Date() },
+            $setOnInsert: { createdAt: new Date() }
+        },
+        { upsert: true }
+    );
+    console.log(`Admin account ready: ${email}`);
+}
 
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
@@ -238,6 +355,15 @@ async function countPinned(owner, exceptPartner) {
     });
 }
 
+async function sharesContact(a, b) {
+    const chatted = await messages().findOne({
+        groupId: null,
+        $or: [{ sender: a, receiver: b }, { sender: b, receiver: a }]
+    }, { projection: { _id: 1 } });
+    if (chatted) return true;
+    return !!(await groups().findOne({ members: { $all: [a, b] } }, { projection: { _id: 1 } }));
+}
+
 // Profiles and visibility
 
 async function visibleTo(viewer, owner, setting) {
@@ -255,11 +381,9 @@ async function buildProfile(viewer, username, settings) {
     const photoOk = await visibleTo(viewer, username, s.privacy?.profilePhoto || 'everyone');
     const seenOk = await visibleTo(viewer, username, s.privacy?.lastSeen || 'everyone');
 
-    let lastSeen = null;
-    if (seenOk) {
-        const u = await users().findOne({ username }, { projection: { lastSeen: 1 } });
-        lastSeen = u?.lastSeen || null;
-    }
+    const userDoc = await users().findOne({ username }, { projection: { lastSeen: 1, phone: 1 } });
+    const phoneOk = viewer === username || await sharesContact(viewer, username);
+    const lastSeen = seenOk ? (userDoc?.lastSeen || null) : null;
 
     return {
         username,
@@ -268,7 +392,8 @@ async function buildProfile(viewer, username, settings) {
         avatar: s.avatar || 'default1',
         customAvatar: photoOk ? (s.customAvatar || null) : null,
         lastSeen,
-        online: seenOk && isOnline(username)
+        online: seenOk && isOnline(username),
+        phone: phoneOk ? (userDoc?.phone || null) : null
     };
 }
 
@@ -296,7 +421,11 @@ function publicMessage(m) {
         audio: m.audio || null,
         audioDuration: m.audioDuration || 0,
         oneView: false,
-        opened: false
+        opened: false,
+        edited: !!m.edited,
+        forwarded: !!m.forwarded,
+        replyTo: m.replyTo || null,
+        reactions: m.reactions || {}
     };
 }
 
@@ -316,7 +445,11 @@ function publicGroupMessage(m) {
         text: m.text || '',
         image: m.image || null,
         audio: m.audio || null,
-        audioDuration: m.audioDuration || 0
+        audioDuration: m.audioDuration || 0,
+        edited: !!m.edited,
+        forwarded: !!m.forwarded,
+        replyTo: m.replyTo || null,
+        reactions: m.reactions || {}
     };
 }
 
@@ -488,6 +621,10 @@ async function requireAuth(req, res, next) {
 
 // HTTP routes
 
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -547,6 +684,9 @@ app.post('/login', async (req, res) => {
         }
 
         if (!valid) return res.json({ success: false, error: 'Invalid username or password' });
+
+        const blocked = accountBlock(user);
+        if (blocked) return res.json({ success: false, error: blocked });
 
         const token = crypto.randomBytes(32).toString('hex');
         await users().updateOne({ username }, { $set: { sessionToken: token, lastSeen: new Date() } });
@@ -612,6 +752,268 @@ app.get('/search-users', requireAuth, async (req, res) => {
         console.error('Search error:', err);
         res.status(500).json({ success: false, error: 'Search failed' });
     }
+});
+
+// Admin panel API
+
+const PUBLIC_USER_FIELDS = { passwordHash: 0, sessionToken: 0 };
+
+function adminLog(admin, action, target, detail) {
+    return db.collection(COLLECTIONS.ADMIN_LOGS).insertOne({
+        admin, action, target, detail: detail || '', at: new Date()
+    });
+}
+
+async function purgeUser(username) {
+    await users().deleteOne({ username });
+    await messages().deleteMany({ $or: [{ sender: username }, { receiver: username }] });
+    await settingsCol().deleteOne({ username });
+    await statuses().deleteMany({ user: username });
+    await chatPrefs().deleteMany({ $or: [{ owner: username }, { partner: username }] });
+    await starred().deleteMany({ owner: username });
+    await groups().updateMany({ members: username }, { $pull: { members: username, admins: username } });
+}
+
+async function requireAdminAuth(req, res, next) {
+    try {
+        const token = req.headers['x-admin-token'];
+        if (typeof token !== 'string' || !token) return res.status(401).json({ success: false, error: 'Not signed in' });
+        const admin = await db.collection(COLLECTIONS.ADMINS).findOne({ sessionToken: token });
+        if (!admin) return res.status(401).json({ success: false, error: 'Session expired' });
+        req.admin = admin.email;
+        next();
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Authentication failed' });
+    }
+}
+
+app.post('/admin/login', async (req, res) => {
+    try {
+        const email = String(req.body.email || '').trim().toLowerCase();
+        const password = String(req.body.password || '');
+        const admin = await db.collection(COLLECTIONS.ADMINS).findOne({ email });
+        if (!admin || !verifyPassword(admin.passwordHash, password)) {
+            return res.json({ success: false, error: 'Invalid admin email or password' });
+        }
+        const token = crypto.randomBytes(32).toString('hex');
+        await db.collection(COLLECTIONS.ADMINS).updateOne({ email }, { $set: { sessionToken: token, lastLogin: new Date() } });
+        res.json({ success: true, token, email });
+    } catch (err) {
+        console.error('Admin login error:', err);
+        res.status(500).json({ success: false, error: 'Login failed' });
+    }
+});
+
+app.post('/admin/logout', requireAdminAuth, async (req, res) => {
+    await db.collection(COLLECTIONS.ADMINS).updateOne({ email: req.admin }, { $set: { sessionToken: null } });
+    res.json({ success: true });
+});
+
+app.get('/admin/stats', requireAdminAuth, async (req, res) => {
+    try {
+        const now = new Date();
+        const since = new Date(now.getTime() - 86400000);
+        const [total, banned, suspended, msgs, msgsToday, groupCount, statusCount] = await Promise.all([
+            users().countDocuments({}),
+            users().countDocuments({ status: 'banned' }),
+            users().countDocuments({ status: 'suspended', $or: [{ suspendedUntil: null }, { suspendedUntil: { $gt: now } }] }),
+            messages().countDocuments({}),
+            messages().countDocuments({ timestamp: { $gt: since } }),
+            groups().countDocuments({}),
+            statuses().countDocuments({ expiresAt: { $gt: now } })
+        ]);
+        res.json({
+            success: true,
+            stats: {
+                users: total, banned, suspended, online: onlineCounts.size,
+                messages: msgs, messagesToday: msgsToday, groups: groupCount, activeStatuses: statusCount
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load stats' });
+    }
+});
+
+app.get('/admin/users', requireAdminAuth, async (req, res) => {
+    try {
+        const q = String(req.query.q || '').trim().slice(0, 40);
+        const filter = String(req.query.filter || 'all');
+        const query = {};
+        if (q) {
+            const re = { $regex: escapeRegex(q), $options: 'i' };
+            query.$or = [{ username: re }, { fullName: re }, { phone: re }];
+        }
+        if (filter === 'banned') query.status = 'banned';
+        if (filter === 'suspended') query.status = 'suspended';
+
+        const list = await users().find(query, { projection: PUBLIC_USER_FIELDS })
+            .sort({ createdAt: -1 }).limit(200).toArray();
+
+        res.json({
+            success: true,
+            users: list.map(u => ({
+                username: u.username,
+                fullName: u.fullName || null,
+                phone: u.phone || null,
+                status: accountStatus(u),
+                suspendedUntil: u.suspendedUntil || null,
+                createdAt: u.createdAt,
+                lastSeen: u.lastSeen || null,
+                online: isOnline(u.username)
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load users' });
+    }
+});
+
+app.get('/admin/users/:username', requireAdminAuth, async (req, res) => {
+    try {
+        const username = req.params.username;
+        const u = await users().findOne({ username }, { projection: PUBLIC_USER_FIELDS });
+        if (!u) return res.status(404).json({ success: false, error: 'User not found' });
+
+        const settings = await settingsCol().findOne({ username }) || {};
+        const [sent, groupCount, statusCount] = await Promise.all([
+            messages().countDocuments({ sender: username }),
+            groups().countDocuments({ members: username }),
+            statuses().countDocuments({ user: username, expiresAt: { $gt: new Date() } })
+        ]);
+
+        res.json({
+            success: true,
+            user: {
+                username,
+                fullName: u.fullName || null,
+                phone: u.phone || null,
+                displayName: settings.displayName || null,
+                about: settings.about || '',
+                status: accountStatus(u),
+                suspendedUntil: u.suspendedUntil || null,
+                banReason: u.banReason || null,
+                createdAt: u.createdAt,
+                lastSeen: u.lastSeen || null,
+                online: isOnline(username),
+                blockedCount: (settings.blockedUsers || []).length
+            },
+            stats: { messagesSent: sent, groups: groupCount, activeStatuses: statusCount }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load user' });
+    }
+});
+
+app.post('/admin/users/:username/action', requireAdminAuth, async (req, res) => {
+    try {
+        const username = req.params.username;
+        const action = String(req.body.action || '');
+        const reason = String(req.body.reason || '').slice(0, 200);
+        const now = new Date();
+
+        const u = await users().findOne({ username }, { projection: { _id: 1 } });
+        if (!u) return res.status(404).json({ success: false, error: 'User not found' });
+
+        switch (action) {
+            case 'suspend': {
+                const days = Math.max(0, Number(req.body.days) || 0);
+                const until = days > 0 ? new Date(now.getTime() + days * 86400000) : null;
+                await users().updateOne({ username }, {
+                    $set: { status: 'suspended', suspendedUntil: until, banReason: reason || null },
+                    $unset: { sessionToken: '' }
+                });
+                disconnectUser(username);
+                break;
+            }
+            case 'unsuspend':
+                await users().updateOne({ username }, { $set: { status: 'active', suspendedUntil: null, banReason: null } });
+                break;
+            case 'ban':
+                await users().updateOne({ username }, {
+                    $set: { status: 'banned', suspendedUntil: null, banReason: reason || null },
+                    $unset: { sessionToken: '' }
+                });
+                disconnectUser(username);
+                break;
+            case 'unban':
+                await users().updateOne({ username }, { $set: { status: 'active', suspendedUntil: null, banReason: null } });
+                break;
+            case 'logout':
+                await users().updateOne({ username }, { $unset: { sessionToken: '' } });
+                disconnectUser(username);
+                break;
+            case 'reset-password': {
+                const password = String(req.body.password || '');
+                if (password.length < LIMITS.PASSWORD_MIN || password.length > LIMITS.PASSWORD_MAX) {
+                    return res.json({ success: false, error: 'Password must be 6 to 100 characters' });
+                }
+                await users().updateOne({ username }, {
+                    $set: { passwordHash: hashPassword(password) },
+                    $unset: { sessionToken: '' }
+                });
+                disconnectUser(username);
+                break;
+            }
+            case 'delete':
+                await purgeUser(username);
+                disconnectUser(username);
+                break;
+            default:
+                return res.json({ success: false, error: 'Unknown action' });
+        }
+
+        await adminLog(req.admin, action, username, reason || (req.body.days ? `${req.body.days} days` : ''));
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Admin action error:', err);
+        res.status(500).json({ success: false, error: 'Action failed' });
+    }
+});
+
+app.get('/admin/groups', requireAdminAuth, async (req, res) => {
+    const list = await groups().find({}).sort({ createdAt: -1 }).limit(200).toArray();
+    res.json({
+        success: true,
+        groups: list.map(g => ({
+            _id: String(g._id), name: g.name, createdBy: g.createdBy,
+            members: g.members.length, createdAt: g.createdAt
+        }))
+    });
+});
+
+app.delete('/admin/groups/:id', requireAdminAuth, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.json({ success: false, error: 'Group not found' });
+    const g = await groups().findOne({ _id: new ObjectId(req.params.id) });
+    if (!g) return res.json({ success: false, error: 'Group not found' });
+
+    await messages().deleteMany({ groupId: String(g._id) });
+    await groups().deleteOne({ _id: g._id });
+    for (const m of g.members) emitToUser(m, 'group-deleted', { groupId: String(g._id) });
+    await adminLog(req.admin, 'delete-group', g.name, String(g._id));
+    res.json({ success: true });
+});
+
+app.get('/admin/statuses', requireAdminAuth, async (req, res) => {
+    const list = await statuses().find({ expiresAt: { $gt: new Date() } }).sort({ timestamp: -1 }).limit(200).toArray();
+    res.json({
+        success: true,
+        statuses: list.map(s => ({
+            _id: String(s._id), user: s.user, text: s.text || '', hasImage: !!s.image, timestamp: s.timestamp
+        }))
+    });
+});
+
+app.delete('/admin/statuses/:id', requireAdminAuth, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.json({ success: false, error: 'Status not found' });
+    const result = await statuses().deleteOne({ _id: new ObjectId(req.params.id) });
+    if (!result.deletedCount) return res.json({ success: false, error: 'Status not found' });
+    io.emit('new-status', {});
+    await adminLog(req.admin, 'delete-status', req.params.id, '');
+    res.json({ success: true });
+});
+
+app.get('/admin/logs', requireAdminAuth, async (req, res) => {
+    const logs = await db.collection(COLLECTIONS.ADMIN_LOGS).find({}).sort({ at: -1 }).limit(200).toArray();
+    res.json({ success: true, logs: logs.map(l => ({ admin: l.admin, action: l.action, target: l.target, detail: l.detail, at: l.at })) });
 });
 
 // Socket authentication
@@ -795,6 +1197,10 @@ io.on('connection', (socket) => {
             audioDuration: oneView ? 0 : audioDuration,
             oneView,
             opened: false,
+            replyTo: sanitizeReply(d.replyTo),
+            forwarded: d.forwarded === true,
+            edited: false,
+            reactions: {},
             timestamp: now,
             read: false,
             readAt: null,
@@ -1023,6 +1429,10 @@ io.on('connection', (socket) => {
             audio,
             audioDuration,
             system: false,
+            replyTo: sanitizeReply(d.replyTo),
+            forwarded: d.forwarded === true,
+            edited: false,
+            reactions: {},
             timestamp: new Date(),
             deleted: false,
             hiddenFor: []
@@ -1185,6 +1595,301 @@ io.on('connection', (socket) => {
         await groupSystemMessage(after, `${me} left the group`);
         await emitGroup(after, 'groups-changed', {});
         emitToUser(me, 'groups-changed', {});
+        return {};
+    });
+
+    on('edit-message', async (d, me) => {
+        if (!ObjectId.isValid(d.messageId)) throw fail('Message not found');
+        const msg = await messages().findOne({ _id: new ObjectId(d.messageId) });
+        if (!msg || msg.sender !== me || msg.deleted || msg.oneView || msg.image || msg.audio) {
+            throw fail('You can only edit your own text messages');
+        }
+        const text = typeof d.text === 'string' ? d.text.trim().slice(0, LIMITS.TEXT) : '';
+        if (!text) throw fail('Message cannot be empty');
+
+        await messages().updateOne({ _id: msg._id }, { $set: { text, edited: true, editedAt: new Date() } });
+        const payload = { messageId: String(msg._id), text, groupId: msg.groupId || null };
+
+        if (msg.groupId) {
+            const g = await getGroupForMember(msg.groupId, me);
+            await emitGroup(g, 'message-edited', payload);
+        } else {
+            emitToUser(msg.receiver, 'message-edited', payload);
+            emitToUser(me, 'message-edited', payload);
+        }
+        return {};
+    });
+
+    on('react-message', async (d, me) => {
+        if (!ObjectId.isValid(d.messageId)) throw fail('Message not found');
+        const msg = await messages().findOne({ _id: new ObjectId(d.messageId) });
+        if (!msg || msg.deleted) throw fail('Message not found');
+
+        let recipients;
+        if (msg.groupId) {
+            const g = await getGroupForMember(msg.groupId, me);
+            recipients = g.members;
+        } else {
+            if (msg.sender !== me && msg.receiver !== me) throw fail('Message not found');
+            recipients = [msg.sender, msg.receiver];
+        }
+
+        const emoji = typeof d.emoji === 'string' && d.emoji.length > 0 && d.emoji.length <= 8 ? d.emoji : null;
+        const update = emoji
+            ? { $set: { [`reactions.${me}`]: emoji } }
+            : { $unset: { [`reactions.${me}`]: '' } };
+        await messages().updateOne({ _id: msg._id }, update);
+
+        const fresh = await messages().findOne({ _id: msg._id }, { projection: { reactions: 1 } });
+        const payload = { messageId: String(msg._id), groupId: msg.groupId || null, reactions: fresh.reactions || {} };
+        for (const r of new Set(recipients)) emitToUser(r, 'message-reaction', payload);
+        return {};
+    });
+
+    on('star-message', async (d, me) => {
+        if (!ObjectId.isValid(d.messageId)) throw fail('Message not found');
+        const id = String(d.messageId);
+        if (d.on === true) {
+            await starred().updateOne(
+                { owner: me, messageId: id },
+                { $set: { owner: me, messageId: id, at: new Date() } },
+                { upsert: true }
+            );
+        } else {
+            await starred().deleteOne({ owner: me, messageId: id });
+        }
+        return {};
+    });
+
+    on('get-starred', async (_d, me) => {
+        const rows = await starred().find({ owner: me }).sort({ at: -1 }).limit(300).toArray();
+        const ids = rows.map(r => r.messageId).filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+        const docs = await messages().find({ _id: { $in: ids }, deleted: { $ne: true } }).toArray();
+
+        const myGroups = await groups().find({ members: me }, { projection: { name: 1 } }).toArray();
+        const groupNames = new Map(myGroups.map(g => [String(g._id), g.name]));
+
+        const items = [];
+        for (const m of docs) {
+            const allowed = m.groupId ? groupNames.has(m.groupId) : (m.sender === me || m.receiver === me);
+            if (!allowed) continue;
+            const pub = m.groupId ? publicGroupMessage(m) : publicMessage(m);
+            const partner = m.sender === me ? m.receiver : m.sender;
+            items.push({ ...pub, chat: m.groupId ? (groupNames.get(m.groupId) || 'Group') : partner });
+        }
+        items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        return { messages: items };
+    });
+
+    on('get-media', async (d, me) => {
+        const common = {
+            deleted: { $ne: true },
+            oneView: { $ne: true },
+            hiddenFor: { $ne: me },
+            $and: [{ $or: [{ image: { $ne: null } }, { audio: { $ne: null } }] }]
+        };
+        let query;
+        if (d.groupId) {
+            const g = await getGroupForMember(String(d.groupId), me);
+            query = { ...common, groupId: String(g._id) };
+        } else {
+            const target = String(d.target || '');
+            if (!target) throw fail('Invalid chat');
+            query = {
+                ...common,
+                groupId: null,
+                $and: [
+                    ...common.$and,
+                    { $or: [{ sender: me, receiver: target }, { sender: target, receiver: me }] }
+                ]
+            };
+        }
+
+        const list = await messages().find(query).sort({ timestamp: -1 }).limit(300).toArray();
+        return {
+            media: list.map(m => ({
+                _id: String(m._id),
+                image: m.image || null,
+                audio: m.audio || null,
+                audioDuration: m.audioDuration || 0,
+                sender: m.sender,
+                timestamp: m.timestamp
+            }))
+        };
+    });
+
+    // Channels: only admins post; followers read and react
+
+    on('create-channel', async (d, me) => {
+        const name = String(d.name || '').trim().slice(0, LIMITS.GROUP_NAME);
+        if (!name) throw fail('Give the channel a name');
+        const description = String(d.description || '').trim().slice(0, LIMITS.GROUP_DESC);
+        const photo = d.photo || null;
+        if (photo && !validDataUrl(photo, IMAGE_RE, LIMITS.IMAGE_CHARS)) throw fail('That photo is too large or not supported');
+
+        const now = new Date();
+        const result = await channels().insertOne({
+            name, description, photo,
+            createdBy: me,
+            admins: [me],
+            subscribers: [me],
+            lastPost: null,
+            createdAt: now,
+            updatedAt: now
+        });
+        const c = await channels().findOne({ _id: result.insertedId });
+        return { channel: channelView(c, me) };
+    });
+
+    on('explore-channels', async (d, me) => {
+        const q = String(d.q || '').trim().slice(0, 40);
+        const query = q ? { name: { $regex: escapeRegex(q), $options: 'i' } } : {};
+        const list = await channels().find(query).sort({ createdAt: -1 }).limit(100).toArray();
+        return { channels: list.map(c => channelView(c, me)) };
+    });
+
+    on('get-my-channels', async (_d, me) => {
+        const list = await channels().find({ subscribers: me }).limit(200).toArray();
+        list.sort((a, b) => new Date(b.lastPost?.timestamp || b.createdAt) - new Date(a.lastPost?.timestamp || a.createdAt));
+        return { channels: list.map(c => channelView(c, me)) };
+    });
+
+    on('get-channel', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        return { channel: channelView(c, me) };
+    });
+
+    on('set-channel-subscription', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (d.on === true) {
+            await channels().updateOne({ _id: c._id }, { $addToSet: { subscribers: me } });
+        } else {
+            if (c.createdBy === me) throw fail('The owner cannot unfollow. Delete the channel instead.');
+            await channels().updateOne({ _id: c._id }, { $pull: { subscribers: me, admins: me } });
+        }
+        const fresh = await getChannel(String(c._id));
+        return { channel: channelView(fresh, me) };
+    });
+
+    on('get-channel-posts', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (!(c.subscribers || []).includes(me)) throw fail('Follow this channel to see its posts');
+        const list = await channelPosts().find({ channelId: String(c._id) })
+            .sort({ timestamp: -1 }).limit(200).toArray();
+        return { posts: list.reverse().map(p => publicPost(p, me)) };
+    });
+
+    on('post-channel', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (!(c.admins || []).includes(me)) throw fail('Only channel admins can post');
+
+        const text = typeof d.text === 'string' ? d.text.trim().slice(0, LIMITS.TEXT) : '';
+        const image = d.image || null;
+        const audio = d.audio || null;
+        if (!text && !image && !audio) throw fail('Post is empty');
+        if (image && !validDataUrl(image, IMAGE_RE, LIMITS.IMAGE_CHARS)) throw fail('That photo is too large or not supported');
+        if (audio && !validDataUrl(audio, AUDIO_RE, LIMITS.AUDIO_CHARS)) throw fail('That voice note is too long or not supported');
+
+        const now = new Date();
+        const doc = {
+            channelId: String(c._id),
+            sender: me,
+            text, image, audio,
+            audioDuration: Math.min(Math.max(Number(d.audioDuration) || 0, 0), LIMITS.AUDIO_SECONDS),
+            reactions: {},
+            deleted: false,
+            timestamp: now
+        };
+        const result = await channelPosts().insertOne(doc);
+        doc._id = result.insertedId;
+
+        await channels().updateOne({ _id: c._id }, {
+            $set: {
+                updatedAt: now,
+                lastPost: { text: text || (image ? 'Photo' : 'Voice message'), timestamp: now }
+            }
+        });
+
+        await emitChannel(c, 'channel-post', { channelId: String(c._id), post: publicPost(doc, null) });
+        return { post: publicPost(doc, me) };
+    });
+
+    on('delete-channel-post', async (d, me) => {
+        if (!ObjectId.isValid(d.postId)) throw fail('Post not found');
+        const p = await channelPosts().findOne({ _id: new ObjectId(d.postId) });
+        if (!p) throw fail('Post not found');
+        const c = await getChannel(p.channelId);
+        if (!(c.admins || []).includes(me)) throw fail('Only channel admins can delete posts');
+
+        await channelPosts().updateOne({ _id: p._id }, { $set: { deleted: true, text: '', image: null, audio: null } });
+        await emitChannel(c, 'channel-post-deleted', { channelId: p.channelId, postId: String(p._id) });
+        return {};
+    });
+
+    on('react-channel-post', async (d, me) => {
+        if (!ObjectId.isValid(d.postId)) throw fail('Post not found');
+        const p = await channelPosts().findOne({ _id: new ObjectId(d.postId) });
+        if (!p || p.deleted) throw fail('Post not found');
+        const c = await getChannel(p.channelId);
+        if (!(c.subscribers || []).includes(me)) throw fail('Follow the channel to react');
+
+        const emoji = typeof d.emoji === 'string' && d.emoji.length > 0 && d.emoji.length <= 8 ? d.emoji : null;
+        await channelPosts().updateOne(
+            { _id: p._id },
+            emoji ? { $set: { [`reactions.${me}`]: emoji } } : { $unset: { [`reactions.${me}`]: '' } }
+        );
+        const fresh = await channelPosts().findOne({ _id: p._id });
+        const view = publicPost(fresh, me);
+        await emitChannel(c, 'channel-post-reaction', { postId: String(p._id), channelId: p.channelId, counts: view.counts });
+        return { counts: view.counts, myReaction: view.myReaction };
+    });
+
+    on('update-channel', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (!(c.admins || []).includes(me)) throw fail('Only channel admins can edit the channel');
+
+        const patch = { updatedAt: new Date() };
+        if ('name' in d) {
+            const name = String(d.name || '').trim().slice(0, LIMITS.GROUP_NAME);
+            if (!name) throw fail('The channel needs a name');
+            patch.name = name;
+        }
+        if ('description' in d) patch.description = String(d.description || '').slice(0, LIMITS.GROUP_DESC);
+        if ('photo' in d) {
+            if (d.photo === null) patch.photo = null;
+            else if (validDataUrl(d.photo, IMAGE_RE, LIMITS.IMAGE_CHARS)) patch.photo = d.photo;
+            else throw fail('That photo is too large or not supported');
+        }
+
+        await channels().updateOne({ _id: c._id }, { $set: patch });
+        const fresh = await getChannel(String(c._id));
+        await emitChannel(fresh, 'channels-changed', { channelId: String(c._id) });
+        return { channel: channelView(fresh, me) };
+    });
+
+    on('set-channel-admin', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (c.createdBy !== me) throw fail('Only the channel owner can manage admins');
+        const target = String(d.target || '');
+        if (!(c.subscribers || []).includes(target)) throw fail('That person does not follow the channel');
+
+        if (d.admin === true) {
+            await channels().updateOne({ _id: c._id }, { $addToSet: { admins: target } });
+        } else {
+            if (target === c.createdBy) throw fail('The owner stays an admin');
+            await channels().updateOne({ _id: c._id }, { $pull: { admins: target } });
+        }
+        const fresh = await getChannel(String(c._id));
+        await emitChannel(fresh, 'channels-changed', { channelId: String(c._id) });
+        return { channel: channelView(fresh, me) };
+    });
+
+    on('delete-channel', async (d, me) => {
+        const c = await getChannel(String(d.channelId || ''));
+        if (c.createdBy !== me) throw fail('Only the channel owner can delete it');
+        await emitChannel(c, 'channel-deleted', { channelId: String(c._id) });
+        await channelPosts().deleteMany({ channelId: String(c._id) });
+        await channels().deleteOne({ _id: c._id });
         return {};
     });
 
