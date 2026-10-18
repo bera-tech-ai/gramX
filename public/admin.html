@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>B-Messenger Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        [hidden] { display: none !important; }
+        :root {
+            --bg: #080C18; --surface: #0F1628; --surface-2: #162038; --border: #1F2C4D;
+            --text: #EDF1FF; --muted: #8B96B8; --accent: #3B82F6; --ok: #22C55E; --warn: #F59E0B; --danger: #F43F5E;
+            --ease: cubic-bezier(.2, .8, .2, 1);
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+        button, input, select { font: inherit; color: inherit; }
+        button { cursor: pointer; border: 0; background: none; transition: background .15s, transform .12s var(--ease), opacity .15s; }
+        button:active:not(:disabled) { transform: scale(.97); }
+        button:disabled { opacity: .45; cursor: default; }
+        input, select { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; outline: none; transition: border-color .2s; }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        .login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(900px 500px at 50% -10%, rgba(59,130,246,.22), transparent 60%), var(--bg); animation: fade .5s var(--ease); }
+        @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .login-card { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 32px 28px; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+        .logo { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #3B82F6, #6366F1); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 26px; margin: 0 auto 14px; box-shadow: 0 10px 24px rgba(59,130,246,.35); }
+        .login-card h1 { text-align: center; font-size: 22px; font-weight: 700; }
+        .login-card p { text-align: center; color: var(--muted); margin: 6px 0 22px; font-size: 14px; }
+        .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .field label { font-size: 13px; color: var(--muted); }
+        .field input { width: 100%; }
+        .btn { width: 100%; padding: 13px; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(59,130,246,.3); }
+        .btn.ghost { background: var(--surface-2); border: 1px solid var(--border); box-shadow: none; width: auto; padding: 10px 14px; }
+        .btn.danger { background: var(--danger); box-shadow: none; }
+        .btn.ok { background: var(--ok); box-shadow: none; }
+        .btn.warn { background: var(--warn); color: #111; box-shadow: none; }
+        .btn.small { width: auto; padding: 8px 12px; font-size: 13px; border-radius: 10px; box-shadow: none; }
+        .error { color: var(--danger); font-size: 14px; text-align: center; margin-bottom: 12px; }
+
+        .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 24px; background: rgba(15,22,40,.82); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+        .brand .logo { width: 36px; height: 36px; font-size: 17px; margin: 0; border-radius: 11px; }
+        .brand small { display: block; color: var(--muted); font-weight: 500; font-size: 12px; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; animation: fade .4s var(--ease); }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; transition: transform .2s var(--ease), border-color .2s; }
+        .stat:hover { transform: translateY(-2px); border-color: #2d3d66; }
+        .stat .label { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .stat .value { font-size: 28px; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+        .stat i { color: var(--accent); }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tab { padding: 10px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-weight: 600; }
+        .tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+        .search { flex: 1; min-width: 220px; position: relative; }
+        .search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+        .search input { width: 100%; padding-left: 40px; }
+        .pill { padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 600; }
+        .pill.on { background: rgba(59,130,246,.18); color: #93C5FD; border-color: rgba(59,130,246,.4); }
+
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; background: var(--surface-2); }
+        tr.user-row { cursor: pointer; transition: background .15s; }
+        tr.user-row:hover { background: var(--surface-2); }
+        tr:last-child td { border-bottom: 0; }
+        .who { display: flex; align-items: center; gap: 12px; }
+        .av { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+        .muted { color: var(--muted); font-size: 13px; }
+        .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .chip.active { background: rgba(34,197,94,.14); color: #86EFAC; }
+        .chip.suspended { background: rgba(245,158,11,.16); color: #FCD34D; }
+        .chip.banned { background: rgba(244,63,94,.16); color: #FDA4AF; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+        .dot.off { background: #475569; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(3,6,14,.6); backdrop-filter: blur(4px); display: flex; justify-content: flex-end; z-index: 50; animation: fade .2s; }
+        .drawer { width: 100%; max-width: 480px; height: 100%; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; padding: 24px; animation: slide .3s var(--ease); }
+        @keyframes slide { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+        .drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .drawer-head h2 { font-size: 18px; }
+        .profile { text-align: center; padding: 10px 0 18px; }
+        .profile .av { width: 84px; height: 84px; font-size: 32px; margin: 0 auto 12px; }
+        .profile h3 { font-size: 20px; }
+        .info { background: var(--surface-2); border-radius: 16px; padding: 4px 16px; margin-bottom: 16px; }
+        .info div { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .info div:last-child { border-bottom: 0; }
+        .info span:first-child { color: var(--muted); }
+        .info span:last-child { text-align: right; word-break: break-word; }
+        .section { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 18px 0 10px; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .actions .btn { width: 100%; }
+        .actions .full { grid-column: 1 / -1; }
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); background: #E5ECFF; color: #0B1020; padding: 12px 18px; border-radius: 12px; font-weight: 600; opacity: 0; transition: .25s var(--ease); pointer-events: none; z-index: 100; }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .empty { padding: 40px; text-align: center; color: var(--muted); }
+        .logs li { list-style: none; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+        .logs { padding: 0; margin: 0; }
+        @media (max-width: 720px) { .hide-sm { display: none; } .wrap { padding: 14px; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="login">
+        <div class="login-card">
+            <div class="logo">B</div>
+            <h1>Admin sign in</h1>
+            <p>B-Messenger control panel</p>
+            <div class="error" id="login-error" hidden></div>
+            <div class="field">
+                <label for="a-email">Email</label>
+                <input id="a-email" type="email" autocomplete="username" placeholder="admin@bmessenger.com">
+            </div>
+            <div class="field">
+                <label for="a-password">Password</label>
+                <input id="a-password" type="password" autocomplete="current-password" placeholder="••••••••">
+            </div>
+            <button class="btn" id="login-btn">Sign in</button>
+        </div>
+    </div>
+
+    <div id="app" hidden>
+        <header class="top">
+            <div class="brand">
+                <div class="logo" style="width:36px;height:36px;font-size:17px;margin:0;border-radius:11px">B</div>
+                <div>B-Messenger<small>Admin panel</small></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+                <span class="muted hide-sm" id="admin-email"></span>
+                <button class="btn ghost small" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
+            </div>
+        </header>
+
+        <main class="wrap">
+            <section class="stats" id="stats"></section>
+
+            <nav class="tabs">
+                <button class="tab on" data-tab="users">Users</button>
+                <button class="tab" data-tab="groups">Groups</button>
+                <button class="tab" data-tab="statuses">Statuses</button>
+                <button class="tab" data-tab="logs">Activity log</button>
+            </nav>
+
+            <section id="tab-users">
+                <div class="toolbar">
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="user-search" placeholder="Search by username, name or phone" autocomplete="off"></div>
+                    <button class="pill on" data-filter="all">All</button>
+                    <button class="pill" data-filter="suspended">Suspended</button>
+                    <button class="pill" data-filter="banned">Banned</button>
+                </div>
+                <div class="panel">
+                    <table>
+                        <thead><tr><th>User</th><th class="hide-sm">Phone</th><th>Status</th><th class="hide-sm">Last seen</th></tr></thead>
+                        <tbody id="user-rows"></tbody>
+                    </table>
+                    <div class="empty" id="user-empty" hidden>No users match.</div>
+                </div>
+            </section>
+
+            <section id="tab-groups" hidden>
+                <div class="panel">
+                    <table>
+                        <thead><tr><th>Group</th><th>Members</th><th class="hide-sm">Created</th><th></th></tr></thead>
+                        <tbody id="group-rows"></tbody>
+                    </table>
+                    <div class="empty" id="group-empty" hidden>No groups.</div>
+                </div>
+            </section>
+
+            <section id="tab-statuses" hidden>
+                <div class="panel">
+                    <table>
+                        <thead><tr><th>Owner</th><th>Content</th><th class="hide-sm">Posted</th><th></th></tr></thead>
+                        <tbody id="status-rows"></tbody>
+                    </table>
+                    <div class="empty" id="status-empty" hidden>No active statuses.</div>
+                </div>
+            </section>
+
+            <section id="tab-logs" hidden>
+                <div class="panel"><ul class="logs" id="log-list"></ul><div class="empty" id="log-empty" hidden>No actions yet.</div></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="drawer-host"></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+        const state = { token: null, email: null, tab: 'users', filter: 'all', query: '', timer: null, users: [] };
+
+        const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmt = (d) => d ? new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        const ago = (d) => {
+            if (!d) return 'never';
+            const s = (Date.now() - new Date(d)) / 1000;
+            if (s < 60) return 'just now';
+            if (s < 3600) return Math.floor(s / 60) + ' min ago';
+            if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+            return Math.floor(s / 86400) + ' d ago';
+        };
+        const avatar = (name) => `<span class="av">${esc((name || '?').charAt(0).toUpperCase())}</span>`;
+
+        function toast(msg) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toast.t);
+            toast.t = setTimeout(() => t.classList.remove('show'), 2400);
+        }
+
+        async function api(method, path, body) {
+            const res = await fetch(path, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': state.token || '' },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json().catch(() => ({ success: false, error: 'Server error' }));
+            if (res.status === 401) { signOut(); throw new Error('Session expired. Sign in again.'); }
+            return data;
+        }
+
+        function showLogin() {
+            $('app').hidden = true;
+            $('login-screen').hidden = false;
+        }
+
+        function showApp() {
+            $('login-screen').hidden = true;
+            $('app').hidden = false;
+            $('admin-email').textContent = state.email || '';
+            loadStats();
+            loadTab();
+        }
+
+        async function login() {
+            const email = $('a-email').value.trim();
+            const password = $('a-password').value;
+            $('login-error').hidden = true;
+            if (!email || !password) { $('login-error').textContent = 'Enter your email and password'; $('login-error').hidden = false; return; }
+            $('login-btn').disabled = true;
+            try {
+                const res = await fetch('/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }).then(r => r.json());
+                if (!res.success) { $('login-error').textContent = res.error; $('login-error').hidden = false; return; }
+                state.token = res.token;
+                state.email = res.email;
+                sessionStorage.setItem('bm_admin', JSON.stringify({ token: res.token, email: res.email }));
+                $('a-password').value = '';
+                showApp();
+            } catch (e) {
+                $('login-error').textContent = 'Network error. Try again.';
+                $('login-error').hidden = false;
+            } finally {
+                $('login-btn').disabled = false;
+            }
+        }
+
+        function signOut() {
+            api('POST', '/admin/logout').catch(() => {});
+            sessionStorage.removeItem('bm_admin');
+            state.token = null;
+            showLogin();
+        }
+
+        async function loadStats() {
+            const res = await api('GET', '/admin/stats').catch(() => null);
+            if (!res || !res.success) return;
+            const s = res.stats;
+            const cards = [
+                ['fa-users', 'Users', s.users],
+                ['fa-circle', 'Online now', s.online],
+                ['fa-user-clock', 'Suspended', s.suspended],
+                ['fa-user-slash', 'Banned', s.banned],
+                ['fa-comments', 'Messages', s.messages],
+                ['fa-bolt', 'Messages today', s.messagesToday],
+                ['fa-user-group', 'Groups', s.groups],
+                ['fa-circle-dot', 'Active statuses', s.activeStatuses]
+            ];
+            $('stats').innerHTML = cards.map(([icon, label, value]) => `
+                <div class="stat"><div class="label"><i class="fa-solid ${icon}"></i>${label}</div><div class="value">${Number(value || 0).toLocaleString()}</div></div>`).join('');
+        }
+
+        function setTab(name) {
+            state.tab = name;
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
+            ['users', 'groups', 'statuses', 'logs'].forEach(n => { $(`tab-${n}`).hidden = n !== name; });
+            loadTab();
+        }
+
+        function loadTab() {
+            if (state.tab === 'users') loadUsers();
+            if (state.tab === 'groups') loadGroups();
+            if (state.tab === 'statuses') loadStatuses();
+            if (state.tab === 'logs') loadLogs();
+        }
+
+        async function loadUsers() {
+            const res = await api('GET', `/admin/users?q=${encodeURIComponent(state.query)}&filter=${state.filter}`).catch(() => null);
+            if (!res || !res.success) return;
+            state.users = res.users;
+            $('user-rows').innerHTML = res.users.map(u => `
+                <tr class="user-row" data-user="${esc(u.username)}">
+                    <td><div class="who">${avatar(u.fullName || u.username)}<div><div style="font-weight:600">${esc(u.fullName || u.username)}</div><div class="muted">@${esc(u.username)}</div></div></div></td>
+                    <td class="hide-sm muted">${esc(u.phone || '—')}</td>
+                    <td>${statusChip(u)}</td>
+                    <td class="hide-sm muted"><span class="dot ${u.online ? '' : 'off'}"></span>&nbsp; ${u.online ? 'Online' : ago(u.lastSeen)}</td>
+                </tr>`).join('');
+            $('user-empty').hidden = res.users.length > 0;
+        }
+
+        function statusChip(u) {
+            if (u.status === 'banned') return '<span class="chip banned"><i class="fa-solid fa-ban"></i> Banned</span>';
+            if (u.status === 'suspended') return `<span class="chip suspended"><i class="fa-solid fa-clock"></i> ${u.suspendedUntil ? 'Until ' + new Date(u.suspendedUntil).toLocaleDateString() : 'Suspended'}</span>`;
+            return '<span class="chip active"><i class="fa-solid fa-check"></i> Active</span>';
+        }
+
+        async function openUser(username) {
+            const res = await api('GET', `/admin/users/${encodeURIComponent(username)}`).catch(() => null);
+            if (!res || !res.success) return toast(res?.error || 'Could not load user');
+            const u = res.user, st = res.stats;
+            const host = $('drawer-host');
+            host.innerHTML = `
+                <div class="overlay" id="overlay">
+                    <aside class="drawer">
+                        <div class="drawer-head"><h2>User details</h2><button class="btn ghost small" id="close-drawer"><i class="fa-solid fa-xmark"></i></button></div>
+                        <div class="profile">
+                            ${avatar(u.fullName || u.username)}
+                            <h3>${esc(u.fullName || u.username)}</h3>
+                            <div class="muted">@${esc(u.username)}</div>
+                            <div style="margin-top:10px">${statusChip(u)}</div>
+                        </div>
+                        <div class="info">
+                            <div><span>Phone</span><span>${esc(u.phone || 'Not set')}</span></div>
+                            <div><span>Bio</span><span>${esc(u.about || '—')}</span></div>
+                            <div><span>Joined</span><span>${fmt(u.createdAt)}</span></div>
+                            <div><span>Last seen</span><span>${u.online ? 'Online now' : fmt(u.lastSeen)}</span></div>
+                            <div><span>Messages sent</span><span>${Number(st.messagesSent).toLocaleString()}</span></div>
+                            <div><span>Groups</span><span>${st.groups}</span></div>
+                            <div><span>Active statuses</span><span>${st.activeStatuses}</span></div>
+                            <div><span>Blocked users</span><span>${u.blockedCount}</span></div>
+                            ${u.banReason ? `<div><span>Reason</span><span>${esc(u.banReason)}</span></div>` : ''}
+                        </div>
+                        <div class="section">Account actions</div>
+                        <div class="actions">
+                            ${u.status === 'active' ? `<button class="btn warn" data-act="suspend"><i class="fa-solid fa-clock"></i> Suspend</button>` : `<button class="btn ok" data-act="unsuspend"><i class="fa-solid fa-user-check"></i> Unsuspend</button>`}
+                            ${u.status === 'banned' ? `<button class="btn ok" data-act="unban"><i class="fa-solid fa-unlock"></i> Unban</button>` : `<button class="btn danger" data-act="ban"><i class="fa-solid fa-ban"></i> Ban</button>`}
+                            <button class="btn ghost" data-act="logout"><i class="fa-solid fa-right-from-bracket"></i> Force logout</button>
+                            <button class="btn ghost" data-act="reset-password"><i class="fa-solid fa-key"></i> Reset password</button>
+                            <button class="btn danger full" data-act="delete"><i class="fa-solid fa-trash-can"></i> Delete account permanently</button>
+                        </div>
+                    </aside>
+                </div>`;
+            $('close-drawer').onclick = closeDrawer;
+            $('overlay').onclick = (e) => { if (e.target.id === 'overlay') closeDrawer(); };
+            host.querySelectorAll('[data-act]').forEach(btn => btn.onclick = () => runUserAction(username, btn.dataset.act));
+        }
+
+        function closeDrawer() { $('drawer-host').innerHTML = ''; }
+
+        async function runUserAction(username, action) {
+            let body = { action };
+            if (action === 'suspend') {
+                const days = prompt(`Suspend @${username} for how many days? Enter 0 for indefinitely.`, '7');
+                if (days === null) return;
+                const reason = prompt('Reason (shown to the user, optional)', '') || '';
+                body = { action, days: Number(days) || 0, reason };
+            }
+            if (action === 'ban') {
+                if (!confirm(`Ban @${username}? They will be signed out and cannot log in.`)) return;
+                body = { action, reason: prompt('Reason for the ban (optional)', '') || '' };
+            }
+            if (action === 'unsuspend' || action === 'unban' || action === 'logout') {
+                if (action === 'logout' && !confirm(`Sign @${username} out of all devices?`)) return;
+            }
+            if (action === 'reset-password') {
+                const password = prompt(`New password for @${username} (at least 6 characters)`);
+                if (!password) return;
+                body = { action, password };
+            }
+            if (action === 'delete') {
+                const typed = prompt(`This permanently deletes @${username} and all their data. Type the username to confirm.`);
+                if (typed !== username) return toast('Deletion cancelled');
+            }
+
+            const res = await api('POST', `/admin/users/${encodeURIComponent(username)}/action`, body).catch(() => null);
+            if (!res || !res.success) return toast(res?.error || 'Action failed');
+            toast(actionDone(action));
+            closeDrawer();
+            loadUsers();
+            loadStats();
+        }
+
+        function actionDone(a) {
+            return { suspend: 'User suspended', unsuspend: 'Suspension lifted', ban: 'User banned', unban: 'Ban lifted', logout: 'User signed out', 'reset-password': 'Password reset', delete: 'Account deleted' }[a] || 'Done';
+        }
+
+        async function loadGroups() {
+            const res = await api('GET', '/admin/groups').catch(() => null);
+            if (!res || !res.success) return;
+            $('group-rows').innerHTML = res.groups.map(g => `
+                <tr>
+                    <td><div class="who">${avatar(g.name)}<div><div style="font-weight:600">${esc(g.name)}</div><div class="muted">by @${esc(g.createdBy)}</div></div></div></td>
+                    <td>${g.members}</td>
+                    <td class="hide-sm muted">${fmt(g.createdAt)}</td>
+                    <td><button class="btn danger small" data-del-group="${esc(g._id)}" data-name="${esc(g.name)}"><i class="fa-solid fa-trash-can"></i> Delete</button></td>
+                </tr>`).join('');
+            $('group-empty').hidden = res.groups.length > 0;
+            $('group-rows').querySelectorAll('[data-del-group]').forEach(b => b.onclick = async () => {
+                if (!confirm(`Delete the group "${b.dataset.name}" and all its messages?`)) return;
+                const r = await api('DELETE', `/admin/groups/${b.dataset.delGroup}`).catch(() => null);
+                toast(r && r.success ? 'Group deleted' : (r?.error || 'Could not delete'));
+                loadGroups(); loadStats();
+            });
+        }
+
+        async function loadStatuses() {
+            const res = await api('GET', '/admin/statuses').catch(() => null);
+            if (!res || !res.success) return;
+            $('status-rows').innerHTML = res.statuses.map(s => `
+                <tr>
+                    <td><div class="who">${avatar(s.user)}<div style="font-weight:600">@${esc(s.user)}</div></div></td>
+                    <td class="muted">${s.hasImage ? '<i class="fa-solid fa-image"></i> Photo ' : ''}${esc(s.text || '')}</td>
+                    <td class="hide-sm muted">${ago(s.timestamp)}</td>
+                    <td><button class="btn danger small" data-del-status="${esc(s._id)}"><i class="fa-solid fa-trash-can"></i> Remove</button></td>
+                </tr>`).join('');
+            $('status-empty').hidden = res.statuses.length > 0;
+            $('status-rows').querySelectorAll('[data-del-status]').forEach(b => b.onclick = async () => {
+                if (!confirm('Remove this status for everyone?')) return;
+                const r = await api('DELETE', `/admin/statuses/${b.dataset.delStatus}`).catch(() => null);
+                toast(r && r.success ? 'Status removed' : (r?.error || 'Could not remove'));
+                loadStatuses(); loadStats();
+            });
+        }
+
+        async function loadLogs() {
+            const res = await api('GET', '/admin/logs').catch(() => null);
+            if (!res || !res.success) return;
+            $('log-list').innerHTML = res.logs.map(l => `
+                <li><span><b>${esc(l.action)}</b> · ${esc(l.target)} ${l.detail ? `<span class="muted">(${esc(l.detail)})</span>` : ''}</span><span class="muted">${esc(l.admin)} · ${fmt(l.at)}</span></li>`).join('');
+            $('log-empty').hidden = res.logs.length > 0;
+        }
+
+        // Events
+        $('login-btn').onclick = login;
+        $('a-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+        $('a-email').addEventListener('keydown', e => { if (e.key === 'Enter') $('a-password').focus(); });
+        $('logout-btn').onclick = signOut;
+        document.querySelectorAll('.tab').forEach(t => t.onclick = () => setTab(t.dataset.tab));
+        document.querySelectorAll('[data-filter]').forEach(p => p.onclick = () => {
+            state.filter = p.dataset.filter;
+            document.querySelectorAll('[data-filter]').forEach(x => x.classList.toggle('on', x === p));
+            loadUsers();
+        });
+        $('user-search').addEventListener('input', () => {
+            clearTimeout(state.timer);
+            state.timer = setTimeout(() => { state.query = $('user-search').value.trim(); loadUsers(); }, 250);
+        });
+        $('user-rows').addEventListener('click', (e) => {
+            const row = e.target.closest('[data-user]');
+            if (row) openUser(row.dataset.user);
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
+        // Restore a session from this browser tab
+        const saved = JSON.parse(sessionStorage.getItem('bm_admin') || 'null');
+        if (saved && saved.token) {
+            state.token = saved.token;
+            state.email = saved.email;
+            showApp();
+        } else {
+            $('login-screen').hidden = false;
+        }
+    </script>
+</body>
+</html>
