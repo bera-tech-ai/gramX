@@ -114,6 +114,10 @@
         .mini-post img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
         .mini-post .grow { flex: 1; min-width: 0; font-size: 14px; }
         .mini-post .grow span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .count-badge { display: inline-block; min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 700; margin-left: 6px; }
+        .reason { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: rgba(244,63,94,.16); color: #FDA4AF; text-transform: capitalize; }
+        .request-form { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .request-form input { flex: 1; min-width: 180px; }
         @media (max-width: 720px) { .hide-sm { display: none; } .wrap { padding: 14px; } }
     </style>
 </head>
@@ -154,6 +158,8 @@
 
             <nav class="tabs">
                 <button class="tab on" data-tab="users">Users</button>
+                <button class="tab" data-tab="reports">Reports <span id="report-count" class="count-badge" hidden></span></button>
+                <button class="tab" data-tab="requests">Password requests <span id="request-count" class="count-badge" hidden></span></button>
                 <button class="tab" data-tab="posts">Posts</button>
                 <button class="tab" data-tab="groups">Groups</button>
                 <button class="tab" data-tab="statuses">Statuses</button>
@@ -184,6 +190,18 @@
                 </div>
                 <div id="post-feed" class="feed"></div>
                 <div class="empty" id="post-empty" hidden>No public posts right now.</div>
+            </section>
+
+            <section id="tab-reports" hidden>
+                <div class="muted" style="margin-bottom:14px">Reported content is shown here. Only what was reported is visible; private chats are not browsed.</div>
+                <div class="feed" id="report-feed"></div>
+                <div class="empty" id="report-empty" hidden>No open reports. Nothing needs review.</div>
+            </section>
+
+            <section id="tab-requests" hidden>
+                <div class="muted" style="margin-bottom:14px">Check the person's identity, then set a new password and give it to them. The request closes when you save.</div>
+                <div class="feed" id="request-feed"></div>
+                <div class="empty" id="request-empty" hidden>No password requests.</div>
             </section>
 
             <section id="tab-groups" hidden>
@@ -313,7 +331,7 @@
         function setTab(name) {
             state.tab = name;
             document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
-            ['users', 'posts', 'groups', 'statuses', 'logs'].forEach(n => { $(`tab-${n}`).hidden = n !== name; });
+            ['users', 'posts', 'reports', 'requests', 'groups', 'statuses', 'logs'].forEach(n => { $(`tab-${n}`).hidden = n !== name; });
             loadTab();
         }
 
@@ -322,6 +340,8 @@
             if (state.tab === 'groups') loadGroups();
             if (state.tab === 'statuses') loadStatuses();
             if (state.tab === 'posts') loadPosts();
+            if (state.tab === 'reports') loadReports();
+            if (state.tab === 'requests') loadRequests();
             if (state.tab === 'logs') loadLogs();
         }
 
@@ -568,6 +588,113 @@
                 loadUserPosts(username);
             });
         }
+
+        const REASON_LABELS = { spam: 'Spam', harassment: 'Harassment', hate: 'Hate speech', violence: 'Violence', sexual: 'Sexual content', scam: 'Scam', other: 'Other' };
+
+        async function loadReports() {
+            const res = await api('GET', '/admin/reports').catch(() => null);
+            if (!res || !res.success) return;
+            const count = res.reports.length;
+            const badge = $('report-count');
+            badge.textContent = count;
+            badge.hidden = count === 0;
+
+            $('report-feed').innerHTML = res.reports.map(r => {
+                const s = r.snapshot || {};
+                const where = { message: s.chat || 'Message', status: 'Status', 'channel-post': s.channel ? 'Channel: ' + s.channel : 'Channel post', profile: 'Profile' }[r.targetType] || 'Content';
+                return `
+                <article class="post-card">
+                    ${s.image ? `<img src="${esc(s.image)}" alt="Reported photo" data-zoom-admin="${esc(s.image)}">` : ''}
+                    <div class="post-body">
+                        <span class="reason">${esc(REASON_LABELS[r.reason] || r.reason)}</span>
+                        <span class="post-tag" style="margin-left:6px">${esc(where)}</span>
+                        ${s.text ? `<p>${esc(s.text)}</p>` : ''}
+                        ${s.username ? `<p>User: @${esc(s.username)}</p>` : ''}
+                        <div class="muted" style="margin-top:10px">Posted by <b style="color:var(--text)">@${esc(r.targetUser)}</b> · reported by @${esc(r.reporter)} · ${ago(r.createdAt)}</div>
+                        <div class="muted">${r.reportCount} report${r.reportCount === 1 ? '' : 's'} on this content</div>
+                    </div>
+                    <div class="post-actions">
+                        <button class="btn ghost small" data-rdo="dismiss" data-id="${esc(r._id)}"><i class="fa-solid fa-check"></i> Dismiss</button>
+                        ${r.targetType !== 'profile' ? `<button class="btn warn small" data-rdo="delete" data-id="${esc(r._id)}"><i class="fa-solid fa-trash-can"></i> Remove content</button>` : ''}
+                        <button class="btn warn small" data-rdo="suspend" data-id="${esc(r._id)}"><i class="fa-solid fa-clock"></i> Suspend user</button>
+                        <button class="btn danger small" data-rdo="ban" data-id="${esc(r._id)}"><i class="fa-solid fa-ban"></i> Ban user</button>
+                    </div>
+                </article>`;
+            }).join('');
+            $('report-empty').hidden = count > 0;
+        }
+
+        async function resolveReport(id, action) {
+            let body = { action };
+            if (action === 'suspend') {
+                const days = prompt('Suspend for how many days? Enter 0 for indefinitely.', '7');
+                if (days === null) return;
+                body.days = Number(days) || 0;
+            }
+            if (action === 'ban' && !confirm('Ban this user? They will be signed out and cannot log in.')) return;
+            if (action === 'delete' && !confirm('Remove this content for everyone?')) return;
+            const res = await api('POST', `/admin/reports/${id}/resolve`, body).catch(() => null);
+            toast(res && res.success ? 'Done' : (res?.error || 'Action failed'));
+            loadReports();
+            loadStats();
+        }
+
+        async function loadRequests() {
+            const res = await api('GET', '/admin/password-requests').catch(() => null);
+            if (!res || !res.success) return;
+            const count = res.requests.length;
+            const badge = $('request-count');
+            badge.textContent = count;
+            badge.hidden = count === 0;
+
+            $('request-feed').innerHTML = res.requests.map(r => `
+                <article class="post-card">
+                    <div class="post-body">
+                        <div class="who">${avatar(r.fullName || r.username)}<div><div style="font-weight:700">${esc(r.fullName || r.username)}</div><div class="muted">@${esc(r.username)}</div></div></div>
+                        <div class="muted" style="margin-top:10px">Phone: ${esc(r.phone || 'not given')}</div>
+                        <div class="muted">Account created: ${fmt(r.accountCreated)}</div>
+                        <div class="muted">Requested: ${ago(r.createdAt)}</div>
+                        <div class="request-form">
+                            <input type="text" data-newpass="${esc(r._id)}" placeholder="New password (6+ characters)" autocomplete="off">
+                            <button class="btn ok small" data-rset="${esc(r._id)}"><i class="fa-solid fa-key"></i> Set password</button>
+                        </div>
+                    </div>
+                    <div class="post-actions">
+                        <button class="btn ghost small" data-rreject="${esc(r._id)}"><i class="fa-solid fa-xmark"></i> Reject request</button>
+                    </div>
+                </article>`).join('');
+            $('request-empty').hidden = count > 0;
+        }
+
+        $('report-feed').addEventListener('click', (e) => {
+            const zoom = e.target.closest('[data-zoom-admin]');
+            if (zoom) return window.open(zoom.dataset.zoomAdmin, '_blank');
+            const b = e.target.closest('[data-rdo]');
+            if (b) resolveReport(b.dataset.id, b.dataset.rdo);
+        });
+
+        $('request-feed').addEventListener('click', async (e) => {
+            const set = e.target.closest('[data-rset]');
+            if (set) {
+                const id = set.dataset.rset;
+                const input = document.querySelector(`[data-newpass="${id}"]`);
+                const password = input ? input.value : '';
+                if (password.length < 6) return toast('Password must be at least 6 characters');
+                const res = await api('POST', `/admin/password-requests/${id}/resolve`, { password }).catch(() => null);
+                if (res && res.success) {
+                    toast('Password set. Give it to the user now.');
+                    loadRequests();
+                    loadStats();
+                } else toast(res?.error || 'Could not set the password');
+                return;
+            }
+            const rej = e.target.closest('[data-rreject]');
+            if (rej && confirm('Reject this request?')) {
+                const res = await api('POST', `/admin/password-requests/${rej.dataset.rreject}/resolve`, { reject: true }).catch(() => null);
+                toast(res && res.success ? 'Request rejected' : (res?.error || 'Could not reject'));
+                loadRequests();
+            }
+        });
 
         async function loadLogs() {
             const res = await api('GET', '/admin/logs').catch(() => null);
