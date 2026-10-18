@@ -27,6 +27,8 @@ const COLLECTIONS = {
     STARRED: 'starred',
     CHANNELS: 'channels',
     CHANNEL_POSTS: 'channel_posts',
+    REPORTS: 'reports',
+    PASSWORD_REQUESTS: 'password_requests',
     ADMINS: 'admins',
     ADMIN_LOGS: 'admin_logs'
 };
@@ -38,7 +40,7 @@ const LIMITS = {
     ABOUT: 140,
     PASSWORD_MIN: 6,
     PASSWORD_MAX: 100,
-    HISTORY: 500,
+    HISTORY: 150,
     CONVERSATIONS: 200,
     PEOPLE: 300,
     IMAGE_CHARS: 3 * 1024 * 1024,
@@ -80,6 +82,8 @@ const groups = () => db.collection(COLLECTIONS.GROUPS);
 const starred = () => db.collection(COLLECTIONS.STARRED);
 const channels = () => db.collection(COLLECTIONS.CHANNELS);
 const channelPosts = () => db.collection(COLLECTIONS.CHANNEL_POSTS);
+const reports = () => db.collection(COLLECTIONS.REPORTS);
+const passwordRequests = () => db.collection(COLLECTIONS.PASSWORD_REQUESTS);
 
 // Channel info as seen by one user
 function channelView(c, me) {
@@ -158,6 +162,8 @@ async function connectToDatabase() {
     await starred().createIndex({ owner: 1, messageId: 1 }, { unique: true });
     await channels().createIndex({ subscribers: 1 });
     await channelPosts().createIndex({ channelId: 1, timestamp: 1 });
+    await reports().createIndex({ status: 1, createdAt: 1 });
+    await passwordRequests().createIndex({ status: 1, createdAt: 1 });
     await ensureAdmin();
 
     console.log(`Connected to MongoDB (${DB_NAME})`);
@@ -336,6 +342,7 @@ function sanitizeSettings(input) {
         if (PRIVACY_VALUES.includes(input.privacy.lastSeen)) patch['privacy.lastSeen'] = input.privacy.lastSeen;
         if (PRIVACY_VALUES.includes(input.privacy.profilePhoto)) patch['privacy.profilePhoto'] = input.privacy.profilePhoto;
         if (typeof input.privacy.readReceipts === 'boolean') patch['privacy.readReceipts'] = input.privacy.readReceipts;
+        if (['everyone', 'contacts'].includes(input.privacy.status)) patch['privacy.status'] = input.privacy.status;
     }
     return patch;
 }
@@ -353,6 +360,24 @@ async function countPinned(owner, exceptPartner) {
         pinned: true,
         partner: { $ne: exceptPartner }
     });
+}
+
+async function canSeeStatus(me, s) {
+    if (s.user === me || s.audience === 'everyone') return true;
+    return sharesContact(me, s.user);
+}
+
+async function filterVisibleStatuses(me, list) {
+    const cache = new Map();
+    const visible = [];
+    for (const s of list) {
+        if (s.user !== me && s.audience !== 'everyone') {
+            if (!cache.has(s.user)) cache.set(s.user, await sharesContact(me, s.user));
+            if (!cache.get(s.user)) continue;
+        }
+        visible.push(s);
+    }
+    return visible;
 }
 
 async function sharesContact(a, b) {
@@ -382,7 +407,7 @@ async function buildProfile(viewer, username, settings) {
     const seenOk = await visibleTo(viewer, username, s.privacy?.lastSeen || 'everyone');
 
     const userDoc = await users().findOne({ username }, { projection: { lastSeen: 1, phone: 1 } });
-    const phoneOk = viewer === username || await sharesContact(viewer, username);
+    const phoneOk = !!userDoc?.phone && (viewer === username || await sharesContact(viewer, username));
     const lastSeen = seenOk ? (userDoc?.lastSeen || null) : null;
 
     return {
@@ -621,6 +646,23 @@ async function requireAuth(req, res, next) {
 
 // HTTP routes
 
+app.post('/forgot-password', async (req, res) => {
+    try {
+        const username = String(req.body.username || '').trim();
+        const user = username ? await users().findOne({ username }, { projection: { _id: 1 } }) : null;
+        if (user) {
+            const open = await passwordRequests().findOne({ username, status: 'open' });
+            if (!open) await passwordRequests().insertOne({ username, status: 'open', createdAt: new Date() });
+        }
+        res.json({
+            success: true,
+            message: 'Your request has been sent to the admin. They will contact you with your new password.'
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not send the request. Try again.' });
+    }
+});
+
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -643,6 +685,11 @@ app.post('/register', async (req, res) => {
             return res.json({ success: false, error: 'Password must be 6 to 100 characters' });
         }
 
+        const avatarPhoto = req.body.avatarPhoto;
+        if (avatarPhoto && !validDataUrl(avatarPhoto, IMAGE_RE, LIMITS.IMAGE_CHARS)) {
+            return res.json({ success: false, error: 'That profile photo is too large or not supported' });
+        }
+
         await users().insertOne({
             username,
             passwordHash: hashPassword(password),
@@ -653,7 +700,7 @@ app.post('/register', async (req, res) => {
             lastSeen: new Date()
         });
 
-        await settingsCol().insertOne({ username, ...defaultSettings(fullName || null) });
+        await settingsCol().insertOne({ username, ...defaultSettings(fullName || null), customAvatar: avatarPhoto || null });
         res.json({ success: true, username });
     } catch (err) {
         if (err.code === 11000) return res.json({ success: false, error: 'Username taken' });
@@ -1063,6 +1110,145 @@ app.get('/admin/users/:username/posts', requireAdminAuth, async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Could not load posts' });
+    }
+});
+
+app.get('/admin/reports', requireAdminAuth, async (req, res) => {
+    try {
+        const list = await reports().find({ status: 'open' }).sort({ createdAt: 1 }).limit(200).toArray();
+        const counts = {};
+        list.forEach(r => { counts[r.targetId] = (counts[r.targetId] || 0) + 1; });
+        res.json({
+            success: true,
+            reports: list.map(r => ({
+                _id: String(r._id),
+                reason: r.reason,
+                targetType: r.targetType,
+                targetId: r.targetId,
+                targetUser: r.targetUser,
+                reporter: r.reporter,
+                snapshot: r.snapshot || {},
+                reportCount: counts[r.targetId] || 1,
+                createdAt: r.createdAt
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load reports' });
+    }
+});
+
+async function removeReportedContent(r) {
+    if (!ObjectId.isValid(r.targetId)) return;
+    const id = new ObjectId(r.targetId);
+    if (r.targetType === 'message' || r.targetType === 'channel-post') {
+        const col = r.targetType === 'message' ? messages() : channelPosts();
+        await col.updateOne({ _id: id }, { $set: { deleted: true, text: '', image: null, audio: null } });
+    } else if (r.targetType === 'status') {
+        await statuses().deleteOne({ _id: id });
+    }
+}
+
+app.post('/admin/reports/:id/resolve', requireAdminAuth, async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) return res.json({ success: false, error: 'Report not found' });
+        const r = await reports().findOne({ _id: new ObjectId(req.params.id) });
+        if (!r) return res.json({ success: false, error: 'Report not found' });
+
+        const action = String(req.body.action || 'dismiss');
+        const reason = String(req.body.reason || r.reason || '').slice(0, 200);
+        const now = new Date();
+
+        if (action === 'delete') await removeReportedContent(r);
+
+        if (action === 'suspend') {
+            const days = Math.max(0, Number(req.body.days) || 0);
+            await users().updateOne({ username: r.targetUser }, {
+                $set: {
+                    status: 'suspended',
+                    suspendedUntil: days > 0 ? new Date(now.getTime() + days * 86400000) : null,
+                    banReason: reason
+                },
+                $unset: { sessionToken: '' }
+            });
+            disconnectUser(r.targetUser);
+        }
+
+        if (action === 'ban') {
+            await users().updateOne({ username: r.targetUser }, {
+                $set: { status: 'banned', suspendedUntil: null, banReason: reason },
+                $unset: { sessionToken: '' }
+            });
+            disconnectUser(r.targetUser);
+        }
+
+        // Every open report about the same content is closed together
+        await reports().updateMany(
+            { targetId: r.targetId, status: 'open' },
+            { $set: { status: action === 'dismiss' ? 'dismissed' : 'actioned', resolvedAt: now, resolvedBy: req.admin, resolution: action } }
+        );
+        await adminLog(req.admin, `report-${action}`, r.targetUser, reason);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Report resolve error:', err);
+        res.status(500).json({ success: false, error: 'Action failed' });
+    }
+});
+
+app.get('/admin/password-requests', requireAdminAuth, async (req, res) => {
+    try {
+        const list = await passwordRequests().find({ status: 'open' }).sort({ createdAt: 1 }).limit(200).toArray();
+        const accounts = await users().find(
+            { username: { $in: list.map(r => r.username) } },
+            { projection: { username: 1, fullName: 1, phone: 1, createdAt: 1 } }
+        ).toArray();
+        const byName = new Map(accounts.map(u => [u.username, u]));
+        res.json({
+            success: true,
+            requests: list.map(r => {
+                const u = byName.get(r.username) || {};
+                return {
+                    _id: String(r._id),
+                    username: r.username,
+                    fullName: u.fullName || null,
+                    phone: u.phone || null,
+                    accountCreated: u.createdAt || null,
+                    createdAt: r.createdAt
+                };
+            })
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load requests' });
+    }
+});
+
+app.post('/admin/password-requests/:id/resolve', requireAdminAuth, async (req, res) => {
+    try {
+        if (!ObjectId.isValid(req.params.id)) return res.json({ success: false, error: 'Request not found' });
+        const r = await passwordRequests().findOne({ _id: new ObjectId(req.params.id), status: 'open' });
+        if (!r) return res.json({ success: false, error: 'Request not found' });
+        const now = new Date();
+
+        if (req.body.reject === true) {
+            await passwordRequests().updateOne({ _id: r._id }, { $set: { status: 'rejected', resolvedAt: now, resolvedBy: req.admin } });
+            await adminLog(req.admin, 'password-request-rejected', r.username, '');
+            return res.json({ success: true });
+        }
+
+        const password = String(req.body.password || '');
+        if (password.length < LIMITS.PASSWORD_MIN || password.length > LIMITS.PASSWORD_MAX) {
+            return res.json({ success: false, error: 'Password must be 6 to 100 characters' });
+        }
+
+        await users().updateOne({ username: r.username }, {
+            $set: { passwordHash: hashPassword(password) },
+            $unset: { sessionToken: '' }
+        });
+        disconnectUser(r.username);
+        await passwordRequests().updateOne({ _id: r._id }, { $set: { status: 'done', resolvedAt: now, resolvedBy: req.admin } });
+        await adminLog(req.admin, 'password-reset-request', r.username, '');
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not set the password' });
     }
 });
 
@@ -1948,6 +2134,87 @@ io.on('connection', (socket) => {
         return {};
     });
 
+    on('report-content', async (d, me) => {
+        const reasons = ['spam', 'harassment', 'hate', 'violence', 'sexual', 'scam', 'other'];
+        if (!reasons.includes(d.reason)) throw fail('Choose a reason for the report');
+
+        const type = String(d.targetType || '');
+        const id = String(d.targetId || '');
+        let owner;
+        let snapshot = {};
+
+        if (type === 'message') {
+            if (!ObjectId.isValid(id)) throw fail('Message not found');
+            const m = await messages().findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
+            if (!m) throw fail('Message not found');
+            if (m.groupId) await getGroupForMember(m.groupId, me);
+            else if (m.sender !== me && m.receiver !== me) throw fail('Message not found');
+            if (m.sender === me) throw fail('You cannot report your own message');
+            owner = m.sender;
+            snapshot = { text: m.text || '', image: m.image || null, audio: !!m.audio, chat: m.groupId ? 'Group' : 'Private chat' };
+        } else if (type === 'status') {
+            if (!ObjectId.isValid(id)) throw fail('Status not found');
+            const s = await statuses().findOne({ _id: new ObjectId(id), expiresAt: { $gt: new Date() } });
+            if (!s || !(await canSeeStatus(me, s))) throw fail('Status not found');
+            if (s.user === me) throw fail('You cannot report your own status');
+            owner = s.user;
+            snapshot = { text: s.text || '', image: s.image || null };
+        } else if (type === 'channel-post') {
+            if (!ObjectId.isValid(id)) throw fail('Post not found');
+            const p = await channelPosts().findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
+            if (!p) throw fail('Post not found');
+            const c = await getChannel(p.channelId);
+            if (!(c.subscribers || []).includes(me)) throw fail('Follow the channel to report its posts');
+            owner = p.sender;
+            snapshot = { text: p.text || '', image: p.image || null, channel: c.name };
+        } else if (type === 'profile') {
+            if (!(await userExists(id))) throw fail('User not found');
+            if (id === me) throw fail('You cannot report yourself');
+            owner = id;
+            snapshot = { username: id };
+        } else {
+            throw fail('Nothing to report');
+        }
+
+        const already = await reports().findOne({ reporter: me, targetId: id, status: 'open' });
+        if (already) return {};
+
+        await reports().insertOne({
+            reporter: me,
+            targetType: type,
+            targetId: id,
+            targetUser: owner,
+            reason: d.reason,
+            snapshot,
+            status: 'open',
+            createdAt: new Date()
+        });
+        return {};
+    });
+
+    on('load-older', async (d, me) => {
+        const before = d.before ? new Date(d.before) : new Date();
+        if (d.groupId) {
+            const g = await getGroupForMember(String(d.groupId), me);
+            const list = await messages().find({
+                groupId: String(g._id),
+                hiddenFor: { $ne: me },
+                timestamp: { $lt: before }
+            }).sort({ timestamp: -1 }).limit(LIMITS.HISTORY).toArray();
+            return { messages: list.reverse().map(publicGroupMessage), hasMore: list.length === LIMITS.HISTORY };
+        }
+
+        const target = String(d.target || '');
+        if (!target) throw fail('Invalid chat');
+        const list = await messages().find({
+            groupId: null,
+            hiddenFor: { $ne: me },
+            timestamp: { $lt: before },
+            $or: [{ sender: me, receiver: target }, { sender: target, receiver: me }]
+        }).sort({ timestamp: -1 }).limit(LIMITS.HISTORY).toArray();
+        return { messages: list.reverse().map(publicMessage), hasMore: list.length === LIMITS.HISTORY };
+    });
+
     on('set-activity', async (d, me) => {
         const kind = d.kind === 'recording' ? 'recording' : 'typing';
         const on = d.on === true;
@@ -2003,6 +2270,7 @@ io.on('connection', (socket) => {
             text,
             image,
             bg,
+            audience: (await getSettings(me)).privacy?.status === 'everyone' ? 'everyone' : 'contacts',
             views: [],
             likes: [],
             timestamp: now,
@@ -2013,8 +2281,8 @@ io.on('connection', (socket) => {
     });
 
     on('get-statuses', async (_d, me) => {
-        const list = await statuses().find({ expiresAt: { $gt: new Date() } })
-            .sort({ timestamp: 1 }).limit(LIMITS.STATUS_LIST).toArray();
+        const list = await filterVisibleStatuses(me, await statuses().find({ expiresAt: { $gt: new Date() } })
+            .sort({ timestamp: 1 }).limit(LIMITS.STATUS_LIST).toArray());
 
         // Profiles needed for the owners, and for the people who viewed or liked my statuses
         const names = new Set();
@@ -2037,7 +2305,8 @@ io.on('connection', (socket) => {
                     _id: String(s._id),
                     user: s.user,
                     text: s.text || '',
-                    image: s.image || null,
+                    hasImage: !!s.image,
+                    image: null,
                     bg: s.bg || STATUS_BACKGROUNDS[0],
                     timestamp: s.timestamp,
                     expiresAt: s.expiresAt,
@@ -2054,14 +2323,24 @@ io.on('connection', (socket) => {
         };
     });
 
+    on('get-status-image', async (d, me) => {
+        if (!ObjectId.isValid(d.statusId)) throw fail('Status not found');
+        const s = await statuses().findOne(
+            { _id: new ObjectId(d.statusId), expiresAt: { $gt: new Date() } },
+            { projection: { image: 1, user: 1, audience: 1 } }
+        );
+        if (!s || !(await canSeeStatus(me, s))) throw fail('Status not found');
+        return { image: s.image || null };
+    });
+
     on('view-status', async (d, me) => {
         if (!ObjectId.isValid(d.statusId)) throw fail('Status not found');
         const id = new ObjectId(d.statusId);
         const status = await statuses().findOne(
             { _id: id, expiresAt: { $gt: new Date() } },
-            { projection: { user: 1 } }
+            { projection: { user: 1, audience: 1 } }
         );
-        if (!status) throw fail('Status not found');
+        if (!status || !(await canSeeStatus(me, status))) throw fail('Status not found');
         if (status.user === me) return {};
 
         await statuses().updateOne(
@@ -2077,9 +2356,9 @@ io.on('connection', (socket) => {
         const id = new ObjectId(d.statusId);
         const status = await statuses().findOne(
             { _id: id, expiresAt: { $gt: new Date() } },
-            { projection: { user: 1 } }
+            { projection: { user: 1, audience: 1 } }
         );
-        if (!status) throw fail('Status not found');
+        if (!status || !(await canSeeStatus(me, status))) throw fail('Status not found');
         if (status.user === me) throw fail('You cannot like your own status');
 
         if (d.liked === true) {
