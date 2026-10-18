@@ -102,6 +102,18 @@
         .empty { padding: 40px; text-align: center; color: var(--muted); }
         .logs li { list-style: none; padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
         .logs { padding: 0; margin: 0; }
+        .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+        .post-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; animation: fade .3s var(--ease); }
+        .post-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; cursor: zoom-in; background: var(--surface-2); }
+        .post-body { padding: 14px 16px; flex: 1; }
+        .post-body p { white-space: pre-wrap; word-wrap: break-word; font-size: 15px; line-height: 1.45; margin-top: 6px; }
+        .post-tag { display: inline-block; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+        .post-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+        .mini-post { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+        .mini-post:last-child { border-bottom: 0; }
+        .mini-post img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
+        .mini-post .grow { flex: 1; min-width: 0; font-size: 14px; }
+        .mini-post .grow span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media (max-width: 720px) { .hide-sm { display: none; } .wrap { padding: 14px; } }
     </style>
 </head>
@@ -142,6 +154,7 @@
 
             <nav class="tabs">
                 <button class="tab on" data-tab="users">Users</button>
+                <button class="tab" data-tab="posts">Posts</button>
                 <button class="tab" data-tab="groups">Groups</button>
                 <button class="tab" data-tab="statuses">Statuses</button>
                 <button class="tab" data-tab="logs">Activity log</button>
@@ -161,6 +174,16 @@
                     </table>
                     <div class="empty" id="user-empty" hidden>No users match.</div>
                 </div>
+            </section>
+
+            <section id="tab-posts" hidden>
+                <div class="toolbar">
+                    <button class="pill on" data-pfilter="all">All</button>
+                    <button class="pill" data-pfilter="status">Statuses</button>
+                    <button class="pill" data-pfilter="channel">Channel posts</button>
+                </div>
+                <div id="post-feed" class="feed"></div>
+                <div class="empty" id="post-empty" hidden>No public posts right now.</div>
             </section>
 
             <section id="tab-groups" hidden>
@@ -290,7 +313,7 @@
         function setTab(name) {
             state.tab = name;
             document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === name));
-            ['users', 'groups', 'statuses', 'logs'].forEach(n => { $(`tab-${n}`).hidden = n !== name; });
+            ['users', 'posts', 'groups', 'statuses', 'logs'].forEach(n => { $(`tab-${n}`).hidden = n !== name; });
             loadTab();
         }
 
@@ -298,6 +321,7 @@
             if (state.tab === 'users') loadUsers();
             if (state.tab === 'groups') loadGroups();
             if (state.tab === 'statuses') loadStatuses();
+            if (state.tab === 'posts') loadPosts();
             if (state.tab === 'logs') loadLogs();
         }
 
@@ -347,6 +371,8 @@
                             <div><span>Blocked users</span><span>${u.blockedCount}</span></div>
                             ${u.banReason ? `<div><span>Reason</span><span>${esc(u.banReason)}</span></div>` : ''}
                         </div>
+                        <div class="section">Recent posts</div>
+                        <div id="user-posts"><div class="muted">Loading…</div></div>
                         <div class="section">Account actions</div>
                         <div class="actions">
                             ${u.status === 'active' ? `<button class="btn warn" data-act="suspend"><i class="fa-solid fa-clock"></i> Suspend</button>` : `<button class="btn ok" data-act="unsuspend"><i class="fa-solid fa-user-check"></i> Unsuspend</button>`}
@@ -360,6 +386,7 @@
             $('close-drawer').onclick = closeDrawer;
             $('overlay').onclick = (e) => { if (e.target.id === 'overlay') closeDrawer(); };
             host.querySelectorAll('[data-act]').forEach(btn => btn.onclick = () => runUserAction(username, btn.dataset.act));
+            loadUserPosts(username);
         }
 
         function closeDrawer() { $('drawer-host').innerHTML = ''; }
@@ -436,6 +463,109 @@
                 const r = await api('DELETE', `/admin/statuses/${b.dataset.delStatus}`).catch(() => null);
                 toast(r && r.success ? 'Status removed' : (r?.error || 'Could not remove'));
                 loadStatuses(); loadStats();
+            });
+        }
+
+        state.postFilter = 'all';
+        state.postItems = [];
+
+        async function loadPosts() {
+            const [st, ch] = await Promise.all([
+                api('GET', '/admin/statuses').catch(() => null),
+                api('GET', '/admin/channel-posts').catch(() => null)
+            ]);
+            const statusItems = (st && st.success ? st.statuses : []).map(s => ({
+                kind: 'status', id: s._id, user: s.user, text: s.text, image: s.image, timestamp: s.timestamp, where: 'Status'
+            }));
+            const channelItems = (ch && ch.success ? ch.posts : []).map(p => ({
+                kind: 'channel', id: p._id, user: p.sender, text: p.text, image: p.image, timestamp: p.timestamp, where: p.channel
+            }));
+            state.postItems = [...statusItems, ...channelItems].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            renderPosts();
+        }
+
+        function renderPosts() {
+            const items = state.postItems.filter(p => state.postFilter === 'all' || p.kind === state.postFilter);
+            $('post-feed').innerHTML = items.map(p => `
+                <article class="post-card">
+                    ${p.image ? `<img src="${esc(p.image)}" alt="Post photo" data-zoom-admin="${esc(p.image)}">` : ''}
+                    <div class="post-body">
+                        <span class="post-tag">${p.kind === 'status' ? 'Status' : esc(p.where)}</span>
+                        ${p.text ? `<p>${esc(p.text)}</p>` : (p.image ? '' : '<p class="muted">(empty)</p>')}
+                        <div class="muted" style="margin-top:10px">by <b style="color:var(--text)">@${esc(p.user)}</b> · ${ago(p.timestamp)}</div>
+                    </div>
+                    <div class="post-actions">
+                        <button class="btn danger small" data-pdel="${p.kind}:${esc(p.id)}"><i class="fa-solid fa-trash-can"></i> Delete</button>
+                        <button class="btn warn small" data-puser="${esc(p.user)}" data-pact="suspend"><i class="fa-solid fa-clock"></i> Suspend</button>
+                        <button class="btn danger small" data-puser="${esc(p.user)}" data-pact="ban"><i class="fa-solid fa-ban"></i> Ban</button>
+                        <button class="btn ghost small" data-puser-open="${esc(p.user)}"><i class="fa-solid fa-user"></i> Profile</button>
+                    </div>
+                </article>`).join('');
+            $('post-empty').hidden = items.length > 0;
+        }
+
+        async function removePost(kindAndId) {
+            const [kind, id] = kindAndId.split(':');
+            if (!confirm('Delete this post? The user will not be able to recover it.')) return;
+            const path = kind === 'status' ? `/admin/statuses/${id}` : `/admin/channel-posts/${id}`;
+            const res = await api('DELETE', path).catch(() => null);
+            toast(res && res.success ? 'Post deleted' : (res?.error || 'Could not delete'));
+            loadPosts();
+            loadStats();
+        }
+
+        async function postAction(username, action) {
+            if (action === 'ban' && !confirm(`Ban @${username}? They will be signed out and cannot log in.`)) return;
+            if (action === 'suspend') {
+                const days = prompt(`Suspend @${username} for how many days? Enter 0 for indefinitely.`, '7');
+                if (days === null) return;
+                const res = await api('POST', `/admin/users/${encodeURIComponent(username)}/action`, { action, days: Number(days) || 0, reason: 'Posted content that breaks the rules' }).catch(() => null);
+                toast(res && res.success ? 'User suspended' : (res?.error || 'Action failed'));
+            } else {
+                const res = await api('POST', `/admin/users/${encodeURIComponent(username)}/action`, { action, reason: 'Posted content that breaks the rules' }).catch(() => null);
+                toast(res && res.success ? 'User banned' : (res?.error || 'Action failed'));
+            }
+            loadStats();
+            loadPosts();
+        }
+
+        document.querySelectorAll('[data-pfilter]').forEach(p => p.onclick = () => {
+            state.postFilter = p.dataset.pfilter;
+            document.querySelectorAll('[data-pfilter]').forEach(x => x.classList.toggle('on', x === p));
+            renderPosts();
+        });
+        $('post-feed').addEventListener('click', (e) => {
+            const zoom = e.target.closest('[data-zoom-admin]');
+            if (zoom) return window.open(zoom.dataset.zoomAdmin, '_blank');
+            const del = e.target.closest('[data-pdel]');
+            if (del) return removePost(del.dataset.pdel);
+            const act = e.target.closest('[data-pact]');
+            if (act) return postAction(act.dataset.puser, act.dataset.pact);
+            const prof = e.target.closest('[data-puser-open]');
+            if (prof) openUser(prof.dataset.puserOpen);
+        });
+
+        // Recent posts shown inside a user's details
+        async function loadUserPosts(username) {
+            const res = await api('GET', `/admin/users/${encodeURIComponent(username)}/posts`).catch(() => null);
+            const box = document.getElementById('user-posts');
+            if (!box) return;
+            if (!res || !res.success) { box.innerHTML = '<div class="muted">Could not load posts.</div>'; return; }
+            const all = [
+                ...res.statuses.map(s => ({ kind: 'status', ...s })),
+                ...res.posts.map(p => ({ kind: 'channel', ...p }))
+            ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            box.innerHTML = all.length
+                ? `<div class="info" style="padding:4px 14px">${all.map(p => `
+                    <div class="mini-post">
+                        ${p.image ? `<img src="${esc(p.image)}" alt="">` : ''}
+                        <div class="grow"><span>${esc(p.text || (p.image ? 'Photo' : '(empty)'))}</span><span class="muted">${p.kind === 'status' ? 'Status' : 'Channel post'} · ${ago(p.timestamp)}</span></div>
+                        <button class="btn danger small" data-udel="${p.kind}:${esc(p._id)}" data-user="${esc(username)}"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`).join('')}</div>`
+                : '<div class="muted">No active posts.</div>';
+            box.querySelectorAll('[data-udel]').forEach(b => b.onclick = async () => {
+                await removePost(b.dataset.udel);
+                loadUserPosts(username);
             });
         }
 
