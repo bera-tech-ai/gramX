@@ -997,7 +997,7 @@ app.get('/admin/statuses', requireAdminAuth, async (req, res) => {
     res.json({
         success: true,
         statuses: list.map(s => ({
-            _id: String(s._id), user: s.user, text: s.text || '', hasImage: !!s.image, timestamp: s.timestamp
+            _id: String(s._id), user: s.user, text: s.text || '', image: s.image || null, hasImage: !!s.image, timestamp: s.timestamp
         }))
     });
 });
@@ -1009,6 +1009,61 @@ app.delete('/admin/statuses/:id', requireAdminAuth, async (req, res) => {
     io.emit('new-status', {});
     await adminLog(req.admin, 'delete-status', req.params.id, '');
     res.json({ success: true });
+});
+
+app.get('/admin/channel-posts', requireAdminAuth, async (req, res) => {
+    try {
+        const list = await channelPosts().find({ deleted: { $ne: true } }).sort({ timestamp: -1 }).limit(200).toArray();
+        const ids = [...new Set(list.map(p => p.channelId))].filter(id => ObjectId.isValid(id)).map(id => new ObjectId(id));
+        const chans = await channels().find({ _id: { $in: ids } }, { projection: { name: 1 } }).toArray();
+        const names = new Map(chans.map(c => [String(c._id), c.name]));
+        res.json({
+            success: true,
+            posts: list.map(p => ({
+                _id: String(p._id),
+                channelId: p.channelId,
+                channel: names.get(p.channelId) || 'Deleted channel',
+                sender: p.sender,
+                text: p.text || '',
+                image: p.image || null,
+                hasAudio: !!p.audio,
+                timestamp: p.timestamp
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load posts' });
+    }
+});
+
+app.delete('/admin/channel-posts/:id', requireAdminAuth, async (req, res) => {
+    if (!ObjectId.isValid(req.params.id)) return res.json({ success: false, error: 'Post not found' });
+    const p = await channelPosts().findOne({ _id: new ObjectId(req.params.id) });
+    if (!p || p.deleted) return res.json({ success: false, error: 'Post not found' });
+
+    await channelPosts().updateOne({ _id: p._id }, { $set: { deleted: true, text: '', image: null, audio: null } });
+    if (ObjectId.isValid(p.channelId)) {
+        const c = await channels().findOne({ _id: new ObjectId(p.channelId) });
+        if (c) await emitChannel(c, 'channel-post-deleted', { channelId: p.channelId, postId: String(p._id) });
+    }
+    await adminLog(req.admin, 'delete-channel-post', p.sender, String(p._id));
+    res.json({ success: true });
+});
+
+app.get('/admin/users/:username/posts', requireAdminAuth, async (req, res) => {
+    try {
+        const username = req.params.username;
+        const [sts, posts] = await Promise.all([
+            statuses().find({ user: username, expiresAt: { $gt: new Date() } }).sort({ timestamp: -1 }).limit(50).toArray(),
+            channelPosts().find({ sender: username, deleted: { $ne: true } }).sort({ timestamp: -1 }).limit(50).toArray()
+        ]);
+        res.json({
+            success: true,
+            statuses: sts.map(s => ({ _id: String(s._id), text: s.text || '', image: s.image || null, timestamp: s.timestamp })),
+            posts: posts.map(p => ({ _id: String(p._id), text: p.text || '', image: p.image || null, timestamp: p.timestamp }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not load posts' });
+    }
 });
 
 app.get('/admin/logs', requireAdminAuth, async (req, res) => {
