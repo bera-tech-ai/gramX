@@ -9,7 +9,15 @@
     "plugins": [
       "expo-dev-client",
       "@config-plugins/react-native-webrtc",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0D0F14"
+        }
+      ]
     ],
     "android": {
       "permissions": [
@@ -31,11 +39,6 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
-    },
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0D0F14"
     },
     "ios": {
       "supportsTablet": true,

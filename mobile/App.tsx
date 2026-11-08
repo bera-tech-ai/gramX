@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,10 +20,14 @@ import { io, Socket } from 'socket.io-client';
 import { mediaDevices, RTCPeerConnection, RTCIceCandidate, RTCSessionDescription } from './webrtc';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-const BRAND = '#7C5CFC';
-const BG = '#0D0F14';
-const PANEL = '#151922';
-const MUTED = '#8F96A8';
+const BRAND = '#42B4FF';
+const BRAND_DARK = '#1678C8';
+const BG = '#050818';
+const PANEL = '#0D1A38';
+const PANEL_RAISED = '#12234A';
+const MUTED = '#8D9AB8';
+const LINE = '#1D3159';
+const GREEN = '#4CE095';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -61,6 +66,7 @@ type Conversation = {
   lastMessage?: { text?: string; timestamp?: string; sender?: string };
   unread?: number;
 };
+type StatusItem = { _id: string; user: string; text: string; timestamp: string; bg?: string; viewedByMe?: boolean; likedByMe?: boolean };
 type Message = {
   _id?: string;
   sender: string;
@@ -70,7 +76,7 @@ type Message = {
   pending?: boolean;
 };
 
-type AppTab = 'chats' | 'status' | 'calls' | 'settings';
+type AppTab = 'chats' | 'status' | 'calls' | 'contacts' | 'settings';
 type CallState = { callId: string; peer: string; role: 'caller' | 'callee'; state: 'ringing' | 'connecting' | 'connected'; incoming?: boolean };
 
 type SocketReply<T> = { success: boolean; error?: string } & T;
@@ -87,8 +93,9 @@ function initials(name: string) {
   return name.slice(0, 1).toUpperCase();
 }
 
-function Avatar({ name, small = false }: { name: string; small?: boolean }) {
-  return <View style={[styles.avatar, small && styles.avatarSmall]}><Text style={styles.avatarText}>{initials(name)}</Text></View>;
+function Avatar({ name, initials: initialProp, small = false, size, accent = BRAND, ring = false }: { name?: string; initials?: string; small?: boolean; size?: number; accent?: string; ring?: boolean }) {
+  const dimension = size || (small ? 38 : 48);
+  return <View style={{ width: dimension + (ring ? 8 : 0), height: dimension + (ring ? 8 : 0), borderRadius: dimension, borderWidth: ring ? 2 : 0, borderColor: accent, alignItems: 'center', justifyContent: 'center' }}><View style={{ width: dimension, height: dimension, borderRadius: dimension, backgroundColor: `${accent}2B`, borderWidth: 1, borderColor: LINE, alignItems: 'center', justifyContent: 'center' }}><Text style={[styles.avatarText, { color: accent, fontSize: dimension * 0.34 }]}>{initialProp || initials(name || '?')}</Text></View></View>;
 }
 
 export default function App() {
@@ -101,6 +108,8 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [busy, setBusy] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [contacts, setContacts] = useState<Profile[]>([]);
+  const [statuses, setStatuses] = useState<StatusItem[]>([]);
   const [activePartner, setActivePartner] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<AppTab>('chats');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -197,6 +206,10 @@ export default function App() {
       if (callRef.current?.callId === callId) finishCall(false);
     });
     loadConversations(socket);
+    loadContacts();
+    loadStatuses(socket);
+    socket.on('new-status', () => loadStatuses(socket));
+    socket.on('status-activity', () => loadStatuses(socket));
     return () => { socket.disconnect(); socketRef.current = null; finishCall(false); };
   }, [session]);
 
@@ -206,6 +219,20 @@ export default function App() {
     socket?.emit('get-conversations', (reply: SocketReply<{ conversations: Conversation[] }>) => {
       if (reply.success) setConversations(reply.conversations || []);
     });
+  }
+
+  function loadStatuses(socket = socketRef.current) {
+    socket?.emit('get-statuses', {}, (reply: SocketReply<{ statuses: StatusItem[] }>) => {
+      if (reply.success) setStatuses(reply.statuses || []);
+    });
+  }
+
+  async function loadContacts() {
+    if (!session) return;
+    const result = await request<{ success: boolean; users?: Profile[] }>('/users', {
+      headers: { 'x-username': session.username, 'x-token': session.token },
+    }).catch(() => ({ success: false, users: [] as Profile[] }));
+    if (result.success) setContacts(result.users || []);
   }
 
   function submitAuth() {
@@ -349,8 +376,9 @@ export default function App() {
       ) : (
         <View style={styles.flex}>
           {activeTab === 'chats' && <ChatsScreen session={session} conversations={conversations} openConversation={openConversation} />}
-          {activeTab === 'status' && <StatusScreen />}
-          {activeTab === 'calls' && <CallsScreen />}
+          {activeTab === 'status' && <StatusScreen statuses={statuses} addStatus={(text) => socketRef.current?.emit('add-status', { text }, () => loadStatuses())} />}
+          {activeTab === 'calls' && <CallsScreen conversations={conversations} startVoiceCall={startVoiceCall} />}
+          {activeTab === 'contacts' && <ContactsScreen contacts={contacts} openConversation={openConversation} startVoiceCall={startVoiceCall} />}
           {activeTab === 'settings' && <SettingsScreen username={session.username} signOut={signOut} />}
           <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
         </View>
@@ -360,24 +388,50 @@ export default function App() {
   );
 }
 
+function Header({ title, subtitle, avatar, onBack, action }: { title: string; subtitle?: string; avatar?: string; onBack?: () => void; action?: any }) {
+  return <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: LINE }}>
+    {onBack && <Pressable onPress={onBack} style={{ width: 32 }}><Text style={{ color: '#FFF', fontSize: 34, lineHeight: 32 }}>‹</Text></Pressable>}
+    {avatar ? <Avatar name={avatar} small /> : <View style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#041326', fontWeight: '900', fontSize: 23 }}>B</Text></View>}
+    <View style={{ flex: 1, marginLeft: 11 }}><Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800', letterSpacing: 0.3 }}>{title}</Text>{subtitle && <Text style={{ color: MUTED, marginTop: 3, fontSize: 12 }}>{subtitle}</Text>}</View>
+    {action}
+  </View>;
+}
+
 function ChatsScreen({ session, conversations, openConversation }: { session: Session; conversations: Conversation[]; openConversation: (partner: string) => void }) {
-  return <View style={styles.flex}><View style={styles.header}><Avatar name={session.username} /><View style={styles.headerCopy}><Text style={styles.title}>B-MESSENGER</Text><Text style={styles.subtitle}>Signed in as @{session.username}</Text></View><View style={styles.onlineDot} /></View><View style={styles.screenHeading}><Text style={styles.sectionTitle}>Messages</Text><Pressable style={styles.newButton}><Text style={styles.newButtonText}>＋</Text></Pressable></View><FlatList data={conversations} keyExtractor={(item) => item.partner} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={styles.empty}>No conversations yet. Start a chat from the web app or add search next.</Text>} renderItem={({ item }) => <Pressable style={styles.row} onPress={() => openConversation(item.partner)}><Avatar name={item.profile?.displayName || item.partner} /><View style={styles.rowCopy}><Text style={styles.rowTitle}>{item.profile?.displayName || item.partner}</Text><Text style={styles.rowSub} numberOfLines={1}>{item.lastMessage?.text || 'Open conversation'}</Text></View><Text style={styles.chevron}>›</Text></Pressable>} /></View>;
+  const [query, setQuery] = useState('');
+  const visible = conversations.filter((item) => (item.profile?.displayName || item.partner).toLowerCase().includes(query.toLowerCase()));
+  return <View style={styles.flex}>
+    <Header title="B-MESSENGER" subtitle={`Chat  ·  Connect  ·  Always`} action={<View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: GREEN }} />} />
+    <View style={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 10 }}><Text style={{ color: '#FFF', fontSize: 27, fontWeight: '800' }}>Messages</Text><Text style={{ color: MUTED, marginTop: 4 }}>Stay close to the people who matter.</Text></View>
+    <View style={{ marginHorizontal: 18, marginBottom: 14, backgroundColor: PANEL, borderRadius: 13, borderWidth: 1, borderColor: LINE, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13 }}><Text style={{ color: BRAND, fontSize: 18 }}>⌕</Text><TextInput value={query} onChangeText={setQuery} placeholder="Search chats" placeholderTextColor={MUTED} style={{ flex: 1, color: '#FFF', paddingVertical: 12, paddingHorizontal: 9 }} /></View>
+    <View style={{ flexDirection: 'row', paddingHorizontal: 18, paddingBottom: 10, gap: 9 }}><View style={{ backgroundColor: BRAND, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 14 }}><Text style={{ color: '#041326', fontWeight: '800', fontSize: 12 }}>CHATS</Text></View><Text style={{ color: MUTED, fontWeight: '800', fontSize: 12, paddingVertical: 7 }}>GROUPS</Text><Text style={{ color: MUTED, fontWeight: '800', fontSize: 12, paddingVertical: 7 }}>ARCHIVED</Text></View>
+    <FlatList data={visible} keyExtractor={(item) => item.partner} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 18 }} ListEmptyComponent={<Text style={styles.empty}>No conversations yet. Open Contacts to start a chat.</Text>} renderItem={({ item }) => <Pressable style={{ flexDirection: 'row', alignItems: 'center', padding: 13, borderRadius: 17, backgroundColor: PANEL, marginBottom: 9, borderWidth: 1, borderColor: LINE }} onPress={() => openConversation(item.partner)}><Avatar name={item.profile?.displayName || item.partner} /><View style={{ flex: 1, marginLeft: 12 }}><View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={styles.rowTitle}>{item.profile?.displayName || item.partner}</Text><Text style={{ color: MUTED, fontSize: 11 }}>{item.lastMessage?.timestamp ? formatTime(item.lastMessage.timestamp) : ''}</Text></View><Text style={styles.rowSub} numberOfLines={1}>{item.lastMessage?.text || 'Start a conversation'}</Text></View>{(item.unread || 0) > 0 && <View style={{ minWidth: 20, height: 20, borderRadius: 10, backgroundColor: BRAND, alignItems: 'center', justifyContent: 'center', marginLeft: 7 }}><Text style={{ color: '#041326', fontSize: 11, fontWeight: '800' }}>{item.unread}</Text></View>}</Pressable>} />
+  </View>;
 }
 
-function StatusScreen() {
-  return <View style={styles.flex}><View style={styles.header}><View style={styles.headerCopy}><Text style={styles.title}>Status</Text><Text style={styles.subtitle}>Share a moment with your contacts</Text></View><Pressable style={styles.newButton}><Text style={styles.newButtonText}>＋</Text></Pressable></View><View style={styles.statusContent}><Pressable style={styles.statusComposer}><View style={styles.statusPlus}><Text style={styles.statusPlusText}>＋</Text></View><View><Text style={styles.rowTitle}>My status</Text><Text style={styles.rowSub}>Add a photo or text update</Text></View></Pressable><Text style={styles.sectionLabel}>RECENT UPDATES</Text><View style={styles.emptyPanel}><Text style={styles.emptyIcon}>◌</Text><Text style={styles.emptyTitle}>No recent updates</Text><Text style={styles.empty}>Status updates from your contacts will appear here.</Text></View></View></View>;
+function StatusScreen({ statuses, addStatus }: { statuses: StatusItem[]; addStatus: (text: string) => void }) {
+  const [draft, setDraft] = useState('');
+  function publish() { const text = draft.trim(); if (!text) return; addStatus(text); setDraft(''); }
+  return <View style={styles.flex}><Header title="Status" subtitle="Share a moment with your contacts" action={<Pressable style={styles.newButton} onPress={publish}><Text style={styles.newButtonText}>↑</Text></Pressable>} /><View style={{ margin: 18, padding: 14, borderRadius: 18, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE }}><Text style={{ color: '#FFF', fontSize: 15, fontWeight: '800', marginBottom: 9 }}>My Status</Text><View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 38, height: 38, borderRadius: 13, borderWidth: 1, borderColor: BRAND, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: BRAND, fontSize: 22 }}>＋</Text></View><TextInput value={draft} onChangeText={setDraft} onSubmitEditing={publish} placeholder="Share a thought..." placeholderTextColor={MUTED} style={{ flex: 1, color: '#FFF', marginLeft: 10, paddingVertical: 9 }} returnKeyType="send" /></View></View><FlatList data={statuses} keyExtractor={(item) => item._id} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }} ListHeaderComponent={<Text style={{ color: MUTED, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>RECENT UPDATES</Text>} ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 55 }}><Text style={{ color: BRAND, fontSize: 40 }}>◌</Text><Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 12 }}>No recent updates</Text><Text style={styles.empty}>Your contacts’ status updates will appear here.</Text></View>} renderItem={({ item }) => <Pressable style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={item.user} ring accent={item.bg || BRAND} /><View style={{ marginLeft: 13, flex: 1 }}><Text style={styles.rowTitle}>{item.user}</Text><Text style={styles.rowSub} numberOfLines={1}>{item.text || 'Photo status'}</Text></View><Text style={{ color: MUTED, fontSize: 11 }}>{item.viewedByMe ? 'Viewed' : 'New'}</Text></Pressable>} /></View>;
 }
 
-function CallsScreen() {
-  return <View style={styles.flex}><View style={styles.header}><View style={styles.headerCopy}><Text style={styles.title}>Calls</Text><Text style={styles.subtitle}>Voice and video calls</Text></View><Pressable style={styles.newButton}><Text style={styles.newButtonText}>＋</Text></Pressable></View><View style={styles.emptyPanel}><Text style={styles.emptyIcon}>⌁</Text><Text style={styles.emptyTitle}>No call history</Text><Text style={styles.empty}>Your recent B-MESSENGER calls will appear here.</Text></View></View>;
+function CallsScreen({ conversations, startVoiceCall }: { conversations: Conversation[]; startVoiceCall: (peer: string) => void }) {
+  return <View style={styles.flex}><Header title="Calls" subtitle="Voice and video, closer than ever" action={<Pressable style={styles.newButton}><Text style={styles.newButtonText}>＋</Text></Pressable>} /><FlatList data={conversations.slice(0, 4)} keyExtractor={(item) => item.partner} contentContainerStyle={{ padding: 18 }} ListHeaderComponent={<Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginBottom: 14 }}>Recent calls</Text>} ListEmptyComponent={<Text style={styles.empty}>Your recent calls will appear here.</Text>} renderItem={({ item, index }) => <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={item.profile?.displayName || item.partner} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={styles.rowTitle}>{item.profile?.displayName || item.partner}</Text><Text style={styles.rowSub}>{index === 0 ? 'Outgoing voice call · Today' : 'Incoming voice call · Yesterday'}</Text></View><Pressable onPress={() => startVoiceCall(item.partner)} style={{ width: 38, height: 38, borderRadius: 13, backgroundColor: `${BRAND}24`, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: BRAND, fontSize: 18 }}>☎</Text></Pressable></View>} /></View>;
+}
+
+function ContactsScreen({ contacts, openConversation, startVoiceCall }: { contacts: Profile[]; openConversation: (partner: string) => void; startVoiceCall: (peer: string) => void }) {
+  const [query, setQuery] = useState('');
+  const visible = contacts.filter((item) => (item.displayName || item.username).toLowerCase().includes(query.toLowerCase()));
+  return <View style={styles.flex}><Header title="Contacts" subtitle={`${contacts.length} people on B-MESSENGER`} action={<Pressable style={styles.newButton}><Text style={styles.newButtonText}>＋</Text></Pressable>} /><View style={{ margin: 18, marginBottom: 8, backgroundColor: PANEL, borderRadius: 13, borderWidth: 1, borderColor: LINE, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13 }}><Text style={{ color: BRAND, fontSize: 18 }}>⌕</Text><TextInput value={query} onChangeText={setQuery} placeholder="Search contacts" placeholderTextColor={MUTED} style={{ flex: 1, color: '#FFF', paddingVertical: 12, paddingHorizontal: 9 }} /></View><FlatList data={visible} keyExtractor={(item) => item.username} contentContainerStyle={{ paddingHorizontal: 18 }} ListEmptyComponent={<Text style={styles.empty}>No contacts match your search.</Text>} renderItem={({ item }) => <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={item.displayName || item.username} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={styles.rowTitle}>{item.displayName || item.username}</Text><Text style={styles.rowSub}>@{item.username} · Available to chat</Text></View><Pressable onPress={() => openConversation(item.username)} style={{ padding: 9 }}><Text style={{ color: BRAND, fontSize: 18 }}>▣</Text></Pressable><Pressable onPress={() => startVoiceCall(item.username)} style={{ padding: 9 }}><Text style={{ color: BRAND, fontSize: 18 }}>☎</Text></Pressable></View>} /></View>;
 }
 
 function SettingsScreen({ username, signOut }: { username: string; signOut: () => void }) {
-  return <View style={styles.flex}><View style={styles.header}><View style={styles.headerCopy}><Text style={styles.title}>Settings</Text><Text style={styles.subtitle}>Make B-MESSENGER yours</Text></View></View><View style={styles.settingsContent}><View style={styles.profileCard}><Avatar name={username} /><View style={styles.headerCopy}><Text style={styles.rowTitle}>{username}</Text><Text style={styles.rowSub}>Your B-MESSENGER account</Text></View><Text style={styles.chevron}>›</Text></View>{['Account', 'Privacy', 'Notifications', 'Appearance', 'Help & support'].map((item) => <Pressable key={item} style={styles.settingRow}><Text style={styles.settingIcon}>◈</Text><Text style={styles.settingText}>{item}</Text><Text style={styles.chevron}>›</Text></Pressable>)}<Pressable style={styles.logoutRow} onPress={signOut}><Text style={styles.logoutText}>Sign out</Text></Pressable><Text style={styles.version}>B-MESSENGER mobile · v1.0</Text></View></View>;
+  const rows = [['◉', 'Account', 'Profile, name and about'], ['◌', 'Privacy', 'Last seen and read receipts'], ['◈', 'Notifications', 'Messages, calls and status'], ['✦', 'Appearance', 'Dark theme · B-Messenger blue'], ['⌁', 'Chat settings', 'Wallpaper and message preferences'], ['?', 'Help & support', 'Get help with B-Messenger']];
+  return <View style={styles.flex}><Header title="Settings" subtitle="Make B-MESSENGER yours" /><ScrollView contentContainerStyle={{ padding: 18 }}><View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE, marginBottom: 18 }}><Avatar name={username} size={58} ring /><View style={{ marginLeft: 13, flex: 1 }}><Text style={{ color: '#FFF', fontSize: 19, fontWeight: '800' }}>{username}</Text><Text style={styles.rowSub}>Your B-MESSENGER account</Text></View><Text style={{ color: BRAND, fontSize: 23 }}>›</Text></View>{rows.map(([icon, title, sub]) => <Pressable key={title} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: LINE }}><Text style={{ color: BRAND, fontSize: 18, width: 33 }}>{icon}</Text><View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700' }}>{title}</Text><Text style={{ color: MUTED, fontSize: 12, marginTop: 3 }}>{sub}</Text></View><Text style={{ color: MUTED, fontSize: 23 }}>›</Text></Pressable>)}<Pressable style={{ alignItems: 'center', paddingVertical: 22 }} onPress={signOut}><Text style={{ color: '#FF9B9B', fontWeight: '800' }}>Sign out</Text></Pressable><Text style={{ color: MUTED, fontSize: 12, textAlign: 'center', marginTop: 8 }}>B-MESSENGER mobile · v1.0</Text></ScrollView></View>;
 }
 
 function BottomNav({ activeTab, setActiveTab }: { activeTab: AppTab; setActiveTab: (tab: AppTab) => void }) {
-  const items: { key: AppTab; label: string; icon: string }[] = [{ key: 'chats', label: 'Chats', icon: '◒' }, { key: 'status', label: 'Status', icon: '◌' }, { key: 'calls', label: 'Calls', icon: '⌁' }, { key: 'settings', label: 'Settings', icon: '⚙' }];
+  const items: { key: AppTab; label: string; icon: string }[] = [{ key: 'chats', label: 'Chats', icon: '◒' }, { key: 'status', label: 'Status', icon: '◌' }, { key: 'calls', label: 'Calls', icon: '⌁' }, { key: 'contacts', label: 'Contacts', icon: '♧' }, { key: 'settings', label: 'Settings', icon: '⚙' }];
   return <View style={styles.bottomNav}>{items.map((item) => <Pressable key={item.key} style={styles.navItem} onPress={() => setActiveTab(item.key)}><Text style={[styles.navIcon, activeTab === item.key && styles.navIconActive]}>{item.icon}</Text><Text style={[styles.navLabel, activeTab === item.key && styles.navLabelActive]}>{item.label}</Text></Pressable>)}</View>;
 }
 
