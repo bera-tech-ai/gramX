@@ -752,6 +752,27 @@ async function requireAuth(req, res, next) {
     }
 }
 
+function validExpoPushToken(value) {
+    return typeof value === 'string' && /^(Expo|Exponent)PushToken\[[^\]]+\]$/.test(value);
+}
+
+async function sendExpoPushNotification(username, message) {
+    const settings = await settingsCol().findOne({ username }, { projection: { pushTokens: 1 } });
+    const tokens = Array.isArray(settings?.pushTokens) ? settings.pushTokens.filter(validExpoPushToken) : [];
+    if (!tokens.length) return;
+    try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Accept-encoding': 'gzip, deflate', 'Content-Type': 'application/json' },
+            body: JSON.stringify(tokens.map(to => ({ to, ...message })))
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok) console.error('Expo push error:', response.status, result);
+    } catch (err) {
+        console.error('Expo push request failed:', err.message);
+    }
+}
+
 // HTTP routes
 
 app.post('/forgot-password', async (req, res) => {
@@ -872,6 +893,19 @@ app.post('/logout', async (req, res) => {
     } catch (err) {
         console.error('Logout error:', err);
     }
+    res.json({ success: true });
+});
+
+app.post('/push-token', requireAuth, async (req, res) => {
+    const pushToken = String(req.body?.pushToken || '');
+    if (!validExpoPushToken(pushToken)) return res.status(400).json({ success: false, error: 'Invalid push token' });
+    await settingsCol().updateOne({ username: req.username }, { $addToSet: { pushTokens: pushToken }, $set: { updatedAt: new Date() } }, { upsert: true });
+    res.json({ success: true });
+});
+
+app.delete('/push-token', requireAuth, async (req, res) => {
+    const pushToken = String(req.body?.pushToken || '');
+    if (validExpoPushToken(pushToken)) await settingsCol().updateOne({ username: req.username }, { $pull: { pushTokens: pushToken }, $set: { updatedAt: new Date() } });
     res.json({ success: true });
 });
 
@@ -1367,7 +1401,7 @@ app.get('/admin/logs', requireAdminAuth, async (req, res) => {
 
 // Socket authentication
 
-const callSignalling = require('./calls')({ io, getDb: () => db, isOnline, emitToUser });
+const callSignalling = require('./calls')({ io, getDb: () => db, isOnline, emitToUser, sendPushNotification: sendExpoPushNotification });
 
 io.use(async (socket, next) => {
     try {

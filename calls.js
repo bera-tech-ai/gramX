@@ -16,7 +16,7 @@ function fail(message) {
     return err;
 }
 
-function createCalls({ io, getDb, isOnline, emitToUser }) {
+function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) {
     const activeCalls = new Map(); // callId -> call
     const userCall = new Map();    // username -> callId of the call they are in
     const inviteLog = new Map();   // username -> timestamps of recent invites
@@ -103,14 +103,15 @@ function createCalls({ io, getDb, isOnline, emitToUser }) {
         const target = await getDb().collection('users').findOne({ username: to }, { projection: { _id: 1 } });
         if (!target) throw fail('That user does not exist');
 
-        const settings = await getDb().collection('user_settings').findOne({ username: to }, { projection: { blockedUsers: 1 } });
+        const settings = await getDb().collection('user_settings').findOne({ username: to }, { projection: { blockedUsers: 1, pushTokens: 1 } });
         if (settings && Array.isArray(settings.blockedUsers) && settings.blockedUsers.includes(me)) {
             return { status: 'unavailable' };
         }
         if (userCall.has(to)) return { status: 'busy' };
 
         const now = new Date();
-        if (!isOnline(to)) {
+        const hasPushToken = Array.isArray(settings?.pushTokens) && settings.pushTokens.length > 0;
+        if (!isOnline(to) && !hasPushToken) {
             // Nobody is there to ring: record a missed call and tell the caller
             saveRecord({ caller: me, callee: to, type, status: 'missed', startedAt: now, endedAt: now, durationSec: 0 });
             return { status: 'unavailable' };
@@ -135,6 +136,16 @@ function createCalls({ io, getDb, isOnline, emitToUser }) {
         }, RING_MS);
 
         emitToUser(to, 'call-incoming', { callId: call.id, from: me, type });
+        if (type === 'voice' && sendPushNotification) {
+            sendPushNotification(to, {
+                title: 'Incoming voice call',
+                body: `${me} is calling you`,
+                sound: 'default',
+                priority: 'high',
+                channelId: 'calls',
+                data: { type: 'incoming_call', callId: call.id, from: me, callType: type }
+            }).catch(err => console.error('Call push error:', err));
+        }
         return { status: 'ringing', callId: call.id };
     }
 
