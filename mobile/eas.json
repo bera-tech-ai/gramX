@@ -5,11 +5,17 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://gramxapi-rxttc3xk.manus.space"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://gramxapi-rxttc3xk.manus.space"
+      },
       "android": {
         "buildType": "app-bundle"
       }
