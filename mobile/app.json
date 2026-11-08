@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GramX",
+    "name": "B-MESSENGER",
     "slug": "gramx",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,6 +23,7 @@
         "android.permission.BLUETOOTH"
       ],
       "package": "com.gramx.mobile",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#0D0F14",
         "foregroundImage": "./assets/android-icon-foreground.png",
