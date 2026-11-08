@@ -9,7 +9,8 @@
         "EXPO_PUBLIC_API_URL": "https://gramxapi-rxttc3xk.manus.space"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease -x minifyReleaseWithR8"
       }
     },
     "production": {
