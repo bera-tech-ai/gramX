@@ -6,7 +6,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://gramxapi-rxttc3xk.manus.space"
+        "EXPO_PUBLIC_API_URL": "https://bmessenger-9ugcbmtp.manus.space"
       },
       "android": {
         "buildType": "apk",
@@ -15,7 +15,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://gramxapi-rxttc3xk.manus.space"
+        "EXPO_PUBLIC_API_URL": "https://bmessenger-9ugcbmtp.manus.space"
       },
       "android": {
         "buildType": "app-bundle"
