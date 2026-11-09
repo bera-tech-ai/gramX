@@ -182,12 +182,14 @@ export default function App() {
       }).catch(() => undefined);
     }).catch(() => undefined);
     const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { type?: string };
+      const data = response.notification.request.content.data as { type?: string; from?: string };
       if (data?.type === 'incoming_call') setActiveTab('calls');
+      if (data?.type === 'message' && data.from) { setActiveTab('chats'); setTimeout(() => openConversation(data.from!), 0); }
     });
     Notifications.getLastNotificationResponseAsync().then((response) => {
-      const data = response?.notification.request.content.data as { type?: string } | undefined;
+      const data = response?.notification.request.content.data as { type?: string; from?: string } | undefined;
       if (data?.type === 'incoming_call') setActiveTab('calls');
+      if (data?.type === 'message' && data.from) { setActiveTab('chats'); setTimeout(() => openConversation(data.from!), 0); }
     }).catch(() => undefined);
     return () => { mounted = false; responseListener.remove(); };
   }, [session]);

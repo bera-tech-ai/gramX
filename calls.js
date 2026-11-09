@@ -136,9 +136,9 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
         }, RING_MS);
 
         emitToUser(to, 'call-incoming', { callId: call.id, from: me, type });
-        if (type === 'voice' && sendPushNotification) {
+        if (sendPushNotification) {
             sendPushNotification(to, {
-                title: 'Incoming voice call',
+                title: `Incoming ${type} call`,
                 body: `${me} is calling you`,
                 sound: 'default',
                 priority: 'high',

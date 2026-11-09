@@ -1628,6 +1628,13 @@ io.on('connection', (socket) => {
         if (online) {
             emitToUser(receiver, 'new-private-message', message);
             emitToUser(me, 'message-delivered', { messageIds: [String(doc._id)] });
+        } else {
+            sendExpoPushNotification(receiver, {
+                title: me,
+                body: image ? 'Photo message' : (audio ? 'Voice message' : text.slice(0, 120)),
+                sound: 'default',
+                data: { type: 'message', from: me, messageId: String(doc._id) }
+            }).catch(err => console.error('Message push error:', err));
         }
         return { message };
     });
