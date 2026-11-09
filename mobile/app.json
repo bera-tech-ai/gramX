@@ -2,12 +2,11 @@
   "expo": {
     "name": "B-MESSENGER",
     "slug": "gramx",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "plugins": [
-      "expo-dev-client",
       "@config-plugins/react-native-webrtc",
       "expo-notifications",
       [
@@ -31,8 +30,8 @@
         "android.permission.WAKE_LOCK",
         "android.permission.BLUETOOTH"
       ],
-      "package": "com.gramx.mobile",
-      "versionCode": 3,
+      "package": "com.bmessenger.chat",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0D0F14",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -43,7 +42,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gramx.mobile",
+      "bundleIdentifier": "com.bmessenger.chat",
       "bitcode": false
     },
     "web": {
