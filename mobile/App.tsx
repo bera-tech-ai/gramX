@@ -96,6 +96,7 @@ type Message = {
 
 type AppTab = 'chats' | 'status' | 'calls' | 'contacts' | 'settings' | 'admin';
 type CallState = { callId: string; peer: string; role: 'caller' | 'callee'; type: 'voice' | 'video'; state: 'ringing' | 'connecting' | 'connected'; incoming?: boolean };
+type CallRecord = { caller: string; callee: string; type: 'voice' | 'video'; status: string; durationSec: number; startedAt: string };
 
 type SocketReply<T> = { success: boolean; error?: string } & T;
 
@@ -133,6 +134,7 @@ export default function App() {
   const [contacts, setContacts] = useState<Profile[]>([]);
   const [statuses, setStatuses] = useState<StatusItem[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [callHistory, setCallHistory] = useState<CallRecord[]>([]);
   const [activeGroup, setActiveGroup] = useState<Group | null>(null);
   const [groupMessages, setGroupMessages] = useState<Message[]>([]);
   const [settings, setSettings] = useState<UserSettings>({ notifications: true, sound: true, privacy: { readReceipts: true, lastSeen: 'everyone' } });
@@ -246,11 +248,13 @@ export default function App() {
     });
     socket.on('call-ended', ({ callId }: { callId: string }) => {
       if (callRef.current?.callId === callId) finishCall(false);
+      loadCallHistory(socket);
     });
     loadConversations(socket);
     loadContacts();
     loadStatuses(socket);
     loadGroups(socket);
+    loadCallHistory(socket);
     socket.on('group-message', (message: Message) => { setGroupMessages((current) => [...current, message]); loadGroups(socket); });
     socket.on('groups-changed', () => loadGroups(socket));
     socket.emit('get-user-settings', {}, (reply: SocketReply<{ settings: UserSettings }>) => { if (reply.success && reply.settings) setSettings(reply.settings); });
@@ -269,6 +273,9 @@ export default function App() {
 
   function loadGroups(socket = socketRef.current) {
     socket?.emit('get-groups', {}, (reply: SocketReply<{ groups: Group[] }>) => { if (reply.success) setGroups(reply.groups || []); });
+  }
+  function loadCallHistory(socket = socketRef.current) {
+    socket?.emit('get-calls', {}, (reply: SocketReply<{ calls: CallRecord[] }>) => { if (reply.success) setCallHistory(reply.calls || []); });
   }
   function openGroup(group: Group) {
     socketRef.current?.emit('join-group', { groupId: group._id }, (reply: SocketReply<{ messages: Message[] }>) => {
@@ -532,7 +539,7 @@ export default function App() {
         <View style={styles.flex}>
           {activeTab === 'chats' && <ChatsScreen session={session} conversations={conversations} groups={groups} openConversation={openConversation} openGroup={openGroup} />}
           {activeTab === 'status' && <StatusScreen statuses={statuses} addStatus={(payload) => socketRef.current?.emit('add-status', payload, () => loadStatuses())} onOpen={openStatus} onLike={toggleStatusLike} onDelete={deleteStatus} />}
-          {activeTab === 'calls' && <CallsScreen conversations={conversations} startVoiceCall={startVoiceCall} startVideoCall={startVideoCall} />}
+          {activeTab === 'calls' && <CallsScreen username={session.username} calls={callHistory} startVoiceCall={startVoiceCall} startVideoCall={startVideoCall} />}
           {activeTab === 'contacts' && <ContactsScreen contacts={contacts} openConversation={openConversation} startVoiceCall={startVoiceCall} onCreateGroup={() => setGroupModal(true)} />}
           {activeTab === 'settings' && <SettingsScreen username={session.username} settings={settings} updateSettings={updateSettings} signOut={signOut} />}
           {activeTab === 'admin' && session.role === 'admin' && <AdminDashboard session={session} />}
@@ -595,8 +602,8 @@ function StatusScreen({ statuses, addStatus, onOpen, onLike, onDelete }: { statu
   return <View style={styles.flex}><Header title="Status" subtitle="Share a moment with your contacts" action={<Pressable style={styles.newButton} onPress={publish}><Text style={styles.newButtonText}>↑</Text></Pressable>} /><View style={{ margin: 18, padding: 14, borderRadius: 18, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE }}><Text style={{ color: '#FFF', fontSize: 15, fontWeight: '800', marginBottom: 9 }}>My Status</Text><View style={{ flexDirection: 'row', alignItems: 'center' }}><Pressable onPress={publishPhoto} style={{ width: 38, height: 38, borderRadius: 13, borderWidth: 1, borderColor: BRAND, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: BRAND, fontSize: 19 }}>▧</Text></Pressable><TextInput value={draft} onChangeText={setDraft} onSubmitEditing={publish} placeholder="Share a thought..." placeholderTextColor={MUTED} style={{ flex: 1, color: '#FFF', marginLeft: 10, paddingVertical: 9 }} returnKeyType="send" /></View></View><FlatList data={statuses} keyExtractor={(item) => item._id} contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: 20 }} ListHeaderComponent={<Text style={{ color: MUTED, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>RECENT UPDATES</Text>} ListEmptyComponent={<View style={{ alignItems: 'center', paddingTop: 55 }}><Text style={{ color: BRAND, fontSize: 40 }}>◌</Text><Text style={{ color: '#FFF', fontSize: 18, fontWeight: '800', marginTop: 12 }}>No recent updates</Text><Text style={styles.empty}>Your contacts’ status updates will appear here.</Text></View>} renderItem={({ item }) => <Pressable onPress={() => onOpen(item)} onLongPress={() => item.hasImage && onDelete(item)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={item.user} ring accent={item.bg || BRAND} /><View style={{ marginLeft: 13, flex: 1 }}><Text style={styles.rowTitle}>{item.user}</Text><Text style={styles.rowSub} numberOfLines={1}>{item.text || (item.hasImage ? 'Photo status' : 'Status update')}</Text><Text style={{ color: MUTED, fontSize: 10, marginTop: 4 }}>{item.viewCount || 0} views · {item.likeCount || 0} likes</Text></View><Pressable onPress={() => onLike(item)} style={{ padding: 8 }}><Text style={{ color: item.likedByMe ? '#FF789B' : MUTED, fontSize: 19 }}>♥</Text></Pressable><Text style={{ color: MUTED, fontSize: 11 }}>{item.viewedByMe ? 'Viewed' : 'New'}</Text></Pressable>} /></View>;
 }
 
-function CallsScreen({ conversations, startVoiceCall, startVideoCall }: { conversations: Conversation[]; startVoiceCall: (peer: string) => void; startVideoCall: (peer: string) => void }) {
-  return <View style={styles.flex}><Header title="Calls" subtitle="Voice and video, closer than ever" /><FlatList data={conversations.slice(0, 8)} keyExtractor={(item) => item.partner} contentContainerStyle={{ padding: 18 }} ListHeaderComponent={<Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginBottom: 14 }}>Recent calls</Text>} ListEmptyComponent={<Text style={styles.empty}>Your recent calls will appear here.</Text>} renderItem={({ item, index }) => <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={item.profile?.displayName || item.partner} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={styles.rowTitle}>{item.profile?.displayName || item.partner}</Text><Text style={styles.rowSub}>{index === 0 ? 'Outgoing call · Today' : 'Recent call · Yesterday'}</Text></View><Pressable onPress={() => startVoiceCall(item.partner)} style={styles.callListButton}><Text style={{ color: BRAND, fontSize: 18 }}>☎</Text></Pressable><Pressable onPress={() => startVideoCall(item.partner)} style={styles.callListButton}><Text style={{ color: BRAND, fontSize: 18 }}>▣</Text></Pressable></View>} /></View>;
+function CallsScreen({ username, calls, startVoiceCall, startVideoCall }: { username: string; calls: CallRecord[]; startVoiceCall: (peer: string) => void; startVideoCall: (peer: string) => void }) {
+  return <View style={styles.flex}><Header title="Calls" subtitle="Voice and video, closer than ever" /><FlatList data={[...calls].reverse()} keyExtractor={(item, index) => `${item.startedAt}-${item.caller}-${item.callee}-${index}`} contentContainerStyle={{ padding: 18 }} ListHeaderComponent={<Text style={{ color: '#FFF', fontSize: 22, fontWeight: '800', marginBottom: 14 }}>Recent calls</Text>} ListEmptyComponent={<Text style={styles.empty}>Your recent calls will appear here.</Text>} renderItem={({ item }) => { const peer = item.caller === username ? item.callee : item.caller; const direction = item.caller === username ? 'Outgoing' : 'Incoming'; const outcome = item.status === 'completed' ? `${direction} · ${item.durationSec}s` : `${direction} · ${item.status}`; return <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={peer} /><View style={{ flex: 1, marginLeft: 12 }}><Text style={styles.rowTitle}>{peer}</Text><Text style={styles.rowSub}>{item.type === 'video' ? 'Video' : 'Voice'} call · {outcome} · {formatTime(item.startedAt)}</Text></View><Pressable onPress={() => startVoiceCall(peer)} style={styles.callListButton}><Text style={{ color: BRAND, fontSize: 18 }}>☎</Text></Pressable><Pressable onPress={() => startVideoCall(peer)} style={styles.callListButton}><Text style={{ color: BRAND, fontSize: 18 }}>▣</Text></Pressable></View>; }} /></View>;
 }
 
 function ContactsScreen({ contacts, openConversation, startVoiceCall, onCreateGroup }: { contacts: Profile[]; openConversation: (partner: string) => void; startVoiceCall: (peer: string) => void; onCreateGroup: () => void }) {

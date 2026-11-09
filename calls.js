@@ -238,11 +238,11 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
         });
 
         on('get-calls', async (d, me) => {
-            const withUser = String(d.with || '');
-            if (!withUser) throw fail('Invalid chat');
-            const list = await getDb().collection('calls').find({
-                $or: [{ caller: me, callee: withUser }, { caller: withUser, callee: me }]
-            }).sort({ startedAt: -1 }).limit(30).toArray();
+            const withUser = String(d.with || '').trim();
+            const query = withUser
+                ? { $or: [{ caller: me, callee: withUser }, { caller: withUser, callee: me }] }
+                : { $or: [{ caller: me }, { callee: me }] };
+            const list = await getDb().collection('calls').find(query).sort({ startedAt: -1 }).limit(withUser ? 30 : 100).toArray();
             return {
                 calls: list.reverse().map(c => ({
                     caller: c.caller, callee: c.callee, type: c.type, status: c.status,
