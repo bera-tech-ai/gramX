@@ -651,6 +651,7 @@
             socket.on('message-deleted', onMessageDeleted);
             socket.on('message-edited', onMessageEdited);
             socket.on('message-reaction', onMessageReaction);
+            socket.on('message-pinned', onMessagePinned);
             socket.on('message-preview', onMessagePreview);
             socket.on('call-incoming', onCallIncoming);
             socket.on('call-accepted', onCallAccepted);
@@ -1481,7 +1482,7 @@
                 renderChatHeader();
                 renderComposer();
                 scrollBottom();
-                
+
             });
         }
 
@@ -3046,6 +3047,13 @@
             refreshBubble(messageId);
         }
 
+        function onMessagePinned({ messageId, pinned, pinnedBy, pinnedAt }) {
+            const m = state.messageIndex.get(String(messageId));
+            if (!m) return;
+            Object.assign(m, { pinned: !!pinned, pinnedBy: pinnedBy || null, pinnedAt: pinnedAt || null });
+            refreshBubble(messageId);
+        }
+
         function quoteHTML(q) {
             const label = q.kind === 'status' ? (q.text || 'Status update') : (q.kind === 'photo' ? 'Photo' : (q.kind === 'voice' ? 'Voice message' : q.text));
             return `<div class="quote" data-jump="${esc(q._id)}"><b>${esc(nameOf(q.sender))}</b><span>${esc(label)}</span></div>`;
@@ -3076,6 +3084,7 @@
                 if (m.replyTo) body += quoteHTML(m.replyTo);
                 if (isGroup && !mine) body += `<div class="bubble-sender">${esc(nameOf(m.sender))}</div>`;
                 if (m.forwarded) body += `<div class="fwd"><i class="fa-solid fa-share"></i> Forwarded</div>`;
+                if (m.pinned) body += `<div class="fwd"><i class="fa-solid fa-thumbtack"></i> Pinned message</div>`;
                 if (m.oneView) {
                     body += oneViewBody(m, mine);
                 } else {
@@ -3296,6 +3305,7 @@
             const mine = m.sender === state.user;
             const isGroup = !!m.groupId;
             const canDelete = !m.deleted && (mine || (isGroup && state.chat.group?.isAdmin));
+            const canPin = !isGroup || !!state.chat.group?.isAdmin;
             const canEdit = mine && !m.deleted && !m.image && !m.audio && !m.oneView && !!m.text;
             const starred = state.starredIds.has(String(m._id));
             const myReaction = (m.reactions || {})[state.user];
@@ -3310,6 +3320,7 @@
                 ${m.text && !m.deleted ? `<button data-msg="copy"><i class="fa-regular fa-copy" style="width:24px;color:var(--accent)"></i>&nbsp; Copy</button>` : ''}
                 ${!m.deleted && !m.oneView ? `<button data-msg="forward"><i class="fa-solid fa-share" style="width:24px;color:var(--accent)"></i>&nbsp; Forward</button>` : ''}
                 ${!m.deleted ? `<button data-msg="star"><i class="fa-${starred ? 'solid' : 'regular'} fa-star" style="width:24px;color:#EAB308"></i>&nbsp; ${starred ? 'Unstar' : 'Star'}</button>` : ''}
+                ${canPin && !m.deleted ? `<button data-msg="pin"><i class="fa-solid fa-thumbtack" style="width:24px;color:var(--accent)"></i>&nbsp; ${m.pinned ? 'Unpin message' : 'Pin message'}</button>` : ''}
                 ${canEdit ? `<button data-msg="edit"><i class="fa-solid fa-pen" style="width:24px;color:var(--accent)"></i>&nbsp; Edit</button>` : ''}
                 ${!mine && !m.deleted ? `<button data-msg="report" class="danger-text"><i class="fa-solid fa-flag" style="width:24px"></i>&nbsp; Report</button>` : ''}
                 ${canDelete ? `<button data-msg="delete" class="danger-text"><i class="fa-solid fa-trash-can" style="width:24px"></i>&nbsp; Delete</button>` : ''}
@@ -3349,6 +3360,15 @@
                     if (!res || !res.success) return toast(res?.error || 'Could not update');
                     if (on) state.starredIds.add(String(m._id)); else state.starredIds.delete(String(m._id));
                     toast(on ? 'Starred' : 'Unstarred');
+                });
+            }
+            if (action === 'pin') {
+                const on = !m.pinned;
+                state.socket.emit('pin-message', { messageId: m._id, on }, (res) => {
+                    if (!res || !res.success) return toast(res?.error || 'Could not update pin');
+                    m.pinned = on;
+                    refreshBubble(m._id);
+                    toast(on ? 'Message pinned' : 'Message unpinned');
                 });
             }
             if (action === 'edit') {
@@ -4515,4 +4535,3 @@
 
         bindEvents();
         restoreSession();
-    

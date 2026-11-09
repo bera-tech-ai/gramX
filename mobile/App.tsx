@@ -89,6 +89,9 @@ type Message = {
   deleted?: boolean;
   reactions?: Record<string, string>;
   starred?: boolean;
+  pinned?: boolean;
+  pinnedBy?: string | null;
+  pinnedAt?: string | null;
   read?: boolean;
   delivered?: boolean;
   oneView?: boolean;
@@ -212,6 +215,7 @@ export default function App() {
     socket.on('message-deleted', ({ messageId }: { messageId: string }) => setMessages((current) => current.map((item) => item._id === messageId ? { ...item, deleted: true, text: '', image: null, audio: null } : item)));
     socket.on('message-edited', ({ messageId, text }: { messageId: string; text: string }) => setMessages((current) => current.map((item) => item._id === messageId ? { ...item, text, edited: true } : item)));
     socket.on('message-reaction', ({ messageId, reactions }: { messageId: string; reactions: Record<string, string> }) => setMessages((current) => current.map((item) => item._id === messageId ? { ...item, reactions } : item)));
+    socket.on('message-pinned', ({ messageId, pinned, pinnedBy, pinnedAt }: { messageId: string; pinned: boolean; pinnedBy?: string | null; pinnedAt?: string | null }) => setMessages((current) => current.map((item) => item._id === messageId ? { ...item, pinned, pinnedBy: pinnedBy || null, pinnedAt: pinnedAt || null } : item)));
     socket.on('typing-start', ({ sender }: { sender: string }) => setTypingPeer(sender));
     socket.on('typing-stop', ({ sender }: { sender: string }) => setTypingPeer((current) => current === sender ? null : current));
     socket.on('new-private-message', (message: Message) => {
@@ -399,10 +403,11 @@ export default function App() {
     setRecording(null); if (!uri) return;
     const response = await fetch(uri); const blob = await response.blob(); const reader = new FileReader(); reader.onloadend = () => sendMedia({ audio: String(reader.result), audioDuration: duration }); reader.readAsDataURL(blob);
   }
-  function messageAction(action: 'react' | 'star' | 'delete' | 'reply' | 'edit', message: Message) {
+  function messageAction(action: 'react' | 'star' | 'pin' | 'delete' | 'reply' | 'edit', message: Message) {
     if (!message._id || !socketRef.current) return;
     if (action === 'react') socketRef.current.emit('react-message', { messageId: message._id, emoji: message.reactions?.[session!.username] === '❤️' ? '' : '❤️' });
     if (action === 'star') { const next = !message.starred; socketRef.current.emit('star-message', { messageId: message._id, on: next }); setMessages((current) => current.map((item) => item._id === message._id ? { ...item, starred: next } : item)); }
+    if (action === 'pin') { const next = !message.pinned; socketRef.current.emit('pin-message', { messageId: message._id, on: next }, (reply: SocketReply<{}>) => { if (reply.success) setMessages((current) => current.map((item) => item._id === message._id ? { ...item, pinned: next, pinnedBy: next ? session!.username : null } : item)); }); }
     if (action === 'delete') socketRef.current.emit('delete-message', { messageId: message._id });
     if (action === 'reply') { setDraft(`↳ ${message.text || 'Attachment'}\n`); }
     if (action === 'edit') setEditMessage(message);
@@ -579,7 +584,7 @@ function GroupChatScreen({ group, messages, session, onBack, sendMessage }: { gr
 
 function MessageBubble({ item, mine, onPress }: { item: Message; mine: boolean; onPress: () => void }) {
   if (item.deleted) return <View style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}><Text style={styles.deletedText}>This message was deleted</Text></View>;
-  return <Pressable onLongPress={onPress} onPress={item.image || item.audio ? undefined : onPress} style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}>{item.image && <Image source={{ uri: item.image }} style={styles.messageImage} resizeMode="cover" />}{item.audio && <VoiceNote uri={item.audio} duration={item.audioDuration || 0} />}{item.text && <Text style={styles.messageText}>{item.text}{item.edited ? '  (edited)' : ''}</Text>}<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}><Text style={styles.messageTime}>{item.pending ? 'Sending…' : formatTime(item.timestamp)}</Text>{item.starred && <Text style={{ color: '#FFD35A', fontSize: 11 }}>★</Text>}{item.reactions && Object.values(item.reactions).length > 0 && <Text style={{ color: '#FFF', fontSize: 12 }}>{Object.values(item.reactions).join(' ')}</Text>}</View></Pressable>;
+  return <Pressable onLongPress={onPress} onPress={item.image || item.audio ? undefined : onPress} style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}>{item.pinned && <Text style={{ color: BRAND, fontSize: 11, fontWeight: '800', marginBottom: 5 }}>⌖ Pinned message</Text>}{item.image && <Image source={{ uri: item.image }} style={styles.messageImage} resizeMode="cover" />}{item.audio && <VoiceNote uri={item.audio} duration={item.audioDuration || 0} />}{item.text && <Text style={styles.messageText}>{item.text}{item.edited ? '  (edited)' : ''}</Text>}<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}><Text style={styles.messageTime}>{item.pending ? 'Sending…' : formatTime(item.timestamp)}</Text>{item.pinned && <Text style={{ color: BRAND, fontSize: 11 }}>⌖</Text>}{item.starred && <Text style={{ color: '#FFD35A', fontSize: 11 }}>★</Text>}{item.reactions && Object.values(item.reactions).length > 0 && <Text style={{ color: '#FFF', fontSize: 12 }}>{Object.values(item.reactions).join(' ')}</Text>}</View></Pressable>;
 }
 function VoiceNote({ uri, duration }: { uri: string; duration: number }) {
   const [playing, setPlaying] = useState(false);
@@ -588,9 +593,9 @@ function VoiceNote({ uri, duration }: { uri: string; duration: number }) {
   useEffect(() => () => { sound.current?.unloadAsync(); }, []);
   return <Pressable onPress={toggle} style={styles.voiceNote}><Text style={{ color: BRAND, fontSize: 18 }}>{playing ? 'Ⅱ' : '▶'}</Text><View style={styles.wave}><View style={styles.waveLine} /><View style={[styles.waveLine, { height: 20 }]} /><View style={[styles.waveLine, { height: 12 }]} /><View style={[styles.waveLine, { height: 24 }]} /><View style={[styles.waveLine, { height: 16 }]} /></View><Text style={{ color: MUTED, fontSize: 11 }}>{duration || 0}s</Text></Pressable>;
 }
-function MessageActionsModal({ message, onClose, onAction }: { message: Message; onClose: () => void; onAction: (action: 'react' | 'star' | 'delete' | 'reply' | 'edit') => void }) {
-  const actions: Array<['❤️' | '★' | '↩' | '✎' | '⌫', 'react' | 'star' | 'reply' | 'edit' | 'delete']> = [['❤️', 'react'], ['★', 'star'], ['↩', 'reply'], ['✎', 'edit'], ['⌫', 'delete']];
-  return <Modal transparent animationType="fade" visible onRequestClose={onClose}><View style={styles.modalBackdrop}><View style={styles.actionCard}><Text style={styles.callTitle}>Message actions</Text>{actions.map(([icon, action]) => <Pressable key={action} onPress={() => onAction(action)} style={styles.actionRow}><Text style={{ color: action === 'delete' ? '#FF8A9B' : BRAND, fontSize: 20, width: 32 }}>{icon}</Text><Text style={{ color: '#FFF', fontSize: 16 }}>{action === 'react' ? 'React with heart' : action === 'star' ? 'Star message' : action === 'reply' ? 'Reply' : action === 'edit' ? 'Edit message' : 'Delete message'}</Text></Pressable>)}<Pressable onPress={onClose} style={styles.cancelAction}><Text style={{ color: MUTED }}>Cancel</Text></Pressable></View></View></Modal>;
+function MessageActionsModal({ message, onClose, onAction }: { message: Message; onClose: () => void; onAction: (action: 'react' | 'star' | 'pin' | 'delete' | 'reply' | 'edit') => void }) {
+  const actions: Array<['❤️' | '★' | '⌖' | '↩' | '✎' | '⌫', 'react' | 'star' | 'pin' | 'reply' | 'edit' | 'delete']> = [['❤️', 'react'], ['★', 'star'], ['⌖', 'pin'], ['↩', 'reply'], ['✎', 'edit'], ['⌫', 'delete']];
+  return <Modal transparent animationType="fade" visible onRequestClose={onClose}><View style={styles.modalBackdrop}><View style={styles.actionCard}><Text style={styles.callTitle}>Message actions</Text>{actions.map(([icon, action]) => <Pressable key={action} onPress={() => onAction(action)} style={styles.actionRow}><Text style={{ color: action === 'delete' ? '#FF8A9B' : BRAND, fontSize: 20, width: 32 }}>{icon}</Text><Text style={{ color: '#FFF', fontSize: 16 }}>{action === 'react' ? 'React with heart' : action === 'star' ? 'Star message' : action === 'pin' ? (message.pinned ? 'Unpin message' : 'Pin message') : action === 'reply' ? 'Reply' : action === 'edit' ? 'Edit message' : 'Delete message'}</Text></Pressable>)}<Pressable onPress={onClose} style={styles.cancelAction}><Text style={{ color: MUTED }}>Cancel</Text></Pressable></View></View></Modal>;
 }
 function EditMessageModal({ message, onClose, onSave }: { message: Message; onClose: () => void; onSave: (text: string) => void }) { const [text, setText] = useState(message.text || ''); return <Modal transparent animationType="fade" visible onRequestClose={onClose}><View style={styles.modalBackdrop}><View style={styles.actionCard}><Text style={styles.callTitle}>Edit message</Text><TextInput value={text} onChangeText={setText} style={styles.authInput} autoFocus /><Pressable style={styles.primary} onPress={() => onSave(text)}><Text style={styles.primaryText}>Save changes</Text></Pressable></View></View></Modal>; }
 function StatusViewerModal({ status, image, onClose, onLike, onDelete, currentUser }: { status: StatusItem; image: string | null; onClose: () => void; onLike: () => void; onDelete: () => void; currentUser: string }) { return <Modal transparent animationType="fade" visible onRequestClose={onClose}><View style={styles.statusViewer}><Pressable onPress={onClose} style={styles.viewerClose}><Text style={styles.back}>×</Text></Pressable>{image ? <Image source={{ uri: image }} style={styles.statusImage} resizeMode="contain" /> : <Text style={styles.statusViewerText}>{status.text || 'Photo status'}</Text>}<Text style={styles.statusViewerUser}>{status.user}</Text><View style={styles.viewerActions}><Pressable onPress={onLike} style={styles.viewerAction}><Text style={{ color: status.likedByMe ? '#FF789B' : '#FFF', fontSize: 20 }}>♥</Text><Text style={{ color: '#FFF' }}>{status.likeCount || 0}</Text></Pressable>{status.user === currentUser && <Pressable onPress={onDelete} style={styles.viewerAction}><Text style={{ color: '#FF8A9B', fontSize: 16 }}>Delete</Text></Pressable>}</View></View></Modal>; }

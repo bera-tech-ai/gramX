@@ -607,7 +607,10 @@ function publicMessage(m) {
         preview: m.preview || null,
         forwarded: !!m.forwarded,
         replyTo: m.replyTo || null,
-        reactions: m.reactions || {}
+        reactions: m.reactions || {},
+        pinned: !!m.pinned,
+        pinnedBy: m.pinnedBy || null,
+        pinnedAt: m.pinnedAt || null
     };
 }
 
@@ -632,7 +635,10 @@ function publicGroupMessage(m) {
         preview: m.preview || null,
         forwarded: !!m.forwarded,
         replyTo: m.replyTo || null,
-        reactions: m.reactions || {}
+        reactions: m.reactions || {},
+        pinned: !!m.pinned,
+        pinnedBy: m.pinnedBy || null,
+        pinnedAt: m.pinnedAt || null
     };
 }
 
@@ -2125,6 +2131,40 @@ io.on('connection', (socket) => {
         } else {
             await starred().deleteOne({ owner: me, messageId: id });
         }
+        return {};
+    });
+
+    on('pin-message', async (d, me) => {
+        if (!ObjectId.isValid(d.messageId)) throw fail('Message not found');
+        const msg = await messages().findOne({ _id: new ObjectId(d.messageId) });
+        if (!msg || msg.deleted) throw fail('Message not found');
+
+        let recipients;
+        if (msg.groupId) {
+            const g = await getGroupForMember(msg.groupId, me);
+            if (!g.admins.includes(me)) throw fail('Only group admins can pin messages');
+            recipients = g.members;
+        } else {
+            if (msg.sender !== me && msg.receiver !== me) throw fail('Message not found');
+            recipients = [msg.sender, msg.receiver];
+        }
+
+        const pin = d.on === true;
+        await messages().updateOne(
+            { _id: msg._id },
+            pin
+                ? { $set: { pinned: true, pinnedBy: me, pinnedAt: new Date() } }
+                : { $set: { pinned: false }, $unset: { pinnedBy: '', pinnedAt: '' } }
+        );
+        const fresh = await messages().findOne({ _id: msg._id });
+        const payload = {
+            messageId: String(msg._id),
+            groupId: msg.groupId || null,
+            pinned: !!fresh.pinned,
+            pinnedBy: fresh.pinnedBy || null,
+            pinnedAt: fresh.pinnedAt || null
+        };
+        for (const recipient of new Set(recipients)) emitToUser(recipient, 'message-pinned', payload);
         return {};
     });
 
