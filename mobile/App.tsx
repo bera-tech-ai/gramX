@@ -76,6 +76,7 @@ type Group = { _id: string; name: string; members?: string[]; lastMessage?: { te
 type UserSettings = { displayName?: string; about?: string; notifications?: boolean; sound?: boolean; privacy?: { readReceipts?: boolean; lastSeen?: string } };
 type Message = {
   _id?: string;
+  tempId?: string;
   sender: string;
   receiver?: string;
   text?: string;
@@ -149,6 +150,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [call, setCall] = useState<CallState | null>(null);
+  const outboxKey = session ? `gramx-outbox-${session.username}` : '';
   const socketRef = useRef<Socket | null>(null);
   const callRef = useRef<CallState | null>(null);
   const peerConnectionRef = useRef<any>(null);
@@ -195,6 +197,7 @@ export default function App() {
     const socket = io(API_URL, { transports: ['websocket'], auth: session });
     socketRef.current = socket;
     socket.on('connect', () => {
+      flushOutbox(socket).catch(() => undefined);
       socket.emit('get-active-call', {}, (reply: SocketReply<{ call?: { callId: string; role: 'caller' | 'callee'; peer: string; type: 'voice' | 'video'; state: CallState['state'] } | null }>) => {
         if (!reply.success || !reply.call) return;
         const restored = { callId: reply.call.callId, peer: reply.call.peer, role: reply.call.role, type: reply.call.type === 'video' ? 'video' as const : 'voice' as const, state: reply.call.state, incoming: reply.call.role === 'callee' && reply.call.state === 'ringing' };
@@ -213,8 +216,8 @@ export default function App() {
       }
       loadConversations(socket);
     });
-    socket.on('message-saved', ({ message }: { message: Message }) => {
-      setMessages((current) => { const index = current.findIndex((item) => item.pending); if (index < 0) return current; return current.map((item, i) => i === index ? message : item); });
+    socket.on('message-saved', ({ tempId, message }: { tempId?: string; message: Message }) => {
+      setMessages((current) => { const index = current.findIndex((item) => tempId ? item.tempId === tempId : item.pending); if (index < 0) return current; return current.map((item, i) => i === index ? message : item); });
       loadConversations(socket);
     });
     socket.on('message-delivered', () => loadConversations(socket));
@@ -322,14 +325,38 @@ export default function App() {
     });
   }
 
+  async function enqueueOutbox(payload: any) {
+    if (!outboxKey) return;
+    const current = JSON.parse((await AsyncStorage.getItem(outboxKey)) || '[]');
+    current.push(payload);
+    await AsyncStorage.setItem(outboxKey, JSON.stringify(current.slice(-100)));
+  }
+
+  async function flushOutbox(socket = socketRef.current) {
+    if (!socket?.connected || !outboxKey) return;
+    const queued = JSON.parse((await AsyncStorage.getItem(outboxKey)) || '[]');
+    if (!queued.length) return;
+    const remaining: any[] = [];
+    for (const payload of queued) {
+      const delivered = await new Promise<boolean>((resolve) => {
+        socket.emit('send-private-message', payload, (reply: SocketReply<{ message: Message }>) => resolve(!!reply.success));
+      });
+      if (!delivered) remaining.push(payload);
+    }
+    await AsyncStorage.setItem(outboxKey, JSON.stringify(remaining));
+  }
+
   function sendMessage() {
     const text = draft.trim();
-    if (!text || !activePartner || !socketRef.current || !session) return;
+    if (!text || !activePartner || !session) return;
+    const tempId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const payload = { receiver: activePartner, text, tempId };
     setDraft('');
-    const pending: Message = { sender: session.username, receiver: activePartner, text, timestamp: new Date().toISOString(), pending: true };
+    const pending: Message = { ...payload, sender: session.username, timestamp: new Date().toISOString(), pending: true };
     setMessages((current) => [...current, pending]);
-    socketRef.current.emit('send-private-message', { receiver: activePartner, text, tempId: `${Date.now()}` }, (reply: SocketReply<{ message: Message }>) => {
-      if (!reply.success) setMessages((current) => current.filter((item) => item !== pending));
+    if (!socketRef.current?.connected) { enqueueOutbox(payload).catch(() => undefined); return; }
+    socketRef.current.emit('send-private-message', payload, (reply: SocketReply<{ message: Message }>) => {
+      if (!reply.success) { enqueueOutbox(payload).catch(() => undefined); setMessages((current) => current.map((item) => item.tempId === tempId ? { ...item, pending: true } : item)); }
     });
   }
 
@@ -341,10 +368,13 @@ export default function App() {
     return toDataUrl(result.assets[0]);
   }
   function sendMedia(payload: { image?: string | null; audio?: string | null; audioDuration?: number }) {
-    if (!activePartner || !socketRef.current) return;
-    const pending: Message = { sender: session!.username, receiver: activePartner, ...payload, timestamp: new Date().toISOString(), pending: true };
+    if (!activePartner || !session) return;
+    const tempId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const queuedPayload = { receiver: activePartner, ...payload, tempId };
+    const pending: Message = { sender: session.username, receiver: activePartner, ...payload, tempId, timestamp: new Date().toISOString(), pending: true };
     setMessages((current) => [...current, pending]);
-    socketRef.current.emit('send-private-message', { receiver: activePartner, ...payload, tempId: `${Date.now()}` }, (reply: SocketReply<{ message: Message }>) => { if (!reply.success) setMessages((current) => current.filter((item) => item !== pending)); });
+    if (!socketRef.current?.connected) { enqueueOutbox(queuedPayload).catch(() => undefined); return; }
+    socketRef.current.emit('send-private-message', queuedPayload, (reply: SocketReply<{ message: Message }>) => { if (!reply.success) enqueueOutbox(queuedPayload).catch(() => undefined); });
   }
   async function sendPhoto() { const image = await pickImage(); if (image) sendMedia({ image }); }
   async function startRecording() {
