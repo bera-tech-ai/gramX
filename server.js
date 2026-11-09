@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const path = require('path');
 const http = require('http');
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const { MongoClient, ObjectId } = require('mongodb');
 
@@ -11,11 +13,35 @@ const APP_NAME = 'B-Messenger';
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'gramXDB';
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
 
-if (!MONGODB_URI) {
-    console.error('MONGODB_URI is not set. Add it to your .env file or hosting environment.');
-    process.exit(1);
+function validateEnvironment() {
+    const missing = [];
+    if (!MONGODB_URI) missing.push('MONGODB_URI');
+    if (!ADMIN_EMAIL) missing.push('ADMIN_EMAIL');
+    if (!ADMIN_PASSWORD) missing.push('ADMIN_PASSWORD');
+    if (missing.length) {
+        console.error(`Missing required environment variables: ${missing.join(', ')}`);
+        console.error('Copy .env.example to a private environment file and provide real values.');
+        process.exit(1);
+    }
+    if (!/^\S+@\S+\.\S+$/.test(ADMIN_EMAIL)) {
+        console.error('ADMIN_EMAIL must be a valid email address.');
+        process.exit(1);
+    }
+    if (ADMIN_PASSWORD.length < 16) {
+        console.error('ADMIN_PASSWORD must contain at least 16 characters.');
+        process.exit(1);
+    }
+    if (NODE_ENV === 'production' && process.env.JWT_SECRET === 'your_super_secret_jwt_key_here_make_it_long') {
+        console.error('JWT_SECRET is still using the repository placeholder in production.');
+        process.exit(1);
+    }
 }
+
+validateEnvironment();
 
 const COLLECTIONS = {
     USERS: 'users',
@@ -67,11 +93,45 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { maxHttpBufferSize: 6 * 1024 * 1024 });
 
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json({ limit: '8mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 let db;
 let mongoClient;
+let databaseReady = false;
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 60,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many authentication attempts. Try again later.' }
+});
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 600,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { success: false, error: 'Too many requests. Try again later.' }
+});
+
+app.get('/health', (req, res) => {
+    res.status(databaseReady ? 200 : 503).json({
+        ok: databaseReady,
+        service: APP_NAME,
+        database: databaseReady ? 'connected' : 'unavailable',
+        environment: NODE_ENV
+    });
+});
+app.get('/healthz', (req, res) => {
+    res.redirect('/health');
+});
+
+app.use(['/register', '/login', '/forgot-password', '/admin/login'], authLimiter);
+app.use(['/users', '/search-users', '/push-token', '/admin'], apiLimiter);
 
 const users = () => db.collection(COLLECTIONS.USERS);
 const messages = () => db.collection(COLLECTIONS.MESSAGES);
@@ -206,11 +266,8 @@ function sanitizeReply(r) {
 
 // Creates or updates the admin account from ADMIN_EMAIL and ADMIN_PASSWORD
 async function ensureAdmin() {
-    const email = (process.env.ADMIN_EMAIL || 'admin@bmessenger.com').trim().toLowerCase();
-    const password = process.env.ADMIN_PASSWORD || 'Adminbera';
-    if (!process.env.ADMIN_PASSWORD) {
-        console.warn('ADMIN_PASSWORD is not set, so the default admin password is in use. Set it in your environment.');
-    }
+    const email = ADMIN_EMAIL;
+    const password = ADMIN_PASSWORD;
     await db.collection(COLLECTIONS.ADMINS).updateOne(
         { email },
         {
@@ -743,8 +800,10 @@ async function requireAuth(req, res, next) {
         if (typeof username !== 'string' || typeof token !== 'string') {
             return res.status(401).json({ success: false, error: 'Not signed in' });
         }
-        const user = await users().findOne({ username, sessionToken: token }, { projection: { _id: 1 } });
+        const user = await users().findOne({ username, sessionToken: token }, { projection: { _id: 1, status: 1, suspendedUntil: 1 } });
         if (!user) return res.status(401).json({ success: false, error: 'Session expired' });
+        const blocked = accountBlock(user);
+        if (blocked) return res.status(403).json({ success: false, error: blocked });
         req.username = username;
         next();
     } catch (err) {
@@ -846,14 +905,13 @@ app.post('/login', async (req, res) => {
             return res.json({ success: false, error: 'Enter your username and password' });
         }
 
-        const adminEmail = String(process.env.ADMIN_EMAIL || 'admin@bmessenger.com').trim().toLowerCase();
-        const admin = username.toLowerCase() === adminEmail
-            ? await db.collection(COLLECTIONS.ADMINS).findOne({ email: adminEmail })
+        const admin = username.toLowerCase() === ADMIN_EMAIL
+            ? await db.collection(COLLECTIONS.ADMINS).findOne({ email: ADMIN_EMAIL })
             : null;
         if (admin && verifyPassword(admin.passwordHash, password)) {
             const token = crypto.randomBytes(32).toString('hex');
-            await db.collection(COLLECTIONS.ADMINS).updateOne({ email: adminEmail }, { $set: { sessionToken: token, lastLogin: new Date() } });
-            return res.json({ success: true, username: adminEmail, token, role: 'admin', adminToken: token });
+            await db.collection(COLLECTIONS.ADMINS).updateOne({ email: ADMIN_EMAIL }, { $set: { sessionToken: token, lastLogin: new Date() } });
+            return res.json({ success: true, username: ADMIN_EMAIL, token, role: 'admin', adminToken: token });
         }
 
         const user = await users().findOne({ username });
@@ -1420,8 +1478,9 @@ io.use(async (socket, next) => {
     try {
         const { username, token } = socket.handshake.auth || {};
         if (typeof username !== 'string' || typeof token !== 'string') return next(new Error('unauthorized'));
-        const user = await users().findOne({ username, sessionToken: token }, { projection: { _id: 1 } });
+        const user = await users().findOne({ username, sessionToken: token }, { projection: { _id: 1, status: 1, suspendedUntil: 1 } });
         if (!user) return next(new Error('unauthorized'));
+        if (accountBlock(user)) return next(new Error('account_unavailable'));
         socket.data.username = username;
         next();
     } catch (err) {
@@ -2620,6 +2679,7 @@ io.on('connection', (socket) => {
 
 connectToDatabase()
     .then(() => {
+        databaseReady = true;
         server.listen(PORT, () => {
             console.log(`${APP_NAME} server running on port ${PORT}`);
             console.log(`Open http://localhost:${PORT} in your browser`);
@@ -2630,8 +2690,13 @@ connectToDatabase()
         process.exit(1);
     });
 
-process.on('SIGINT', async () => {
-    console.log('Shutting down...');
+async function shutdown(signal) {
+    console.log(`Received ${signal}; shutting down...`);
+    databaseReady = false;
+    await new Promise(resolve => server.close(resolve));
     if (mongoClient) await mongoClient.close();
     process.exit(0);
-});
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

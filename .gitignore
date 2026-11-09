@@ -1,0 +1,31 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+mobile/node_modules/
+
+# Runtime and build output
+npm-debug.log*
+*.log
+coverage/
+dist/
+build/
+.expo/
+
+# Local uploads and generated media
+uploads/*
+!uploads/.gitkeep
+
+# Native build artifacts
+mobile/android/
+mobile/ios/
+mobile/.expo/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

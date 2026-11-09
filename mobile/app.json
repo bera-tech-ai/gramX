@@ -17,7 +17,14 @@
           "backgroundColor": "#0D0F14"
         }
       ],
-      "expo-build-properties"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useLegacyPackaging": false
+          }
+        }
+      ]
     ],
     "android": {
       "permissions": [
