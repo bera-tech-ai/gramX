@@ -25,7 +25,7 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
     // TURN logins expire after one hour and are generated here, so the secret never reaches the browser.
     function iceServers(username) {
         const servers = [{
-            urls: (process.env.STUN_URLS || 'stun:stun.l.google.com:19302').split(',').map(s => s.trim()).filter(Boolean)
+            urls: (process.env.STUN_URLS || 'stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302,stun:stun.cloudflare.com:3478').split(',').map(s => s.trim()).filter(Boolean)
         }];
         const turnUrls = process.env.TURN_URLS;
         const secret = process.env.TURN_SECRET;
