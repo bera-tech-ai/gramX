@@ -6,8 +6,10 @@
     "@config-plugins/react-native-webrtc": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~58.0.23",
+    "expo-av": "^16.0.8",
     "expo-constants": "~58.0.15",
     "expo-dev-client": "~58.0.18",
+    "expo-image-picker": "~58.0.10",
     "expo-notifications": "~58.1.8",
     "expo-splash-screen": "~58.0.13",
     "expo-status-bar": "~58.0.4",
@@ -33,7 +35,8 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "react-native-webrtc"
+          "react-native-webrtc",
+          "expo-av"
         ]
       }
     }

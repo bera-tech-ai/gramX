@@ -5,3 +5,4 @@ export const mediaDevices = typeof navigator !== 'undefined' && 'mediaDevices' i
 export const RTCPeerConnection = typeof window !== 'undefined' ? window.RTCPeerConnection : class {} as any;
 export const RTCIceCandidate = typeof window !== 'undefined' ? window.RTCIceCandidate : class {} as any;
 export const RTCSessionDescription = typeof window !== 'undefined' ? window.RTCSessionDescription : class {} as any;
+export const RTCView = (_props: any) => null;
