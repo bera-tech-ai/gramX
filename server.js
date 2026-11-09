@@ -11,7 +11,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 
 const APP_NAME = 'B-Messenger';
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.DB_NAME || 'gramXDB';
+const DB_NAME = process.env.MONGODB_DB_NAME || process.env.DB_NAME || 'gramXDB';
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
@@ -2717,18 +2717,25 @@ io.on('connection', (socket) => {
 
 // Start
 
-connectToDatabase()
-    .then(() => {
+server.listen(PORT, () => {
+    console.log(`${APP_NAME} server running on port ${PORT}`);
+    console.log(`Open http://localhost:${PORT} in your browser`);
+});
+
+async function connectWithRetry() {
+    try {
+        await connectToDatabase();
         databaseReady = true;
-        server.listen(PORT, () => {
-            console.log(`${APP_NAME} server running on port ${PORT}`);
-            console.log(`Open http://localhost:${PORT} in your browser`);
-        });
-    })
-    .catch((err) => {
-        console.error('Failed to connect to MongoDB:', err);
-        process.exit(1);
-    });
+        console.log('Database readiness: connected');
+    } catch (err) {
+        databaseReady = false;
+        console.error('Failed to connect to MongoDB; health remains unavailable:', err);
+        try { await mongoClient?.close(); } catch {}
+        setTimeout(connectWithRetry, 5000);
+    }
+}
+
+connectWithRetry();
 
 async function shutdown(signal) {
     console.log(`Received ${signal}; shutting down...`);

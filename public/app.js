@@ -1131,8 +1131,6 @@
                 </div>
 
                 <div class="action-row">
-                    <button class="action-pill" data-action="g-audio"><i class="fa-solid fa-phone"></i>Audio</button>
-                    <button class="action-pill" data-action="g-video"><i class="fa-solid fa-video"></i>Video</button>
                     <button class="action-pill" data-action="g-search"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
                     <button class="action-pill" data-page="media" data-media-group="${esc(g._id)}"><i class="fa-solid fa-photo-film"></i>Media</button>
                     ${g.isAdmin ? `<button class="action-pill" data-action="g-add"><i class="fa-solid fa-user-plus"></i>Add</button>` : ''}
@@ -1386,7 +1384,6 @@
                 <div class="menu-list">
                     <button class="menu-row" data-page="media" data-media-user="${esc(p.username)}"><span class="menu-ico"><i class="fa-solid fa-photo-film"></i></span><span class="menu-text">Media, links and docs</span><i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i></button>
                     <button class="menu-row" data-action="profile-starred"><span class="menu-ico"><i class="fa-solid fa-star"></i></span><span class="menu-text">Starred messages</span><i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i></button>
-                    <button class="menu-row" data-soon="1"><span class="menu-ico"><i class="fa-solid fa-hourglass-half"></i></span><span class="menu-text">Disappearing messages<div class="menu-sub">Coming soon</div></span><i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i></button>
                 </div>
                 <div class="menu-list">
                     <button class="menu-row danger" data-action="profile-report"><span class="menu-ico"><i class="fa-solid fa-flag"></i></span><span class="menu-text">Report ${esc(p.username)}</span></button>
@@ -2937,10 +2934,14 @@
                     sub.textContent = `${plural(g.members.length, 'member')}${online ? ` · ${online} online` : ''}`;
                     sub.className = '';
                 }
+                $('chat-call').hidden = true;
+                $('chat-video-call').hidden = true;
                 return;
             }
             const partner = state.chat.partner;
             if (!partner) return;
+            $('chat-call').hidden = false;
+            $('chat-video-call').hidden = false;
             const p = state.chat.profile || profileFor(partner);
             $('chat-title').textContent = p.displayName || p.username;
             $('chat-avatar').innerHTML = avatarHTML(p, 'avatar small');
@@ -3875,7 +3876,6 @@
                 <div class="list-card">
                     ${selectRow('Last seen and online', 'privacy.lastSeen', p.lastSeen)}
                     ${selectRow('Profile photo', 'privacy.profilePhoto', p.profilePhoto)}
-                    ${soonRow('About')}
                     <div class="list-row">
                         <div><div class="row-title">Status</div><div class="hint">Who can see your status updates</div></div>
                         <select class="field" data-setting="privacy.status">
@@ -3887,8 +3887,6 @@
                 <div class="section-title">Messages</div>
                 <div class="list-card">
                     ${switchRow('Read receipts', 'Blue ticks show when you have read messages', 'privacy.readReceipts', p.readReceipts)}
-                    ${soonRow('Disappearing messages')}
-                    ${soonRow('Groups')}
                 </div>`;
         }
         function localSwitch(title, sub, key, def) {
@@ -3897,9 +3895,6 @@
             return `<label class="list-row"><div class="row-main"><div class="row-title">${esc(title)}</div>${sub ? `<div class="hint">${esc(sub)}</div>` : ''}</div><span class="switch"><input type="checkbox" data-local="${esc(key)}" ${on ? 'checked' : ''}><span class="track"></span></span></label>`;
         }
 
-        function soonRow(title, sub) {
-            return `<div class="list-row" data-soon="1" style="cursor:pointer"><div class="row-main"><div class="row-title">${esc(title)}</div><div class="hint">${esc(sub || 'Coming soon')}</div></div><i class="fa-solid fa-chevron-right" style="color:var(--muted)"></i></div>`;
-        }
 
         function pageChats() {
             const s = S();
@@ -3920,9 +3915,6 @@
                     </div>
                     ${localSwitch('Enter key sends', 'Press Enter to send a message', 'enterSends', true)}
                     ${localSwitch('Media visibility', 'Show photos in your gallery', 'mediaVisible', true)}
-                    ${soonRow('Font size', 'Medium')}
-                    ${soonRow('Chat backup')}
-                    ${soonRow('Export chat')}
                 </div>
                 <div class="section-title">Archived chats</div>
                 <div class="list-card">
@@ -3937,11 +3929,6 @@
                 <div class="list-card">
                     ${switchRow('Message notifications', 'Show alerts for new messages', 'notifications', s.notifications)}
                     ${switchRow('Sounds', 'Play a sound for new messages', 'sound', s.sound)}
-                    ${soonRow('Group notifications')}
-                    ${soonRow('Call notifications')}
-                    ${soonRow('Notification tone')}
-                    ${soonRow('Vibrate')}
-                    ${soonRow('Popup notification')}
                 </div>`;
         }
         function pageBlocked() {
@@ -4087,8 +4074,6 @@
                 case 'g-rename': return renameGroup();
                 case 'g-desc': return editGroupDescription();
                 case 'g-add': return openPage('addmembers');
-                case 'g-audio': return toast('Group calls are coming soon');
-                case 'g-video': return toast('Group calls are coming soon');
                 case 'g-search': closeAllPages(); return openFind();
                 case 'change-phone': return changePhone();
                 case 'g-member': return openMemberSheet(el.dataset.user);
@@ -4188,7 +4173,6 @@
             });
 
             $('page').addEventListener('click', (e) => {
-                if (e.target.closest('[data-soon]')) return toast('Coming soon');
                 const sub = e.target.closest('[data-subscribe]');
                 if (sub) return toggleExploreSub(sub.dataset.subscribe, sub.dataset.on === '1');
                 const chRow = e.target.closest('[data-channel]');
@@ -4313,7 +4297,7 @@
                 if (state.chat.kind === 'group') openGroupInfo();
                 else if (state.chat.partner) openUserProfile(state.chat.partner);
             };
-            $('chat-call').onclick = () => state.chat.kind === 'group' ? toast('Group calls are coming soon') : startCall('voice', state.chat.partner);
+            $('chat-call').onclick = () => { if (state.chat.kind !== 'group') startCall('voice', state.chat.partner); };
             $('call-mute').onclick = toggleCallMute;
             $('call-cam').onclick = toggleCallCamera;
             $('call-flip').onclick = flipCallCamera;
@@ -4328,7 +4312,7 @@
                 const b = e.target.closest('[data-emoji-pick]');
                 if (b) pickEmoji(b.dataset.emojiPick);
             });
-            $('chat-video-call').onclick = () => state.chat.kind === 'group' ? toast('Group calls are coming soon') : startCall('video', state.chat.partner);
+            $('chat-video-call').onclick = () => { if (state.chat.kind !== 'group') startCall('video', state.chat.partner); };
             $('install-yes').onclick = () => {
                 localStorage.setItem('bm_install_done', '1');
                 $('install-prompt').hidden = true;
