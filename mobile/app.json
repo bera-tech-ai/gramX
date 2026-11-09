@@ -17,7 +17,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#0D0F14"
         }
-      ]
+      ],
+      "expo-build-properties"
     ],
     "android": {
       "permissions": [
