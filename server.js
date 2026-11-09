@@ -15,14 +15,15 @@ const DB_NAME = process.env.MONGODB_DB_NAME || process.env.DB_NAME || 'gramXDB';
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
+const ADMIN_PASSWORD_KEY = process.env.BMESSENGER_ADMIN_PASSWORD ? 'BMESSENGER_ADMIN_PASSWORD' : 'ADMIN_PASSWORD';
+const ADMIN_PASSWORD = String(process.env.BMESSENGER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || '');
 const ADMIN_PASSWORD_MIN_LENGTH = 16;
 
 function validateEnvironment() {
     const missing = [];
     if (!MONGODB_URI) missing.push('MONGODB_URI');
     if (!ADMIN_EMAIL) missing.push('ADMIN_EMAIL');
-    if (!ADMIN_PASSWORD) missing.push('ADMIN_PASSWORD');
+    if (!ADMIN_PASSWORD) missing.push(ADMIN_PASSWORD_KEY);
     if (missing.length) {
         console.error(`Missing required environment variables: ${missing.join(', ')}`);
         console.error('Copy .env.example to a private environment file and provide real values.');
@@ -33,7 +34,7 @@ function validateEnvironment() {
         process.exit(1);
     }
     if (ADMIN_PASSWORD.length < ADMIN_PASSWORD_MIN_LENGTH) {
-        console.error(`ADMIN_PASSWORD must contain at least ${ADMIN_PASSWORD_MIN_LENGTH} characters.`);
+        console.error(`${ADMIN_PASSWORD_KEY} must contain at least ${ADMIN_PASSWORD_MIN_LENGTH} characters.`);
         process.exit(1);
     }
     if (NODE_ENV === 'production' && process.env.JWT_SECRET === 'your_super_secret_jwt_key_here_make_it_long') {
