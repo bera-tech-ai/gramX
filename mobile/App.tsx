@@ -63,7 +63,7 @@ async function registerForPushNotificationsAsync() {
   return (await Notifications.getExpoPushTokenAsync({ projectId })).data;
 }
 
-type Session = { username: string; token: string };
+type Session = { username: string; token: string; role?: 'user' | 'admin' };
 type Profile = { username: string; displayName?: string; avatar?: string; customAvatar?: string | null };
 type Conversation = {
   partner: string;
@@ -93,7 +93,7 @@ type Message = {
   oneView?: boolean;
 };
 
-type AppTab = 'chats' | 'status' | 'calls' | 'contacts' | 'settings';
+type AppTab = 'chats' | 'status' | 'calls' | 'contacts' | 'settings' | 'admin';
 type CallState = { callId: string; peer: string; role: 'caller' | 'callee'; type: 'voice' | 'video'; state: 'ringing' | 'connecting' | 'connected'; incoming?: boolean };
 
 type SocketReply<T> = { success: boolean; error?: string } & T;
@@ -160,15 +160,15 @@ export default function App() {
     AsyncStorage.getItem('gramx-session').then(async (value) => {
       if (!value) return setBooting(false);
       const stored = JSON.parse(value) as Session;
-      const result = await request<{ success: boolean }>('/session', { method: 'POST', body: JSON.stringify(stored) });
-      if (result.success) setSession(stored);
+      const result = await request<{ success: boolean; role?: 'user' | 'admin' }>('/session', { method: 'POST', body: JSON.stringify(stored) });
+      if (result.success) setSession({ ...stored, role: result.role || stored.role || 'user' });
       else await AsyncStorage.removeItem('gramx-session');
       setBooting(false);
     }).catch(() => setBooting(false));
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || session.role === 'admin') return;
     let mounted = true;
     registerForPushNotificationsAsync().then(async (pushToken) => {
       if (!mounted || !pushToken) return;
@@ -191,7 +191,7 @@ export default function App() {
   }, [session]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || session.role === 'admin') return;
     const socket = io(API_URL, { transports: ['websocket'], auth: session });
     socketRef.current = socket;
     socket.on('connect', () => {
@@ -301,11 +301,11 @@ export default function App() {
     setBusy(true); setAuthError('');
     const path = authMode === 'login' ? '/login' : '/register';
     const payload = authMode === 'login' ? { username: username.trim(), password } : { username: username.trim(), password, fullName: fullName.trim() };
-    request<{ success: boolean; error?: string; token?: string; username?: string }>(path, { method: 'POST', body: JSON.stringify(payload) })
+    request<{ success: boolean; error?: string; token?: string; username?: string; role?: 'user' | 'admin' }>(path, { method: 'POST', body: JSON.stringify(payload) })
       .then(async (result) => {
         if (!result.success) return setAuthError(result.error || 'Could not continue');
         if (authMode === 'register') { setAuthMode('login'); setAuthError('Account created. Sign in to continue.'); return; }
-        const next = { username: result.username || username.trim(), token: result.token || '' };
+        const next = { username: result.username || username.trim(), token: result.token || '', role: result.role || 'user' as const };
         await AsyncStorage.setItem('gramx-session', JSON.stringify(next));
         setSession(next);
       })
@@ -476,6 +476,7 @@ export default function App() {
       body: JSON.stringify({ pushToken: pushTokenRef.current }),
     }).catch(() => undefined);
     if (session) await request('/logout', { method: 'POST', body: JSON.stringify(session) }).catch(() => undefined);
+    if (session?.role === 'admin') await request('/admin/logout', { method: 'POST', headers: { 'x-admin-token': session.token } }).catch(() => undefined);
     await AsyncStorage.removeItem('gramx-session');
     pushTokenRef.current = null;
     setSession(null); setActivePartner(null); setMessages([]);
@@ -502,7 +503,8 @@ export default function App() {
           {activeTab === 'calls' && <CallsScreen conversations={conversations} startVoiceCall={startVoiceCall} startVideoCall={startVideoCall} />}
           {activeTab === 'contacts' && <ContactsScreen contacts={contacts} openConversation={openConversation} startVoiceCall={startVoiceCall} onCreateGroup={() => setGroupModal(true)} />}
           {activeTab === 'settings' && <SettingsScreen username={session.username} settings={settings} updateSettings={updateSettings} signOut={signOut} />}
-          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+          {activeTab === 'admin' && session.role === 'admin' && <AdminDashboard session={session} />}
+          <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={session.role === 'admin'} />
         </View>
       )}
       {call && <CallOverlay call={call} localStream={localVideoStream} remoteStream={remoteVideoStream} acceptCall={acceptCall} finishCall={() => finishCall(true)} />}
@@ -585,8 +587,27 @@ function SettingsScreen({ username, settings, updateSettings, signOut }: { usern
   return <View style={styles.flex}><Header title="Settings" subtitle="Make B-MESSENGER yours" /><ScrollView contentContainerStyle={{ padding: 18 }}><View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 18, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE, marginBottom: 18 }}><Avatar name={displayName} size={58} ring /><View style={{ marginLeft: 13, flex: 1 }}><Text style={{ color: '#FFF', fontSize: 19, fontWeight: '800' }}>{displayName}</Text><Text style={styles.rowSub}>Your B-MESSENGER account</Text></View></View><Text style={{ color: MUTED, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 8 }}>PROFILE</Text><TextInput value={displayName} onChangeText={setDisplayName} placeholder="Display name" placeholderTextColor={MUTED} style={styles.authInput} /><TextInput value={about} onChangeText={setAbout} placeholder="About you" placeholderTextColor={MUTED} style={styles.authInput} /><Pressable style={[styles.primary, { marginBottom: 18 }]} onPress={() => updateSettings({ displayName, about })}><Text style={styles.primaryText}>Save profile</Text></Pressable>{rows.map(([icon, title, sub]) => <View key={title} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: LINE }}><Text style={{ color: BRAND, fontSize: 18, width: 33 }}>{icon}</Text><View style={{ flex: 1 }}><Text style={{ color: '#FFF', fontSize: 15, fontWeight: '700' }}>{title}</Text><Text style={{ color: MUTED, fontSize: 12, marginTop: 3 }}>{sub}</Text></View>{title === 'Notifications' ? <Switch value={settings.notifications !== false} onValueChange={(value) => updateSettings({ notifications: value })} trackColor={{ false: LINE, true: BRAND_DARK }} thumbColor={settings.notifications !== false ? BRAND : MUTED} /> : <Text style={{ color: MUTED, fontSize: 23 }}>›</Text>}</View>)}<Pressable style={{ alignItems: 'center', paddingVertical: 22 }} onPress={signOut}><Text style={{ color: '#FF9B9B', fontWeight: '800' }}>Sign out</Text></Pressable><Text style={{ color: MUTED, fontSize: 12, textAlign: 'center', marginTop: 8 }}>B-MESSENGER mobile · v1.0</Text></ScrollView></View>;
 }
 
-function BottomNav({ activeTab, setActiveTab }: { activeTab: AppTab; setActiveTab: (tab: AppTab) => void }) {
-  const items: { key: AppTab; label: string; icon: string }[] = [{ key: 'chats', label: 'Chats', icon: '◒' }, { key: 'status', label: 'Status', icon: '◌' }, { key: 'calls', label: 'Calls', icon: '⌁' }, { key: 'contacts', label: 'Contacts', icon: '♧' }, { key: 'settings', label: 'Settings', icon: '⚙' }];
+function AdminDashboard({ session }: { session: Session }) {
+  const [stats, setStats] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [error, setError] = useState('');
+  const headers = { 'x-admin-token': session.token };
+  async function load() {
+    const [statsReply, usersReply, reportsReply] = await Promise.all([request<any>('/admin/stats', { headers }), request<any>('/admin/users', { headers }), request<any>('/admin/reports', { headers })]);
+    if (!statsReply.success || !usersReply.success || !reportsReply.success) { setError('Could not load admin data'); return; }
+    setStats(statsReply.stats); setUsers(usersReply.users || []); setReports(reportsReply.reports || []); setError('');
+  }
+  useEffect(() => { load().catch(() => setError('Could not reach the admin service')); }, []);
+  async function act(username: string, action: string) {
+    const result = await request<any>(`/admin/users/${encodeURIComponent(username)}/action`, { method: 'POST', headers, body: JSON.stringify({ action }) });
+    if (result.success) load(); else setError(result.error || 'Action failed');
+  }
+  return <View style={styles.flex}><Header title="Admin" subtitle="Live platform operations" action={<Pressable onPress={() => load()}><Text style={{ color: BRAND, fontWeight: '800' }}>Refresh</Text></Pressable>} /><ScrollView contentContainerStyle={{ padding: 18 }}><Text style={{ color: MUTED, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginBottom: 10 }}>OVERVIEW</Text><View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{[['Users', stats?.users], ['Online', stats?.online], ['Messages', stats?.messages], ['Groups', stats?.groups], ['Statuses', stats?.activeStatuses], ['Reports', reports.length]].map(([label, value]) => <View key={String(label)} style={{ width: '47%', padding: 16, borderRadius: 16, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE }}><Text style={{ color: MUTED, fontSize: 12 }}>{label}</Text><Text style={{ color: '#FFF', fontSize: 26, fontWeight: '800', marginTop: 6 }}>{value ?? '—'}</Text></View>)}</View>{error ? <Text style={styles.error}>{error}</Text> : null}<Text style={{ color: MUTED, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginTop: 24, marginBottom: 10 }}>USERS</Text>{users.slice(0, 50).map((user) => <View key={user.username} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: LINE }}><Avatar name={user.fullName || user.username} small /><View style={{ flex: 1, marginLeft: 10 }}><Text style={styles.rowTitle}>{user.fullName || user.username}</Text><Text style={styles.rowSub}>@{user.username} · {user.online ? 'Online' : user.status}</Text></View>{user.status === 'active' ? <Pressable onPress={() => act(user.username, 'suspend')}><Text style={{ color: '#FFB86B', fontWeight: '800' }}>Suspend</Text></Pressable> : <Pressable onPress={() => act(user.username, 'unsuspend')}><Text style={{ color: GREEN, fontWeight: '800' }}>Restore</Text></Pressable>}</View>)}</ScrollView></View>;
+}
+
+function BottomNav({ activeTab, setActiveTab, isAdmin = false }: { activeTab: AppTab; setActiveTab: (tab: AppTab) => void; isAdmin?: boolean }) {
+  const items: { key: AppTab; label: string; icon: string }[] = [{ key: 'chats', label: 'Chats', icon: '◒' }, { key: 'status', label: 'Status', icon: '◌' }, { key: 'calls', label: 'Calls', icon: '⌁' }, { key: 'contacts', label: 'Contacts', icon: '♧' }, { key: 'settings', label: 'Settings', icon: '⚙' }, ...(isAdmin ? [{ key: 'admin' as const, label: 'Admin', icon: '▦' }] : [])];
   return <View style={styles.bottomNav}>{items.map((item) => <Pressable key={item.key} style={styles.navItem} onPress={() => setActiveTab(item.key)}><Text style={[styles.navIcon, activeTab === item.key && styles.navIconActive]}>{item.icon}</Text><Text style={[styles.navLabel, activeTab === item.key && styles.navLabelActive]}>{item.label}</Text></Pressable>)}</View>;
 }
 

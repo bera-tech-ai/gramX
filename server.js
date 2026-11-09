@@ -846,6 +846,16 @@ app.post('/login', async (req, res) => {
             return res.json({ success: false, error: 'Enter your username and password' });
         }
 
+        const adminEmail = String(process.env.ADMIN_EMAIL || 'admin@bmessenger.com').trim().toLowerCase();
+        const admin = username.toLowerCase() === adminEmail
+            ? await db.collection(COLLECTIONS.ADMINS).findOne({ email: adminEmail })
+            : null;
+        if (admin && verifyPassword(admin.passwordHash, password)) {
+            const token = crypto.randomBytes(32).toString('hex');
+            await db.collection(COLLECTIONS.ADMINS).updateOne({ email: adminEmail }, { $set: { sessionToken: token, lastLogin: new Date() } });
+            return res.json({ success: true, username: adminEmail, token, role: 'admin', adminToken: token });
+        }
+
         const user = await users().findOne({ username });
         let valid = false;
 
@@ -866,7 +876,7 @@ app.post('/login', async (req, res) => {
 
         const token = crypto.randomBytes(32).toString('hex');
         await users().updateOne({ username }, { $set: { sessionToken: token, lastSeen: new Date() } });
-        res.json({ success: true, username, token });
+        res.json({ success: true, username, token, role: 'user' });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ success: false, error: 'Login failed' });
@@ -877,8 +887,10 @@ app.post('/session', async (req, res) => {
     try {
         const { username, token } = req.body || {};
         if (typeof username !== 'string' || typeof token !== 'string') return res.json({ success: false });
+        const admin = await db.collection(COLLECTIONS.ADMINS).findOne({ email: username.toLowerCase(), sessionToken: token }, { projection: { _id: 1 } });
+        if (admin) return res.json({ success: true, role: 'admin' });
         const user = await users().findOne({ username, sessionToken: token }, { projection: { _id: 1 } });
-        res.json({ success: !!user });
+        res.json({ success: !!user, role: user ? 'user' : undefined });
     } catch (err) {
         res.json({ success: false });
     }
@@ -889,6 +901,7 @@ app.post('/logout', async (req, res) => {
         const { username, token } = req.body || {};
         if (typeof username === 'string' && typeof token === 'string') {
             await users().updateOne({ username, sessionToken: token }, { $set: { sessionToken: null } });
+            await db.collection(COLLECTIONS.ADMINS).updateOne({ email: username.toLowerCase(), sessionToken: token }, { $set: { sessionToken: null } });
         }
     } catch (err) {
         console.error('Logout error:', err);
