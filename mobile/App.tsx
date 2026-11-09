@@ -452,7 +452,7 @@ export default function App() {
     const stream = await mediaDevices.getUserMedia({ audio: true, video: current.type === 'video' });
     localStreamRef.current = stream;
     if (current.type === 'video') setLocalVideoStream(stream);
-    const pc: any = new RTCPeerConnection({ iceServers: iceReply.iceServers || [] });
+    const pc: any = new RTCPeerConnection({ iceServers: iceReply.iceServers || [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }] });
     peerConnectionRef.current = pc;
     stream.getTracks().forEach((track: any) => pc.addTrack(track, stream));
     pc.ontrack = (event: any) => { const stream = event.streams?.[0]; if (stream) setRemoteVideoStream(stream); };
@@ -467,11 +467,26 @@ export default function App() {
         setCall(next);
       }
     };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+        if (callRef.current?.callId === current.callId && callRef.current.state !== 'connected') {
+          socketRef.current?.emit('call-connected', { callId: current.callId });
+          const next = { ...callRef.current, state: 'connected' as const };
+          callRef.current = next;
+          setCall(next);
+        }
+      }
+      if (pc.iceConnectionState === 'failed') finishCall(false);
+    };
     if (createOffer) {
       const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: current.type === 'video' });
       await pc.setLocalDescription(offer);
       socketRef.current.emit('call-signal', { callId: current.callId, kind: 'offer', data: offer });
     }
+    await flushPendingSignals();
+  }
+
+  async function flushPendingSignals() {
     const queued = pendingSignalsRef.current.splice(0);
     for (const signal of queued) await handleCallSignal(signal);
   }
@@ -488,6 +503,7 @@ export default function App() {
     } else if (signal.kind === 'answer') {
       await pc.setRemoteDescription(new RTCSessionDescription(signal.data));
     } else if (signal.kind === 'ice') {
+      if (!pc.remoteDescription) { pendingSignalsRef.current.push(signal); return; }
       await pc.addIceCandidate(new RTCIceCandidate(signal.data));
     }
   }
