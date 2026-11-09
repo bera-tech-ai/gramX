@@ -60,13 +60,12 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
         return call;
     }
 
-    function saveRecord(record) {
-        getDb().collection('calls').insertOne(record)
-            .catch(err => console.error('Call record error:', err));
+    async function saveRecord(record) {
+        await getDb().collection('calls').insertOne(record);
     }
 
     // Ends a call once, saves its record, and tells both people
-    function finish(call, status) {
+    async function finish(call, status) {
         if (call.state === 'ended') return;
         call.state = 'ended';
         clearTimeout(call.ringTimer);
@@ -86,7 +85,7 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
             endedAt,
             durationSec
         };
-        saveRecord(record);
+        await saveRecord(record);
 
         const payload = { callId: call.id, status, durationSec, record };
         emitToUser(call.caller, 'call-ended', payload);
@@ -113,7 +112,7 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
         const hasPushToken = Array.isArray(settings?.pushTokens) && settings.pushTokens.length > 0;
         if (!isOnline(to) && !hasPushToken) {
             // Nobody is there to ring: record a missed call and tell the caller
-            saveRecord({ caller: me, callee: to, type, status: 'missed', startedAt: now, endedAt: now, durationSec: 0 });
+            await saveRecord({ caller: me, callee: to, type, status: 'missed', startedAt: now, endedAt: now, durationSec: 0 });
             return { status: 'unavailable' };
         }
 
@@ -193,23 +192,23 @@ function createCalls({ io, getDb, isOnline, emitToUser, sendPushNotification }) 
         on('call-decline', async (d, me) => {
             const call = requireCall(me, d.callId);
             if (roleOf(call, me) !== 'callee') throw fail('Only the person being called can decline');
-            if (call.state === 'ringing') finish(call, 'rejected');
+            if (call.state === 'ringing') await finish(call, 'rejected');
             return {};
         });
 
         on('call-cancel', async (d, me) => {
             const call = requireCall(me, d.callId);
             if (roleOf(call, me) !== 'caller') throw fail('Only the caller can cancel');
-            if (call.state === 'ringing') finish(call, 'cancelled');
+            if (call.state === 'ringing') await finish(call, 'cancelled');
             return {};
         });
 
         on('call-end', async (d, me) => {
             const call = requireCall(me, d.callId);
             if (call.state === 'ringing') {
-                finish(call, roleOf(call, me) === 'caller' ? 'cancelled' : 'rejected');
+                await finish(call, roleOf(call, me) === 'caller' ? 'cancelled' : 'rejected');
             } else {
-                finish(call, call.connectedAt ? 'completed' : 'failed');
+                await finish(call, call.connectedAt ? 'completed' : 'failed');
             }
             return {};
         });
