@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
+const ADMIN_PASSWORD_MIN_LENGTH = 16;
 
 function validateEnvironment() {
     const missing = [];
@@ -31,8 +32,8 @@ function validateEnvironment() {
         console.error('ADMIN_EMAIL must be a valid email address.');
         process.exit(1);
     }
-    if (ADMIN_PASSWORD.length < 16) {
-        console.error('ADMIN_PASSWORD must contain at least 16 characters.');
+    if (ADMIN_PASSWORD.length < ADMIN_PASSWORD_MIN_LENGTH) {
+        console.error(`ADMIN_PASSWORD must contain at least ${ADMIN_PASSWORD_MIN_LENGTH} characters.`);
         process.exit(1);
     }
     if (NODE_ENV === 'production' && process.env.JWT_SECRET === 'your_super_secret_jwt_key_here_make_it_long') {
